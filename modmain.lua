@@ -25,11 +25,15 @@
 	end
 --]]
 
+local _G = GLOBAL
+if _G.KnownModIndex:IsModEnabledAny("workshop-2189004162") then
+	print("【Show Me (中文)】 检测到有笨蛋同时开启了Show Me和Insight模组，已停止加载Show Me！")
+	return
+end
+
 print(modinfo.name .. " : v" .. modinfo.version)
 
-local _G = GLOBAL
 local require = _G.require
-
 local function Import(modulename)
     local f = _G.kleiloadlua(modulename)
     if f and type(f) == "function" then
