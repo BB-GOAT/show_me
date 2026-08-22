@@ -28,6 +28,7 @@
 print(modinfo.name .. " : v" .. modinfo.version)
 
 local _G = GLOBAL
+local require = _G.require
 
 local function Import(modulename)
     local f = _G.kleiloadlua(modulename)
@@ -36,7 +37,6 @@ local function Import(modulename)
         return f()
     end
 end
-
 local Upvaluehelper = Import(MODROOT .. "bbgoat_upvaluehelper.lua")
 
 local GetGlobal=function(gname,default)
@@ -186,7 +186,6 @@ local MY_STRINGS =
 	{ durability = "耐久度: " },
 	{ strength = "攻击力: " },
 	{ aoe = "群伤: " },
-	{ is_admin = "这是管理员\n他不在游戏中\n所以不要在意他" }, --(@)
 	{ food_temperature = "食物温度: " },
 	{ precipitationrate = "世界雨: " },
 	{ wetness = "世界湿润: " },
@@ -199,7 +198,9 @@ local MY_STRINGS =
 	{ effectiveness = "效率: "},
 	{ force = "动力: "}, --船桨
 	{ repairer = "修理: "},
-	{ stress = "养分流失: "}, --农作物压力，定义通俗术语，因为养分都流失那么多了怎能巨大化
+	-- 农作物
+	{ nutrient = "养分: " },
+	{ moisture = "水分: " },
 	{ stress_tag = " " },
 	{ other_tag = " " }, --其他的TAGS
 	{ harvest = "收获: " },
@@ -235,7 +236,7 @@ SHOWME_STRINGS = {
 	already_fresh = "最大的新鲜度",
 	cheat_fresh = "保鲜返鲜", --容器有返鲜功能存储食物的返回显示
 	onpickup = " 采摘时", --对于花
-	lack_of = '缺乏 ', -- 例如 缺乏肥料
+	pressure = '压力(%s) ', -- 农作物压力
 	_in = ' 大约 ', -- X秒后的东西
 	jieduan = "阶段", chixu = " 持续", pvp = "对你是: ", norot = "永久保鲜", hot = "变质速度 +", weak = "变质速度 +", cold = "保鲜倍率 +", refresh = "返鲜速度 +", xiaolv = "效率", fangyu = "防御", gongji = "攻击", fangshui = "防水", gandian = "感电攻击", faguang = "发光", huifu = "生命恢复",
 }
@@ -408,7 +409,13 @@ INTERNAL_STAGES = {
 }
 
 STRESS_TAGS = { --https://dontstarve.fandom.com/wiki/Farm_Plant
-	nutrients = "缺乏肥料", moisture = "缺少水分", killjoys = "附近有影响生长物", family = "缺少家族", season = "不适应这季节", overcrowding = "过于拥挤", happiness = "不开心",
+	nutrients = "肥料",
+	moisture = "缺少水分",
+	killjoys = "杂物",
+	family = "家族",
+	season = "季节",
+	overcrowding = "拥挤",
+	happiness = "不开心",
 	withered = "已枯萎",
 }
 
@@ -578,14 +585,29 @@ local function DefaultFraction(arr) --典型输出：“名称：cur / max”
 	return arr.data.desc .. " " .. cur .. " / " .. mx
 end
 
---农作物tag
-MY_DATA.stress_tag.fn = function(arr)
-	local key = arr.param[1]
-	if STRESS_TAGS[key] then
-		return STRESS_TAGS[key]
-	end
-	return SHOWME_STRINGS.lack_of .. tostring(key)
+--农作物
+MY_DATA.nutrient.fn = function(arr)
+	return string.format("%d水，%d催，%d堆，%d粪", arr.param[1], arr.param[2], arr.param[3], arr.param[4])
 end
+
+local function slice(tbl, start)
+    local result = {}
+    for i = start, #tbl do
+        result[#result + 1] = tbl[i]
+    end
+    return result
+end
+
+MY_DATA.stress_tag.fn = function(arr)
+	local subArr = slice(arr.param, 2)
+	local arr1 = {}
+	for key, value in pairs(subArr) do
+		table.insert(arr1, STRESS_TAGS[value] or "未知")
+	end
+	return string.format(SHOWME_STRINGS.pressure, arr.param[1]) .. table.concat(arr1, "，")
+end
+
+
 --创建其他tag
 MY_DATA.other_tag.fn = function(arr)
 	local key = arr.param[1]
@@ -1029,7 +1051,7 @@ if CLIENT_SIDE then
 	if not mods.player_preinit_fns then
 		mods.player_preinit_fns={}
 		--Dirty hack
-		local old_MakePlayerCharacter = _G.require("prefabs/player_common")
+		local old_MakePlayerCharacter = require("prefabs/player_common")
 		local function new_MakePlayerCharacter(...)
 			local inst=old_MakePlayerCharacter(...)
 			for _,v in ipairs(mods.player_preinit_fns) do
@@ -1157,7 +1179,6 @@ end
 -------------------------------------------------- HOST -----------------------------------------------------------------
 --只在主机上工作。
 if TheNet and TheNet:GetIsServer() then
-require = _G.require
 
 --检测启用的模组
 local mod_names	 --названия всех модов (чтобы не дергать джвижок)
@@ -1345,45 +1366,6 @@ local function cn(key,param1,param2,param3,param4,param5)
 	return
 end
 
-local is_admin
-local last_user_talbe = {}
---Проверяет, является ли чел админом.
-local function IsAdmin(viewer)
-	if is_admin ~= nil then
-		return is_admin
-	end
-	if not (viewer and viewer.userid) then
-		return false
-	end
-	for i=1,#last_user_talbe do
-		local user = last_user_talbe[i]
-		if user.userid == viewer.userid then
-			is_admin = user.admin or false
-			return is_admin
-		end
-	end
-	last_user_talbe = _G.TheNet:GetClientTable()
-	for i=1,#last_user_talbe do
-		local user = last_user_talbe[i]
-		if user.userid == viewer.userid then
-			is_admin = user.admin or false
-			return is_admin
-		end
-	end
-end
-
-local function name_by_id(userid)
-	for i,v in ipairs(_G.AllPlayers) do
-		if v.userid == userid then
-			return v.name
-		end
-	end
-	return "---Unknown---"
-end
---GetGlobal("name_by_id",name_by_id)
-
---local TemperatureFormatLocal
-
 local SPICIAL_STRUCTURES = {
 	campfire = true, coldfire = true,
 }
@@ -1484,12 +1466,71 @@ local function IsUselessTimer(prefab,name)
 	return USELESS_TIMERS.all[name]
 end
 
+--农作物信息
+local OldGetTileDataAtPoint = nil
+local _nutrientgrid = nil
+local _moisturegrid = nil
+local _drinkersgrid = nil
+local _overlaygrid = nil
+
+local farming_manager
+AddComponentPostInit("farming_manager", function(self)
+	if not (_G.TheWorld and _G.TheWorld.ismastersim) then return end
+	farming_manager = self
+	self.inst:ListenForEvent("worldmapsetsize", function(...)
+		_nutrientgrid = Upvaluehelper.GetUpvalue(self.OnSave, "_nutrientgrid")
+		_moisturegrid = Upvaluehelper.GetUpvalue(self.OnSave, "_moisturegrid")
+		_drinkersgrid = Upvaluehelper.GetUpvalue(self.GetDebugString, "_drinkersgrid")
+		_overlaygrid = Upvaluehelper.GetUpvalue(self.GetDebugString, "_overlaygrid")
+	end)
+end)
+
+--- Get tile nutrients at point
+local function GetTileNutrientsAtPoint(x, y, z)
+	local nutrients
+	local tx, ty = _G.TheWorld.Map:GetTileCoordsAtPoint(x, y, z)
+	nutrients = {farming_manager:GetTileNutrients(tx, ty)}
+	return {
+		formula = nutrients[1],
+		compost = nutrients[2],
+		manure = nutrients[3]
+	}
+end
+
+local function GetTileDataAtPoint(x, y, z)
+	if OldGetTileDataAtPoint then
+		return OldGetTileDataAtPoint(false, x, y, z)
+	end
+
+	if not _nutrientgrid or not _moisturegrid or not _drinkersgrid or not _overlaygrid then
+		if not _nutrientgrid then print("[Show Me (中文)] 警告：未找到上值 _nutrientgrid") end
+		if not _moisturegrid then print("[Show Me (中文)] 警告：未找到上值 _moisturegrid") end
+		if not _drinkersgrid then print("[Show Me (中文)] 警告：未找到上值 _drinkersgrid") end
+		if not _overlaygrid then print("[Show Me (中文)] 警告：未找到上值 _overlaygrid") end
+		return
+	end
+
+	local tx, ty = _G.TheWorld.Map:GetTileCoordsAtPoint(x, y, z)
+
+	return {
+		belowsoiltile = _G.TheWorld.components.undertile and _G.TheWorld.components.undertile:GetTileUnderneath(tx, ty) or nil,
+		soil_drinkers = _drinkersgrid:GetDataAtPoint(tx, ty),
+		nutrients_overlay = _overlaygrid:GetDataAtPoint(tx, ty),
+		nutrients = _nutrientgrid:GetDataAtPoint(tx, ty),
+		soilmoisture = _moisturegrid:GetDataAtPoint(tx, ty)
+	}
+end
+
+--- Gets tile moisture at point
+local function GetTileMoistureAtPoint(x, y, z)
+	local data = GetTileDataAtPoint(x, y, z)
+	return data and data.soilmoisture or 0
+end
+
 --Основная функция получения описания.
 function GetTestString(item,viewer) --从这里开始，与Tell Me区分
 	--line_cnt = 0
 	desc_table = {} --旧的 desc 将被取消
-
-	is_admin = nil
 	local prefab = item.prefab
 	local c=item.components
 	local has_owner = false --仅向所有者发送一次信息
@@ -1513,11 +1554,6 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
 		--end
 	elseif c.health and not item.grow_stage then --Health, Hunger, Sanity Bar
 		local h=c.health
-		--cheat
-		if item.is_admin then
-			cn("is_admin")
-			return desc_table[1]
-		end
 		--生物血量
 		if need_send_hp then --c.health
 			local mx;
@@ -2517,21 +2553,27 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
 		local TS_crop = GetModConfigData("T_crop")
 		if TS_crop then
 			if c.farmplantstress and c.farmplantstress.stress_points then
-				cn("stress",c.farmplantstress.stress_points)
+				local x, y, z = item.Transform:GetWorldPosition()
+				local g = GetTileNutrientsAtPoint(x, y, z)
+				local m = GetTileMoistureAtPoint(x, y, z)
+				cn("nutrient", m, g.formula, g.compost, g.manure)
+
+				local reason = {c.farmplantstress.stress_points}
 				if c.farmplantstress.stressors_testfns then
 					for k,fn in pairs(c.farmplantstress.stressors_testfns) do
 						if k == 'happiness' then
 							if c.farmplantstress.stressors and c.farmplantstress.stressors.happiness then
-								cn("stress_tag",k)
+								table.insert(reason, k)
 							end
 						else
 							local bool = fn(item,k,false)
 							if bool then
-								cn("stress_tag",k)
+								table.insert(reason, k)
 							end
 						end
 					end
 				end
+				cn("stress_tag", table.concat(reason, ","))
 			end
 		end
 	end
@@ -2640,6 +2682,17 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
 			end
 		end
 	end
+    -- 新晾肉架
+    if c.dryingrack and c.dryingrack.GetDryingInfoSnapshot then
+        local snapshot = c.dryingrack:GetDryingInfoSnapshot()
+        if snapshot then
+            for k,v in pairs(snapshot) do
+                if type(v) == "number" then
+                    table.insert(desc_table, "@" .. (k.name or k.prefab or tostring(k)) .. "：剩余 " .. round2(v/TUNING.TOTAL_DAY_TIME,1) .. "天")
+                end
+            end
+        end
+    end
 	return table.concat(desc_table,"\2") --an error with no info
 end
 
@@ -3054,7 +3107,7 @@ if not _G.KnownModIndex:IsModEnabledAny("workshop-3363111676") then -- 开启高
 			end)
 		end
 
-		local ingredientui = _G.require 'widgets/ingredientui'
+		local ingredientui = require 'widgets/ingredientui'
 		local old_OnGainFocus = ingredientui.OnGainFocus
 
 		function ingredientui:OnGainFocus(...)
