@@ -1,5 +1,5 @@
 MY_STRINGS_OVERRIDE =
-{ 
+{
 	armor = "傷害吸收: " , --A --Armor of the item.
 	aggro = "攻擊力: " , --B --Score of griefing 
 	cookpot = "正在烹煮: " , --C (Crock Pot)
@@ -27,7 +27,7 @@ MY_STRINGS_OVERRIDE =
 	fishes = "魚數量: " , --Y  --Count fishes in a pond
 	fish = "魚: " , --Z --Count fishes in a pond if there is only 1 fish
 	sec= "剩餘時間(秒): " ,  --for cooking in Crock Pot
-	love = "喜愛: " , 
+	love = "喜愛: " ,
 	summer = "過熱抗性: " , --summer insulation
 	absorb = "傷害吸收: " , --Absorb damage
 	S3="現在是春天," , --
@@ -39,7 +39,7 @@ MY_STRINGS_OVERRIDE =
 	speed = "移速: " , --Bonus of the speed (percent)
 	uses_of = "次可使用, 總次數" ,
 	obedience = "服從: " ,
-	S1="現在是冬天," , 
+	S1="現在是冬天," ,
 	dmg_character = "攻擊力: " ,
 	power = "造成傷害: ", --P 
 	cooldown="冷卻: ",
@@ -70,7 +70,8 @@ MY_STRINGS_OVERRIDE =
 	effectiveness = "實效: ",
 	force = "動力: ",
 	repairer = "修理: ",
-	stress = "養分流失: ",
+	nutrient = "養分: " ,
+	moisture = "水分: " ,
 	stress_tag = " ",
 	other_tag = " ",
 	harvest="收穫: ",
@@ -103,9 +104,9 @@ SHOWME_STRINGS = {
 	already_fresh = "最大的新鮮度",
 	cheat_fresh = "保鮮返鮮",
 	onpickup = " 采摘时", --for flowers
-	lack_of = '缺乏 ', -- e.g. Lack of nutrients
+	pressure = '壓力(%s) ',
 	_in = ' 大約 ', -- something in X seconds	
-	jieduan = "階段", chixu = " 持續", pvp = "對你是: ", norot = "永久保鮮", hot = "變質速度 +", weak = "變質速度 +", cold = "保鮮倍率 +", refresh = "返鮮速度 +", xiaolv = "效率", fangyu = "防禦", gongji = "攻擊", fangshui = "防水", gandian = "感電攻擊", faguang = "發光", huifu = "生命恢復",	
+	jieduan = "階段", chixu = " 持續", pvp = "對你是: ", norot = "永久保鮮", hot = "變質速度 +", weak = "變質速度 +", cold = "保鮮倍率 +", refresh = "返鮮速度 +", xiaolv = "效率", fangyu = "防禦", gongji = "攻擊", fangshui = "防水", gandian = "感電攻擊", faguang = "發光", huifu = "生命恢復",
 }
 
 --Food tags are in genitive case.
@@ -172,21 +173,21 @@ INTERNAL_TIMERS = {
 	getdistance = "獲取距離", minleaptime = "飛躍", calmtime = "冷靜", targetboatdelay = "目標", standing_dive_cd = "躍起潛水", torpedo_cd = "旋轉魚蕾",
 	--gobble_cooldown --duplicate
 	--远古箱子sacred_chest.lua
-	localoffering = "合成中", localoffering_pst = "提供（pst）", 
+	localoffering = "合成中", localoffering_pst = "提供（pst）",
 	--复活的骷髅stalker.lua
-	snare_cd = "畫地為牢", spikes_cd = "萬箭穿心", channelers_cd = "不動如山", minions_cd = "五穀豐登", mindcontrol_cd = "誅邪！", 
+	snare_cd = "畫地為牢", spikes_cd = "萬箭穿心", channelers_cd = "不動如山", minions_cd = "五穀豐登", mindcontrol_cd = "誅邪！",
 	--无眼鹿deer.lua
-	growantler = "鹿角生長", deercast_cd = "施法冷卻", 
+	growantler = "鹿角生長", deercast_cd = "施法冷卻",
 	--沙拉蝾螈fruit_dragon.lua
-	fire_cd = "冒火冷卻", panicing = "敗走", 
+	fire_cd = "冒火冷卻", panicing = "敗走",
 	--月台moonbase.lua
 	moonchargepre = "感應啟動中", mooncharge = "注入月能", mooncharge2 = "打通通道", mooncharge3 = "吸取月能", fullmoonstartdelay = "啟動等待",
 	--龙蝇dragon fly
-	regen_dragonfly = "再生", groundpound_cd = "怒火", 
+	regen_dragonfly = "再生", groundpound_cd = "怒火",
 	--天体英雄
-	hitsound_cd = "翻滾", roll_cooldown = "震地", summon_cooldown = "精神虛影", summon_cd = "精神虛影", spin_cd = "旋轉攻擊", spike_cd = "玻璃尖刺", traps_cd = "啟迪陷阱", finish_pulse = "完成脈衝", trap_lifetime = "陷阱持續", pulse = "脈衝", runaway_blocker = "逃離", 
+	hitsound_cd = "翻滾", roll_cooldown = "震地", summon_cooldown = "精神虛影", summon_cd = "精神虛影", spin_cd = "旋轉攻擊", spike_cd = "玻璃尖刺", traps_cd = "啟迪陷阱", finish_pulse = "完成脈衝", trap_lifetime = "陷阱持續", pulse = "脈衝", runaway_blocker = "逃離",
 	--远古守护
-	forceleapattack = "躍擊", forcebelch = "吐墨", rammed = "撞擊", endstun = "結束眩暈", leapattack_cooldown = "彈跳攻擊", 
+	forceleapattack = "躍擊", forcebelch = "吐墨", rammed = "撞擊", endstun = "結束眩暈", leapattack_cooldown = "彈跳攻擊",
 	--其他Others:
 	repair = "修理", --尘蛾巢穴dustmothden
 	dontfacetime = "不正視", --人鱼merm.lua
@@ -251,7 +252,7 @@ INTERNAL_TIMERS = {
 	--不妥协
 	regrow = "再生", passedby = "經過", infest =  "蛀蟲", vomit_time = "嘔吐", unelectrify = "放電", electrify = "充電中", scoutingparty = "偵察隊", stumptime = "距離變異", pounce = "猛撲", mortar = "吐絲", RockThrow = "投擲", glasshards = "碎片攻擊", summoncrystals = "召喚水晶", defusetime = "破碎", natural_death = "距離死亡", remoss = "蚜虫", podreset = "种荚恢复", refill = "重新填充", SpitCooldown = "投擲",--海象,蜘蛛女王
 	--棱镜
-	axeuppercut_cd = "斧頭上劈", heavyhack_cd = "重劈", callforlightning_cd = "召喚閃電", rangesplash_cd = "飛電/躍擊", flashwhirl_cd = "旋轉打擊", dehydration = "脫水腐爛", birddeath = "玄鳥重生", birth = "破殼", state1 = "孵化 1 阶", state2 = "孵化 2 阶", state3 = "孵化 3 阶", taunt = "魔音繞梁", caw = "花寄語", flap = "羽亂舞", flap_pre = "羽亂舞pre", eye = "同心同目", revolt = "反抗熱湧", moonsurge = "月耀涌动",fallenleaf = "掉落", swallow = "吞食", lure = "誘捕", 
+	axeuppercut_cd = "斧頭上劈", heavyhack_cd = "重劈", callforlightning_cd = "召喚閃電", rangesplash_cd = "飛電/躍擊", flashwhirl_cd = "旋轉打擊", dehydration = "脫水腐爛", birddeath = "玄鳥重生", birth = "破殼", state1 = "孵化 1 阶", state2 = "孵化 2 阶", state3 = "孵化 3 阶", taunt = "魔音繞梁", caw = "花寄語", flap = "羽亂舞", flap_pre = "羽亂舞pre", eye = "同心同目", revolt = "反抗熱湧", moonsurge = "月耀涌动",fallenleaf = "掉落", swallow = "吞食", lure = "誘捕",
 	--富贵(定时器名称太长了, 占用太多行, 放弃)
 	evergreenpluckabletimer = "采摘冷卻", beehivepluckabletimer = "蜂蜜再生", beequeenhivegrownpluckabletimer = "偷取圖紙冷卻",
 }
@@ -278,7 +279,13 @@ INTERNAL_STAGES = {
 }
 
 STRESS_TAGS = { --https://dontstarve.fandom.com/wiki/Farm_Plant
-	nutrients = "缺乏肥料", moisture = "缺少水分", killjoys = "附近有影響生長物", family = "缺少家族", season = "不適應這季節", overcrowding = "過於擁擠", happiness = "不開心",
+	nutrients = "肥料",
+	moisture = "缺少水分",
+	killjoys = "雜物",
+	family = "家族",
+	season = "季節",
+	overcrowding = "擁擠",
+	happiness = "不開心",
 	withered = "已枯萎",
 }
 
@@ -302,7 +309,7 @@ OTHER_TAGS = {	--拿不到的数值先写死吧
 	slingshot_frame_gems = "彈藥框 +1\n炮擊特效子彈群傷範圍 3.5",
 	slingshot_frame_wagpunk_0 = "蓄力傷害 1~2 倍\n蓄力位面傷害 1~2 倍\n蓄力子彈速度 1~1.25 倍",
 	slingshot_handle_voidcloth = "風帽加強絕望石、純粹恐懼彈藥\n傷害 +10%\n位面傷害 +5\n群聚恐怖 +2次",
-	
+
 	--万圣节
 	halloweenpotion_health = "生命恢復 +1/秒, 持續 30 秒",
 	halloweenpotion_sanity = "精神恢復 +1/秒, 持續 30 秒",
@@ -354,7 +361,7 @@ OTHER_TITLES = {
 	sammo_slow = "目標移速 %s, 持續 %s 秒",
 	resist = "對位面抵抗: ",
 	dmgresist = "擁有位面抵抗",
-	point = " 點", 
+	point = " 點",
 	grow_in = "距離成長：",
 	grow_time = "@成長時間：",
 	energytime = "能量剩餘: ",
@@ -384,7 +391,7 @@ OTHER_TITLES = {
 	ammo_speed = "子彈速度: +%s",
 	slingshot_speed = "%s 概率不消耗子彈",
 	critterhunger = "飢餓剩餘: ",
-	
+
 	beerpowerpower = "不靈電力: ",
 	waterpowerpower = "不靈水量: ",
 	gaspowerpower = "不靈氣體: ",
@@ -397,5 +404,3 @@ OTHER_TITLES = {
 MY_DATA.uses_of.fn = function(arr)
 	return "耐久度: " .. arr.param[1] .. " / " .. arr.param[2]
 end
-
-UpdateNewLanguage()

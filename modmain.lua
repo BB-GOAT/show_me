@@ -969,56 +969,57 @@ if not need_show_hp then
 	MY_DATA.hp.hidden = true
 end
 
-local SHOWME_STRINGS_EN_OLD;
-function UpdateNewLanguage()
-	--print(MY_STRINGS_OVERRIDE)
-	if MY_STRINGS_OVERRIDE ~= nil then --Меняем локальный перевод (в т.ч. для хоста).
-		for k,tr in pairs(MY_STRINGS_OVERRIDE) do
-			local data = MY_DATA[k]
-			if data ~= nil then
-				data.desc = tr
-			--else MY_STRINGS[k] = {tr}
+--适配语言
+do
+	local SHOWME_STRINGS_EN_OLD
+	local function UpdateNewLanguage()
+		--print(MY_STRINGS_OVERRIDE)
+		if MY_STRINGS_OVERRIDE ~= nil then --Меняем локальный перевод (в т.ч. для хоста).
+			for k,tr in pairs(MY_STRINGS_OVERRIDE) do
+				local data = MY_DATA[k]
+				if data ~= nil then
+					data.desc = tr
+				--else MY_STRINGS[k] = {tr}
+				end
+			end
+		end
+		--print(MY_STRINGS.aggro[1])
+		for k,v in pairs(SHOWME_STRINGS_EN_OLD) do
+			if not SHOWME_STRINGS[k] then
+				SHOWME_STRINGS[k] = v
 			end
 		end
 	end
-	--print(MY_STRINGS.aggro[1])
-	for k,v in pairs(SHOWME_STRINGS_EN_OLD) do
-		if not SHOWME_STRINGS[k] then
-			SHOWME_STRINGS[k] = v
-		end
-	end
-end
 
-
-do --适配语言
-	local support_languages = { ru = true, chs = true, cht = true, br = true, pl = true,
-		tw="cht", zh_cn="chs", ch="chs", kr=true, ko="kr", es = true,}
+	local support_languages = {
+		-- zh = "chs", --Chinese for Steam
+		-- zhr = "chs", --Chinese for WeGame
+		-- ch = "chs", --Chinese mod
+		-- chs = "chs", --Chinese mod
+		-- sc = "chs", --simple Chinese
+		-- chinese = "chs", --Chinese mod
+		zht = "cht", --traditional Chinese for Steam
+		tc = "cht", --traditional Chinese
+		cht = "cht", --Chinese mod
+	}
 	--For override: name=file. Example: ,cht="chs",
-	local lang = GetModConfigData("lang", true) or "auto"
+	local lang = GetModConfigData("lang", true)
 	if lang == "auto" then
-		lang = GetModConfigData("lang") or "auto"
+		lang = GetModConfigData("lang")
 	end
 	print("Detected language for ShowMe: ", lang, lang == "auto" and _G.LanguageTranslator.defaultlang or "")
 
 	AddPrefabPostInit("world",function(inst)
 		if lang == "auto" then
 			lang = _G.LanguageTranslator.defaultlang --print("LANG=",lang)
-			if _G.STRINGS.ACTIONS.PLAY == "\253\253\253\253\253\253\253\253\253\253\6\196\232\253\253\253\253\253\253\253\253\1\205" then
-				lang = "kr" --Korean
-			end
-		end
-		if type(lang) ~= "string" or lang == "chs" then
-			return
 		end
 		lang = lang:lower()
 		SHOWME_STRINGS_EN_OLD = SHOWME_STRINGS;
 		if support_languages[lang] ~= nil then
-			if support_languages[lang] ~= true then --алиас
-				lang = support_languages[lang]
-			end
+			lang = support_languages[lang]
 			modimport("showme_"..lang..".lua")
+			UpdateNewLanguage()
 		end
-		UpdateNewLanguage()
 	end)
 end
 
