@@ -25,11 +25,19 @@
 	end
 --]]
 
+print(modinfo.name .. " : v" .. modinfo.version)
+
 local _G = GLOBAL
 
-if modinfo then
-	print("ShowMe version:",modinfo.version)
+local function Import(modulename)
+    local f = _G.kleiloadlua(modulename)
+    if f and type(f) == "function" then
+        _G.setfenv(f, _G)
+        return f()
+    end
 end
+
+local Upvaluehelper = Import(MODROOT .. "bbgoat_upvaluehelper.lua")
 
 local GetGlobal=function(gname,default)
 	local res=_G.rawget(_G,gname)
@@ -774,20 +782,22 @@ MY_DATA.temperature.fn = function(arr)
 end
 
 --从STRINGS.NAMES获取物品名称
+local showme_item_names = {}
 local function GetPrefabFancyName(prefab)
 	local product = tostring(prefab or "nil")
-	local name = _G.STRINGS.NAMES[string.upper(product)]
+	local name = _G.STRINGS.NAMES[string.upper(product)] or showme_item_names[string.upper(product)]
 	if name == nil then	--如果NAMES获取不到就获取一个prefab的对象, 为解决部分在容器里不显示中文的问题
 		local item = _G.SpawnPrefab(prefab)
 		if item and item.GetDisplayName then
 			name = string.gsub(item:GetDisplayName(), "\n", "")	--通过对象获取 GetDisplayName
 			if name then
-				_G.STRINGS.NAMES[string.upper(product)] = name	--保存到 NAMES 里
+				showme_item_names[string.upper(product)] = name -- 保存到局部变量里
 			end
 		end
+		item:Remove()
+		item = nil
 	end
 	return name or product
-	--return _G.STRINGS.NAMES[string.upper(product)] or product
 end
 --烹饪锅
 MY_DATA.cookpot.fn = function(arr)
@@ -990,7 +1000,12 @@ do --适配语言
 	end)
 end
 
+local function printinvalid(rpcname, player)
+    print(string.format("Invalid %s RPC from (%s) %s", rpcname, player.userid or "", player.name or ""))
 
+    --This event is for MODs that want to handle players sending invalid rpcs
+    _G.TheWorld:PushEvent("invalidrpc", { player = player, rpcname = rpcname })
+end
 
 --尝试检测客户端模组并通过 RPC 发送它们
 AddModRPCHandler("ShowMe","AOS",function(inst)
@@ -1479,7 +1494,6 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
 	local c=item.components
 	local has_owner = false --仅向所有者发送一次信息
 	local o_t = OTHER_TITLES
-	local UpvalueHacker = require("upvaluehacker")
 	-- local ftime =  function (seconds)	--时间格式化
 		-- local minutes = math.floor(seconds / 60)
 		-- seconds = seconds % 60
@@ -2198,7 +2212,7 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
 					if v.name:sub(-5) == "_proj" then
 						--table.insert(ammo_prefabs, Prefab(name, function() return fn(data) end, assets, prefabs))  --新
 						--table.insert(ammo_prefabs, Prefab(v.name.."_proj", function() return projectile_fn(v) end, assets, prefabs))  --旧
-						local ammo_data = UpvalueHacker.GetUpvalue(v.fn, "data") --"v" > "data"
+						local ammo_data = Upvaluehelper.GetUpvalue(v.fn, "data") --"v" > "data"
 						if ammo_data ~= nil and type(ammo_data) == "table" then
 							SLINGSHOT_AMMO_DATA[ammo_data.name] = ammo_data
 						end
@@ -2822,6 +2836,11 @@ do
 
 	--服务器上的处理程序
 	AddModRPCHandler("ShowMeSHint", "Hint", function(player, guid, item)	--服务器RPC执行客户端发来的请求
+        if not (_G.checknumber(guid) and _G.checkentity(item)) then
+            printinvalid("ShowMeSHint.Hint", player)
+            return
+        end
+
 		if player.player_classified == nil then
 			print("ERROR: player_classified not found!")
 			return
@@ -2848,7 +2867,7 @@ do
 end
 
 --处理箱子模块
-do
+if not _G.KnownModIndex:IsModEnabledAny("workshop-3363111676") then -- 开启高亮查找模组时关掉Show Me的高亮显示，节省性能
 	local MAIN_VAR_NAME = 'net_ShowMe_chest';
 	local NETVAR_NAME = 'ShowMe_chestlq_.'; -- hash value: 983115,  Ratio: 0.000983115
 	local EVENT_NAME = 'ShowMe_chest_dirty';
