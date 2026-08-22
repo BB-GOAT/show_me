@@ -787,7 +787,7 @@ local function ConvertTemperature(val)
 		return "???"
 	end
 	if is_Fahrenheit then
-		return math.floor(1.8*(val) + 32.5).."\176F"
+		return math.floor(1.8*(val) + 32.5).."\176F" -- \176 是 ° 的符号，来自【综合状态显示】模组
 	else
 		return math.floor(val*0.5 + 0.5) .. "\176C"
 	end
@@ -1242,7 +1242,7 @@ SearchForModsByName()
 
 local is_HealthInfo = nil --Check it to decide, is there a reason to show hp in description.检查客机血量显示模组
 for name in pairs(mods.active_mods_by_name) do
-	if name:find("Health Info",1,true) or name:find("Health Bar",1,true) then
+	if name:find("Health Bar",1,true) then
 		is_HealthInfo = true
 		break
 	end
@@ -1254,9 +1254,6 @@ local need_send_hp = display_hp == -1 and not is_HealthInfo or display_hp == 0 o
 --print('display_hp',display_hp)
 
 local is_DisplayFoodValues = mods.active_mods_by_name["Display food values"]
---TODO: Эта проверка нужна на клиенте!
-local is_AlwaysOnStatus = mods.active_mods_by_name["Combined Status"] or mods.active_mods_by_name["Always On Status"]
---_G.arr(mod_names)
 
 local cooking = require("cooking")
 
@@ -1542,17 +1539,15 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
 		-- return string.format("%02d:%02d", minutes, seconds)
 	-- end
 	if (prefab=="rock1" or prefab=="rock2") and not viewer.has_AlwaysOnStatus then	--没有开季节时钟则在石头上显示季节与剩余天数
-		--if not is_AlwaysOnStatus then --TODO: Do not check! NB!
-			local w=_G.TheWorld.state
-			local tt=round2(w.temperature,1)
-			if w.iswinter then cn("S1")
-			elseif w.issummer then cn("S2")
-			elseif w.isspring then cn("S3")
-			elseif w.isautumn then cn("S4")
-			end
-			cn("remaining_days",w.remainingdaysinseason)
-			cn("temperature",tt)
-		--end
+		local w=_G.TheWorld.state
+		local tt=round2(w.temperature,1)
+		if w.iswinter then cn("S1")
+		elseif w.issummer then cn("S2")
+		elseif w.isspring then cn("S3")
+		elseif w.isautumn then cn("S4")
+		end
+		cn("remaining_days",w.remainingdaysinseason)
+		cn("temperature",tt)
 	elseif c.health and not item.grow_stage then --Health, Hunger, Sanity Bar
 		local h=c.health
 		--生物血量
@@ -1571,7 +1566,7 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
 		if c.hunger then
 			local val = c.hunger:GetPercent()
 			--要么没饥饿值的，要么这根本就不是一个玩家。
-			if (c.grogginess and val <= 0.5) or (not c.grogginess and (val > 0 or prefab ~= "beefalo")) then
+			if c.grogginess or (not c.grogginess and (val > 0 or prefab ~= "beefalo")) then
 				cn("hunger",round2(c.hunger.current,0))
 			end
 		elseif item_info_mod == 0 and c.perishable ~= nil and c.perishable.updatetask ~= nil then --Here "Perishable" means "Hunger".
@@ -1580,7 +1575,7 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
 				cn("will_die",round2(time/TUNING.TOTAL_DAY_TIME,1))
 			end
 		end
-		if c.sanity and c.sanity:GetPercent()<=0.5 then
+		if c.sanity then
 			local sanity = round2(math.floor(c.sanity:GetPercent()*100+0.5),1)
 			cn("sanity_character",sanity)
 		end
@@ -1593,8 +1588,8 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
 				has_owner = true
 			end
 			if c.follower.maxfollowtime then	--最大跟随时间
-				mx = c.follower.maxfollowtime
-				cur = math.floor(c.follower:GetLoyaltyPercent()*mx+0.5)
+				local mx = c.follower.maxfollowtime
+				local cur = math.floor(c.follower:GetLoyaltyPercent()*mx+0.5)
 				if cur>0 then
 					cn("loyal",cur,mx)
 				end
