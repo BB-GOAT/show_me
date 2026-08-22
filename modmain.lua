@@ -1298,68 +1298,6 @@ local function GetPerishTime(inst, c)
 	end
 end
 
-local function old_v38_GetPerishTime(inst,c)
-	local modifier = 1
-	local owner = c.inventoryitem and c.inventoryitem.owner or nil
-	if owner == nil and c.occupier ~= nil then
-		owner = c.occupier:GetOwner() --Для птичек?
-	end
-
-	if owner ~= nil then
-		if owner:HasTag("fridge") then
-			if inst:HasTag("frozen") and not owner:HasTag("nocool") and not owner:HasTag("lowcool") then
-				modifier = TUNING.PERISH_COLD_FROZEN_MULT
-			else
-				modifier = TUNING.PERISH_FRIDGE_MULT
-			end
-		elseif owner:HasTag("spoiler") then
-			modifier = TUNING.PERISH_GROUND_MULT
-		--elseif owner:HasTag("cage") and inst:HasTag("small_livestock") then
-		--	modifier = TUNING.PERISH_CAGE_MULT
-		end
-	else
-		modifier = TUNING.PERISH_GROUND_MULT
-	end
-
-	if inst:GetIsWet() then
-		modifier = modifier * TUNING.PERISH_WET_MULT
-	end
-
-	if ww.temperature < 0 then
-		if inst:HasTag("frozen") and not c.perishable.frozenfiremult then
-			modifier = TUNING.PERISH_COLD_FROZEN_MULT
-		else
-			modifier = modifier * TUNING.PERISH_WINTER_MULT
-		end
-	end
-
-	if c.perishable.frozenfiremult then
-		modifier = modifier * TUNING.PERISH_FROZEN_FIRE_MULT
-	end
-
-	if ww.temperature > TUNING.OVERHEAT_TEMP then
-		modifier = modifier * TUNING.PERISH_SUMMER_MULT
-	end
-
-	if c.perishable.localPerishMultiplyer then
-		modifier = modifier * c.perishable.localPerishMultiplyer
-	end
-
-	modifier = modifier * TUNING.PERISH_GLOBAL_MULT
-
-	local old_val = c.perishable.perishremainingtime
-	if old_val ~= nil then
-		local delta = old_val / modifier
-		if delta ~= nil then --and delta >= 0 then
-			if delta < 0 and c.perishable.perishtime and c.perishable.perishtime > 0 then --modifier < 0 !
-				return delta, (c.perishable.perishremainingtime - c.perishable.perishtime) / modifier;
-			end
-			return delta
-		end
-	end
-end
-
---Новая функция
 local desc_table
 local function cn(key,param1,param2,param3,param4,param5)
 	local data = MY_DATA[key]
@@ -1534,12 +1472,12 @@ end
 --Основная функция получения описания.
 function GetTestString(item,viewer) --从这里开始，与Tell Me区分
 	--line_cnt = 0
-	desc_table = {} --старый desc отменяется
+	desc_table = {} --旧的 desc 将被取消
 
 	is_admin = nil
 	local prefab = item.prefab
 	local c=item.components
-	local has_owner = false --Выводим инфу о владельце лишь ОДИН раз!
+	local has_owner = false --仅向所有者发送一次信息
 	local o_t = OTHER_TITLES
 	local UpvalueHacker = require("upvaluehacker")
 	-- local ftime =  function (seconds)	--时间格式化
@@ -1558,8 +1496,6 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
 			end
 			cn("remaining_days",w.remainingdaysinseason)
 			cn("temperature",tt)
-				--..MY_STRINGS["remaining_days"][2]..": "..w.remainingdaysinseason.."\n"
-				--.."t "..(tt>=0 and "+" or "")..tt
 		--end
 	elseif c.health and not item.grow_stage then --Health, Hunger, Sanity Bar
 		local h=c.health
@@ -1613,13 +1549,6 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
 				end
 			end
 		end
-		--[[if c.locomotor and type(c.locomotor.walkspeed)=="number" then
-			local speed = (c.locomotor.walkspeed + (type(c.locomotor.bonusspeed)=="number" and c.locomotor.bonusspeed or 0))
-				/ TUNING.WILSON_WALK_SPEED
-			if speed>1.01 or speed<0.99 then
-				desc = cn(desc,"x"..round2(speed,2),"speed")
-			end
-		end --]]
 		if item.kills and type(item.kills) == "number" and item.kills>0 then
 			cn(item.kills==1 and "kill" or "kills",item.kills)
 		end
@@ -1633,7 +1562,6 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
 		end
 		--伤害
 		if c.combat and c.combat.defaultdamage and c.combat.defaultdamage > 0 then
-			--Игнорируем всех, чья сила равна 10 или меньше.
 			local com = c.combat
 			local dmg = com.defaultdamage
 			local pvp_perc = tonumber(com.playerdamagepercent) --玩家 NPC 伤害修正，仅适用于无武器
@@ -1674,7 +1602,6 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
 			end
 			table.insert(desc_table, "@Asuna Proof: "..asuna_proof.."%")
 		end
-		--inst.components.domesticatable:GetObedience()
 		if c.domesticatable ~= nil then
 			if c.domesticatable.GetObedience ~= nil then
 				local obedience = c.domesticatable:GetObedience()
@@ -1907,15 +1834,6 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
 		if c.oar and c.oar.force and tonumber(c.oar.force) then
 			cn('force',round2(c.oar.force*100))
 		end
-		--if c.striker and c.striker.chance and type(c.striker.chance) == "number" then
-		--	desc = cn(desc,round2((c.striker.chance)*100,0).."%","striker")
-		--end
-		--if c.tinder and c.tinder.tinder and c.tinder.GetTinder then
-		--	local power = c.tinder:GetTinder()
-		--	if power >= 0.005 then
-		--		desc = cn(desc,round2(power*100,0).."%","tinder")
-		--	end
-		--end
 		if item_info_mod == 0 and c.edible and not is_DisplayFoodValues then
 			local can_eat = false
 			if viewer and viewer.components.eater then
@@ -2068,9 +1986,9 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
 			if time ~= nil then
 				if time < 0 then
 					if fresh then
-						if fresh < 0 then
+						-- if fresh < 0 then
 							--fresh = 0
-						end
+						-- end
 						cn("fresh",round2(fresh/TUNING.TOTAL_DAY_TIME,1))
 					end
 				elseif time ~= math.huge and time ~= -math.huge then
@@ -2120,7 +2038,6 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
 				cur = cur + 1
 			end
 			cn("uses_of",cur,math.floor(c.finiteuses.total * mult + 0.5))
-			--desc = (desc=="" and "" or (desc.."\n"))..cur.." use"..(cur~=1 and "s" or "").." of "..c.finiteuses.total
 		end
 		--温度
 		if c.temperature and c.temperature.current and type(c.temperature.current) == "number" then
@@ -2128,7 +2045,6 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
 		end
 		--建筑燃料
 		if c.fueled and c.fueled:GetPercent()>0 and (SPICIAL_STRUCTURES[prefab] or item:HasTag("structure")) then
-			--cn("fuel",round2(c.fueled:GetPercent()*100,0)) 
 			if c.fueled.currentfuel ~= nil then
 				table.insert(desc_table, "@"..o_t.ot_fuel..DataTimerFn(c.fueled.currentfuel).." ( "..math.floor(c.fueled:GetPercent()*100).."% )")
 			end
@@ -2166,15 +2082,6 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
 				cn("owner",c.mine.nick)
 				has_owner = true
 			end
-			--[[if c.mine.pret and viewer and viewer.userid then
-				for k,v in pairs(c.mine.pret) do
-					if k==viewer.userid then
-						--desc = (desc=="" and "" or (desc.."\n")).."I can see it!"
-						desc = cn(desc,v,"known",true)
-						break
-					end
-				end
-			end--]]
 		end
 		if not has_owner then
 			if item.stealable and item.stealable.owner and item.stealable.owner ~= "_?\1" then
@@ -2309,13 +2216,6 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
 
 			end
 		end
-		--if item:HasTag("book") then
-			--local book_defs = UpvalueHacker.GetUpvalue(_G.Book.SetOnRead, "self.onread")
-			-- if prefab == "book_horticulture_upgraded" then
-				-- table.insert(desc_table, "@: ".."2333")
-			-- end
-		--end
-
 		------------------Check prefabs?----------------------
 		if prefab=="pond" or prefab=="pond_mos" or prefab=="pond_cave" or prefab=="oasislake" then --池塘
 			if c.fishable and c.fishable.fishleft then
@@ -2564,9 +2464,6 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
 			--作物的生长百分比
 			cn("crop",c.crop.product_prefab,round2(c.crop.growthpercent*100,0))
 		end
-		--c.unwrappable.itemdata[1].prefab
-		--c.unwrappable.itemdata[1].data.perishable.time - оставшееся время порчи в секундах.
-		--	   .stackable.stack - количество
 		if show_buddle_item == 1 and c.unwrappable and c.unwrappable.itemdata and type(c.unwrappable.itemdata) == 'table' then
 			--包裹信息？？每样一行
 			for i,v in ipairs(c.unwrappable.itemdata) do
@@ -2622,178 +2519,8 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
 					end
 				end
 			end
-
-			--棱镜已做显示, 则全部已废弃
-			--[[local legion_c1, legion_c2 = c.perennialcrop, c.perennialcrop2
-			local function legion_pc(inst)
-				--每次task_grow的周期,time_start乘time_mult, 周期越短长得越快
-				--总成长所需时间GetGrowTime() - (当前已成长时间time_grow - 成长周期time_start * 生长速度time_mult)
-				--DataTimerFn(GetTime() - (inst:GetGrowTime() - (inst.time_grow - inst.time_start * inst.time_mult)))
-				--DataTimerFn(GetTime() - ((inst:GetGrowTime() - inst.time_grow) / inst.time_mult))
-				local mult, lgpc_time1, lgpc_time2 = "", 0, 0
-				if inst.time_mult ~= nil and inst.time_mult > 0 then	--这个time_mult会为nil, 又参与乘除计算, 难绷
-					lgpc_time2 = tostring(round2(inst.time_mult,3))
-				else
-					lgpc_time2 = 1	--是nil就赋值1, 这样参与计算还不至于崩
-				end
-				if inst.time_grow ~= nil then
-					lgpc_time1 = inst:GetGrowTime() - inst.time_grow
-					if inst.pause_reason ~= nil or lgpc_time2 == 1 then	--pause_reason不为nil 或 time_mult 为 nil, 显示为 暂停成长
-						mult = ' ('..SHOWME_STRINGS.paused..')'
-					else
-						mult = ' ('..lgpc_time2..'x)'	--否则显示成长速度
-					end
-				else
-					mult = ' ('..SHOWME_STRINGS.stopped..')'	--当time_grow 为 nil 的时候，作物 停止成长
-					lgpc_time1 = inst:GetGrowTime() - 0
-				end
-
-				table.insert(desc_table, "@" .. SHOWME_STRINGS.jieduan .. "["..inst.stage.."/"..inst.stage_max.."]:  "	--o_t.grow_in
-					.. tostring(round2((lgpc_time1 / lgpc_time2) / TUNING.TOTAL_DAY_TIME + 0.1,1)) .. SHOWME_STRINGS.days .. mult)
-			end
-			
-			if legion_c1 then  --子圭垄
-				legion_pc(legion_c1)
-				
-				--压力计算
-				if legion_c1.stage_max and legion_c1.regrowstage and legion_c1.stage and legion_c1.stage < legion_c1.stage_max then
-					local lost = 0
-					local stagegrow_cur = legion_c1.stage - legion_c1.regrowstage
-					if stagegrow_cur < 0 then
-						stagegrow_cur = 0
-					end
-					local count_lostFN = function (n)
-						local count_lost = stagegrow_cur - n
-						if count_lost > 0 then
-							return count_lost
-						end
-						return 0
-					end
-					if legion_c1.num_moisture then
-						lost = lost + count_lostFN(legion_c1.num_moisture) 
-					end
-					if legion_c1.num_nutrient then
-						lost = lost + count_lostFN(legion_c1.num_nutrient)
-					end
-					if legion_c1.num_tended then 
-						lost = lost + count_lostFN(legion_c1.num_tended) 
-					end
-					cn("stress", lost)
-				end
-				if legion_c1.pollinated then
-					cn("pollinated", legion_c1.pollinated)
-				end
-				if legion_c1.sickness > 0 then
-					cn("sickness", round2(legion_c1.sickness, 2))	--疏忽了，病害居然有无尽的小数
-				end
-				
-				if legion_c1.nutrient and legion_c1.cost_nutrient then
-					if legion_c1.nutrient < legion_c1.cost_nutrient then
-						cn("stress_tag", "nutrients")
-					end
-				end
-				if legion_c1.Tendable and legion_c1:Tendable() == true then
-					cn("stress_tag", "happiness")
-				end
-				if not _G.TheWorld.state.israining and not _G.TheWorld.state.issnowing and (legion_c1.moisture and legion_c1.cost_moisture and legion_c1.moisture < legion_c1.cost_moisture) then
-					cn("stress_tag", "moisture")
-				end
-				if legion_c1.goodseasons and not legion_c1.goodseasons[_G.TheWorld.state.season] then
-					cn("stress_tag", "season")
-				end
-			end
-			--perennialcrop 2 异作
-			if legion_c2 then
-				legion_pc(legion_c2)
-				
-				if legion_c2.pollinated then
-					cn("pollinated", legion_c2.pollinated)
-				end
-				if legion_c2.infested > 0 then
-					cn("infested", round2(legion_c2.infested, 2))
-				end
-				if legion_c2.inst:HasTag("nognatinfest") then
-					cn("stress_tag", "withered")
-				else
-					if legion_c2.inst:HasTag("fertableall") then
-						cn("stress_tag", "nutrients")
-					end
-					if legion_c2.inst:HasTag("tendable_farmplant") then
-						cn("stress_tag", "happiness")
-					end
-					if legion_c2.inst:HasTag("needwater") then
-						cn("stress_tag", "moisture")
-					end
-				end
-			end ]]--
-			--棱镜农作物 END
-		end		--农作物 END
-	end
-	--棱镜 子圭育
-	--[[ if c.genetrans then  --他自带刷新机制?? 所有定时器到0依旧无法实时更新状态???
-		local lg_y = c.genetrans
-		local paused, lg_fast, lg_tup, lg_upx = "", "", "", 1
-		if lg_y.energytime <= 0 or lg_y.seednum <= 0 then
-			paused = ' ('..SHOWME_STRINGS.paused..')'
-		end
-		if lg_y.timedata_fast.now ~= nil then 
-			lg_fast= " ↓"
-			lg_tup = " ↑"
-			lg_upx = 2
-		end
-
-		if lg_y.energytime ~= nil then  --能量剩余
-			string.sub(lg_y.energytime / 480, 1, 4)) --将时间格式化到1位小数
-			string.gsub(string.format("%.1f", lg_y.energytime / TUNING.TOTAL_DAY_TIME),".0","")
-			table.insert(desc_table, "@"..o_t.energytime .. tostring(round2(lg_y.energytime / TUNING.TOTAL_DAY_TIME,1)) .. SHOWME_STRINGS.days .. lg_fast .. paused)
-		end
-		
-		if lg_y.seednum ~= nil and lg_y.seednum > 0 then  --正在转化
-			table.insert(desc_table, "@"..o_t.seednum .. lg_y.seednum)
-		end
-		if lg_y.fruitnum ~= nil and lg_y.fruitnum > 0 then  --已转化
-			table.insert(desc_table, "@"..o_t.fruitnum .. lg_y.fruitnum)
-		end
-		if lg_y.timedata.all ~= nil and lg_y.timedata.start ~=nil and lg_y.timedata.pass ~=nil then  -- +1 大约 0:00
-			table.insert(desc_table, "@+1"..o_t._in .. DataTimerFn((lg_y.timedata.all - lg_y.timedata.pass) / lg_upx - (GetTime() - lg_y.timedata.start)).. lg_tup)
 		end
 	end
-	if c.botanycontroller then  --botanycontroller 三个种菜装置
-		-- local lg_cm = c.botanycontroller
-		-- local lg_cmn1, lg_cmn2, lg_cmn3 = tostring(round2(lg_cm.nutrients[1],1)), tostring(round2(lg_cm.nutrients[2],1)), tostring(round2(lg_cm.nutrients[3],1))
-		-- local lg_cmn = o_t.nutrients_1..lg_cmn1.." / "..o_t.nutrients_2..lg_cmn2.." / "..o_t.nutrients_3..lg_cmn3
-		-- if lg_cm.type == 1 then  --利川
-			-- if lg_cm.moisture then
-				-- table.insert(desc_table, "@"..o_t.moisture .. lg_cm.moisture)
-			-- end
-		-- elseif lg_cm.type == 2 then  --益矩
-			-- if lg_cm.nutrients then
-				-- table.insert(desc_table, "@"..lg_cmn)
-			-- end
-		-- else  --崇溟
-			-- if lg_cm.moisture then
-				-- table.insert(desc_table, "@"..o_t.moisture .. lg_cm.moisture)
-			-- end
-			-- if lg_cm.nutrients then
-				-- table.insert(desc_table, "@"..lg_cmn)
-			-- end
-		-- end
-	-- end
-	if item.healthcounter then	--子圭汲、歃
-		table.insert(desc_table, "@"..o_t.siv_mask .. item.healthcounter .. " / ".. item.healthcounter_max)
-	end
-	if item.tradeditems then	--子圭巨岩、神木
-		table.insert(desc_table, "@"..o_t.siv_light..item.tradeditems.light.." / "..o_t.siv_health..item.tradeditems.health)
-	end
-	if item.countHealth then
-		table.insert(desc_table, "@"..o_t.siv_mask..tostring(round2(item.countHealth,2)))	--神木生命储存也会出现无数小数，截取到2位小数
-	end
-	if item._lvl_l ~= nil and c.upgradeable.numstages ~= nil then
-		local lg_numstages = c.upgradeable.numstages - 1
-		table.insert(desc_table, "@"..o_t.lg_moon..item._lvl_l:value().." / "..lg_numstages)
-	end ]]--
-	--棱镜END
-	--buling
 	if c.beerpower then
 		local blb = c.beerpower
 		if c.beerpower ~= nil then table.insert(desc_table, "@"..o_t.beerpowerpower.."< "..blb.power.." / "..blb.PowerMax.." >") end
@@ -2814,17 +2541,9 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
 		--local extra = tonumber(c.childspawner.maxemergencycommit) -- extra guards
 		local inside = tonumber(c.childspawner.childreninside)
 		local maximum = tonumber(c.childspawner.maxchildren)
-		--print(inside, outside, maximum, extra)
 		if inside and maximum then
-			--if outside then
-			--	outside = round2(outside,0)
-			--end
-			--cn("children",round2(inside,0),round2(maximum+(extra or 0),0),outside > 0.5 and outside or nil)
 			cn("children",round2(inside,0),round2(maximum,0))
 		end
-		-- if prefab == "mermwatchtower" and c.childspawner:CountChildrenOutside() < 1 then
-			-- table.insert(desc_table, "@ 鱼人房"..)	
-		-- end
 	end
 
 	--从武器信息看:
@@ -2840,14 +2559,12 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
 				if c.freezable.coldness and c.freezable.coldness ~= 0 then
 					now = round2(total_resist - c.freezable.coldness,1)
 				end
-				--cn("resist",c.freezable.resistance)
 			elseif (weapon.prefab=="blowdart_sleep" or weapon.prefab=="panflute") and c.sleeper then
 				resist = c.sleeper.resistance
 				total_resist = resist -- there is sleep time bonus but not sleep armor bonus
 				if c.sleeper.sleepiness and c.sleeper.sleepiness ~= 0 then
 					now = round2(total_resist - c.sleeper.sleepiness,1)
 				end
-				--cn("resist",c.sleeper.resistance)
 			end
 			if resist then
 				if total_resist ~= resist then
@@ -2909,100 +2626,14 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
 			end
 		end
 	end
-	--[[
-	if prefab=="chester" then
-		local name = name_by_id(self.inst.userid)
-		desc = (desc=="" and "" or (desc.."\n")).."Owner: "..name
-			.."\nuserid="..tostring(self.inst.userid)
-			.."\nLeader: "..tostring(c.follower.leader)
-		has_owner = true
-	end
-	if prefab=="chester_eyebone" then
-		local name = name_by_id(self.inst.userid)
-		desc = (desc=="" and "" or (desc.."\n")).."Owner: "..name
-			.."\nuserid="..tostring(self.inst.userid)
-		has_owner = true
-	end
-	--]]
-	--print("GetTestString: "..tostring(item)..", "..tostring(viewer)..", "..tostring(desc))
-	--for i=1,line_cnt do
-	--	desc = desc .. "\n" --Поднимаем описание предмета, чтобы оно было НАД предметом. Но лучше это сделать на клиенте.
-	--end
-
 	return table.concat(desc_table,"\2") --an error with no info
 end
-
---Main description function
---[[
-AddComponentPostInit("inspectable", function(inst)
-	local oldGetDesc = inst.GetDescription
-	function inst:GetDescription(viewer)
-		local desc = oldGetDesc(self,viewer)
-		if self.inst and self.inst.components then
-			local item = self.inst
-			if type(desc)~="string" then
-				desc=""
-			end
-			local desc = GetTestString(item,viewer,desc)
-		end
-		return desc
-	end
-end)
---]]
-
---[[
-AddPrefabPostInit("wes",function(wes)
-	if wes.components and wes.components.talker then
-		local oldSay = wes.components.talker.Say
-		function wes.components.talker:Say(script, time, noanim)
-			local test=type(script)=="string" and string.match(script,"([0-9]+ / [0-9]+)$") or ""
-			if test then
-				script=test
-			else
-				script=""
-			end
-			oldSay(self, script, time, noanim)
-		end
-		wes.components.talker.special_speech = false
-	end
-end)
-
-GetGlobal("fol",function()
-	
-end)
---]]
 
 
 end
 
 ----------------------------WeGame有在维护，请勿搬运，为避免出现多个相同模组----------------------------
 ------------------------------------------- HOST & CLIENT AGAIN ---------------------------------------------
-
-local FindUpvalue = function(fn, upvalue_name, member_check, no_print, newval)
-	local info = _G.debug.getinfo(fn, "u")
-	local nups = info and info.nups
-	if not nups then return end
-	local getupvalue = _G.debug.getupvalue
-	local s = ''
-	--print("FIND "..upvalue_name.."; nups = "..nups)
-	for i = 1, nups do
-		local name, val = getupvalue(fn, i)
-		s = s .. "\t" .. name .. ": " .. type(val) .. "\n"
-		if (name == upvalue_name)
-			and ((not member_check) or (type(val)=="table" and val[member_check] ~= nil)) --Надежная проверка
-		then
-			--print(s.."FOUND "..tostring(val))
-			if newval ~= nil then
-				_G.debug.setupvalue(fn, i, newval)
-			end
-			return val, true
-		end
-	end
-	if no_print == nil then
-		print("CRITICAL ERROR: Can't find variable "..tostring(upvalue_name).."!")
-		print(s)
-	end
-end
 
 --为玩家添加一个提示，通过该提示将发送数据（在项目名称下弹出带有信息的文本）
 do
@@ -3025,36 +2656,6 @@ do
 		return c.showme_hint2:sub(i+1)
 	end
 	if CLIENT_SIDE then
-		--patching Get Display Name. Нужно только клиенту.
-		--[[local old_GetDisplayName = _G.EntityScript.GetDisplayName
-		_G.EntityScript.GetDisplayName = function(self)
-			local old_name = old_GetDisplayName(self)
-			if type(old_name) ~= "string" then
-				return old_name
-			end
-			local str2 = CheckUserHint(self)
-			return old_name .. str2
-		end--]]
-
-		--让我们看一下需要发送有关鼠标下的对象的 guid 的情况。
-		local old_inst --我们记住不要多次向同一个inst发送无用信息
-		--[[AddWorldPostInit(function(w)
-			w:DoPeriodicTask(0.1,function(w)
-				if _G.ThePlayer == nil then
-					return
-				end
-				local inst = _G.TheInput:GetWorldEntityUnderMouse()
-				if inst ~= nil then
-					if inst == old_inst then
-						return
-					end
-					old_inst = inst
-					--Посылаем желаемую подсказку.
-					SendModRPCToServer(MOD_RPC.ShowMeSHint.Hint, inst.GUID, inst)
-				end
-			end)
-		end)--]]
-
 		local function UnpackData(str,div)
 			local pos,arr = 0,{}
 			-- for each divider found
@@ -3068,10 +2669,8 @@ do
 
 		local save_target
 		local last_check_time = 0 --最后一次查看时间, 每 2 秒过期一次。
-		local LOCAL_STRING_CACHE = {} --字符串的表，以免每次都计算替换（虽然会耗点内存）
 		AddClassPostConstruct("widgets/hoverer",function(hoverer) --hoverer=self
 			local old_SetString = hoverer.text.SetString
-			local _debug_info = ''
 			local NEWLINES_SHIFT = {
 				'', --无信息
 				'', -- 1 条信息
@@ -3088,20 +2687,9 @@ do
 				return str
 			end
 			hoverer.text.SetString = function(text,str) --text=self
-				--print(tostring(str))
 				text.cnt_lines = nil
 				local target = _G.TheInput:GetHUDEntityUnderMouse()
 				if target ~= nil then
-					--target.widget.parent -- 这是项目图层
-					--target = target.widget ~= nil and target.widget.parent ~= nil and target.widget.parent.item --实体物品（在客户端）
-
-					-- local tar = target.widget ~= nil and target.widget.parent ~= nil and target.widget.parent.item
-					-- if tar ~= nil then	--多加一层判断
-						-- target = tar
-					-- else	--获取深一层的图层，奔雷矛多了一层parent
-						-- target = target.widget ~= nil and target.widget.parent ~= nil and target.widget.parent.parent ~= nil and target.widget.parent.parent.item
-					-- end
-					--使用递归以免以后有N层parent
 					local function par(w)
 						return w.parent and (w.parent.item or par(w.parent)) or nil
 					end
@@ -3112,7 +2700,6 @@ do
 				if type(target) ~= "table" or not target.GUID then
 					target = nil
 				end
-				--local lmb = hoverer.owner.components.playercontroller:GetLeftMouseAction()
 				if target ~= nil then
 					--print(tostring(target))
 					--检查数据是否匹配。
@@ -3143,7 +2730,6 @@ do
 							cnt_newlines = 0
 						end
 
-
 						--从生成的打包字符串中提取数据。
 						str2 = UnpackData(str2,"\2")
 						local arr2 = {} --以易于理解的形式形成一组数据。
@@ -3159,7 +2745,6 @@ do
 							end
 						end
 						arr2.str2= str2
-						--_G.rawset(_G,"arr2",arr2) --测试
 						--形成一个字符串
 						for i=#arr2,1,-1 do
 							local v = arr2[i]
@@ -3177,53 +2762,21 @@ do
 								arr2[i] = DefaultDisplayFn(v)
 							end
 						end
-						--table.insert(arr2,"xxxxx")
-						--table.insert(arr2,"xyz")
-						--table.insert(arr2,"aaabbbccc")
-						--table.insert(arr2,"dddddd123")
 						str2 = table.concat(arr2,'\n')
-
-						--_G.arr({inst=text.inst,hover=text.parent},5)
-						--print("-----"..str.."-----")
-						--local sss=""
-						--for i=#str,#str-10,-1 do
-						--	sss=sss..string.byte(str:sub(i,i))..", "
-						--end
-						--print("Chars: "..sss)
-						--[[print(#str,"cut str")
-						--В конце тоже убираем переход, если есть.
-						if str:sub(#str,#str) == "\n" then
-							str = str:sub(1,#str-1)
-						end--]]
-						--print(#str,"test cache")
-						--print("count new cache")
-						--print("newlines",#str2)
-
-						--str2 = str2 .. _debug_info
-						--local scale = text:GetScale()
-						--str2 = str2 .. 'scale = ' .. scale.x .. ';' .. scale.y .. '\n'
-						--local scr_w, scr_h = TheSim:GetScreenSize()
-						--str2 = str2 .. scr_w .. 'x' .. scr_h .. '\n'
-
 						text.cnt_lines = cnt_newlines + #arr2 + 1
-
-
 						str = str .. '\n' .. str2 .. (NEWLINES_SHIFT[text.cnt_lines] or InitNewLinesShift(text.cnt_lines))
 					end
-					--print("Check User Hint: "..str2)
 					--如果这是第一次，那么会发送请求。
 					if target ~= save_target or last_check_time + 1 < GetTime() then
 						save_target = target
 						last_check_time = GetTime()
 						SendModRPCToServer(MOD_RPC.ShowMeSHint.Hint, save_target.GUID, save_target)		--客户端向服务器发送请求的RPC
 					end
-				else
+				-- else
 					--print("target nil")
 				end
 				return old_SetString(text,str)
 			end
-			--FindUpvalue(hoverer.UpdatePosition, "YOFFSETUP", 150)
-			--FindUpvalue(hoverer.UpdatePosition, "YOFFSETDOWN", 120)
 
 			local XOFFSET = 10
 
@@ -3243,27 +2796,20 @@ do
 				local w = 0
 				local h = 0
 
-				--_debug_info='x='..x..'; y='..y..'\n' .. 'YOFFSETDOWN = ' .. YOFFSETDOWN .. ';' ..tostring(self.text.cnt_lines) .. '\n';
-
 				if self.text ~= nil and self.str ~= nil then
 					local w0, h0 = self.text:GetRegionSize()
 					w = math.max(w, w0)
 					h = math.max(h, h0)
-					--_debug_info=_debug_info..'w0='..w0..'; h0='..h0..'\n'
 				end
 				if self.secondarytext ~= nil and self.secondarystr ~= nil then
 					local w1, h1 = self.secondarytext:GetRegionSize()
 					w = math.max(w, w1)
 					h = math.max(h, h1)
-					--_debug_info=_debug_info..'w1='..w1..'; h1='..h1..'\n'
 				end
 
 				w = w * scale.x * .5
 				h = h * scale.y * .5
-				--_debug_info=_debug_info..'w='..w..'; h='..h..'\n'
-				--y=y+h
 
-				--_debug_info=_debug_info..'cx='..math.clamp(x, w + XOFFSET, scr_w - w - XOFFSET)..'; cy='..math.clamp(y, h + YOFFSETDOWN * scale.y, scr_h - h - (-80) * scale.y)..'\n'
 				self:SetPosition(
 					math.clamp(x, XOFFSET + w, scr_w - w - XOFFSET),
 					math.clamp(y, YOFFSETDOWN + h, scr_h + 9999),
@@ -3356,36 +2902,9 @@ do
 	local net_string = _G.net_string
 	local chests_around = {} --客户端可见范围内的所有箱子的数组。 对于主机来说——都是箱子，但这很正常。
 
-	--[[
-	_G.showme_count_chests = function() --debug function
-		local cnt = 0
-		for k,v in pairs(chests_around) do
-			cnt = cnt + 1
-		end
-		print('Chests around:',cnt)
-	end
-	--]]
-
 	local function OnClose(inst) --,err) --关闭箱子时，我们会向客户端发送有关其内容的新数据。
 		local c = inst.components.container
 		if not c then
-			--[[if type(err) ~= "number" then err=nil end
-			print('ERROR ShowMe: in ',inst.prefab,err)
-			if not err then
-				if inst.components then
-					print("\tComponents:")
-					for k in pairs(inst.components) do
-						print("\t\t"..tostring(k))
-					end
-				else
-					print("\tNo components at all!")
-				end
-			end
-			if not err or err < 2000 then
-				inst:DoTaskInTime(0,function(inst)
-					OnClose(inst,err and (err+1) or 1)
-				end)
-			end--]]
 			return
 		end
 		--if err then
@@ -3396,18 +2915,6 @@ do
 			return
 		end
 		local arr = {} -- [预制件]=true
-		--[[ Отрывок из предыдущего сочинения (чтобы знать, что там происходит):
-		if c.unwrappable and c.unwrappable.itemdata and type(c.unwrappable.itemdata) == 'table' then
-			--По одной строке на каждый предмет.
-			for i,v in ipairs(c.unwrappable.itemdata) do
-				if v.prefab then
-					--Пересылаем название префаба и количество дней.
-					local delta = v.data and v.data.perishable and v.data.perishable.time
-					local count = v.data and v.data.stackable and v.data.stackable.stack
-					cn('perish_product', v.prefab, count or 0, delta and round2(delta/TUNING.TOTAL_DAY_TIME,1))
-				end
-			end
-		end--]]
 		for k,v in pairs(c.slots) do
 			arr[tostring(v.prefab)] = true
 			local u = v.components and v.components.unwrappable
@@ -3462,10 +2969,7 @@ do
 	end
 
 	local function OnShowMeChestDirty(inst)
-		--inst.components.HuntGameLogic.hunt_kills = inst.components.HuntGameLogic.net_hunt_kills:value()
 		local str = inst[MAIN_VAR_NAME]:value()
-		--inst.test_str = str --test
-		--print('Test Chest:',str)
 		local t = inst.ShowMe_chest_table
 		for k in pairs(t) do
 			t[k] = nil
@@ -3482,7 +2986,6 @@ do
 			inst:ListenForEvent(EVENT_NAME, OnShowMeChestDirty)
 			chests_around[inst] = true
 			inst.ShowMe_chest_table = {}
-			--inst.ShowTable = function() for k in pairs(inst.ShowMe_chest_table) do print(k) end end --debug
 			inst:ListenForEvent('onremove', function(inst)
 				chests_around[inst] = nil
 			end)
@@ -3502,7 +3005,7 @@ do
 	for k in pairs(MONITOR_CHESTS) do	--添加API
 		AddPrefabPostInit(k,InitChest)
 	end
-	--Фиксим игрока, чтобы мониторить действия курсора.
+	--固定玩家以监控光标操作。
 	if CLIENT_SIDE then
 		local function UpdateAllChestsAround()
 			for k in pairs(chests_around) do
@@ -3513,7 +3016,7 @@ do
 			inst:ListenForEvent("activedirty", function(inst)
 				--print("ACTIVE:",inst._active:value())
 				_active = inst._active:value()
-				_ing_prefab = nil --Если взят предмет, то рецепт сразу же забываем.
+				_ing_prefab = nil --一旦拿走物品，配方就会立刻被遗忘。
 				UpdateAllChestsAround() --会为每个活动物品或其取消的物品重新绘制所有箱子。
 			end)
 		end)
