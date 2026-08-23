@@ -1244,9 +1244,9 @@ local function SearchForModsByName()
 end
 SearchForModsByName()
 
-local is_HealthInfo = nil --Check it to decide, is there a reason to show hp in description.检查客机血量显示模组
+local is_HealthInfo = nil --检查服务器血量显示模组
 for name in pairs(mods.active_mods_by_name) do
-	if name:find("Health Bar",1,true) then
+	if name:find("简易血条",1,true) or name:find("Health Bar",1,true) then
 		is_HealthInfo = true
 		break
 	end
@@ -1263,9 +1263,9 @@ local cooking = require("cooking")
 
 local ing = cooking.ingredients
 
-local ww
+local world_state
 AddPrefabPostInit("world",function(inst)
-	ww = inst.state
+	world_state = inst.state
 end)
 
 --容器
@@ -1302,7 +1302,7 @@ local function GetPerishTime(inst, c)
 		modifier = modifier * TUNING.PERISH_WET_MULT
 	end
 
-	if ww.temperature < 0 then
+	if world_state.temperature < 0 then
 		if inst:HasTag("frozen") and not c.perishable.frozenfiremult then
 			modifier = TUNING.PERISH_COLD_FROZEN_MULT
 		else
@@ -1314,7 +1314,7 @@ local function GetPerishTime(inst, c)
 		modifier = modifier * TUNING.PERISH_FROZEN_FIRE_MULT
 	end
 
-	if ww.temperature > TUNING.OVERHEAT_TEMP then
+	if world_state.temperature > TUNING.OVERHEAT_TEMP then
 		modifier = modifier * TUNING.PERISH_SUMMER_MULT
 	end
 
@@ -2180,6 +2180,7 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
 				local FueledTime = DataTimerFn(c.fueled.currentfuel)
 				local FueledDay = tostring(round2(c.fueled.currentfuel / TUNING.TOTAL_DAY_TIME,1))
 				local FDays = SHOWME_STRINGS.days
+				local s_fval
 				if show_fueled == 1 then	--根据配置，显示不同的样式
 					s_fval = o_t.fueled..FueledTime
 				elseif show_fueled == 2 then
