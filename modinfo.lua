@@ -275,8 +275,8 @@ configuration_options =
 	},
 	{
 		name = "Show_naughtiness",
-		label = "顽皮值",
-		hover = "测试功能，人物头顶说话，可能有点烦，慎开",
+		label = "淘气值显示",
+		hover = "显示玩家的淘气值\n如果开启了【综合状态显示】模组，淘气值将显示它的在小部件里，否则在人物头顶说出淘气值",
 		options = {
 			{description = "关闭", data = false},
 			{description = "开启", data = true, hover = "使用有问题就关掉吧"},

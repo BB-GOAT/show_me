@@ -27,13 +27,12 @@
 
 local _G = GLOBAL
 if _G.KnownModIndex:IsModEnabledAny("workshop-2189004162") then
-	print("【Show Me (中文)】 检测到有笨蛋同时开启了Show Me和Insight模组，已停止加载Show Me！")
+	print("Show Me (中文) 检测到有笨蛋同时开启了Show Me和Insight模组，已停止加载Show Me！")
 	return
 end
 
 print(modinfo.name .. " : v" .. modinfo.version)
 
-local require = _G.require
 local function Import(modulename)
     local f = _G.kleiloadlua(modulename)
     if f and type(f) == "function" then
@@ -41,7 +40,7 @@ local function Import(modulename)
         return f()
     end
 end
-local Upvaluehelper = Import(MODROOT .. "bbgoat_upvaluehelper.lua")
+Upvaluehelper = Import(MODROOT .. "bbgoat_upvaluehelper.lua")
 
 local GetGlobal=function(gname,default)
 	local res=_G.rawget(_G,gname)
@@ -130,6 +129,7 @@ local show_nutrients = GetModConfigData("show_nutrients")
 local show_fuel = GetModConfigData("show_fuel")
 local show_fueled = GetModConfigData("show_fueled")
 local show_planar_resist = GetModConfigData("show_planar_resist")
+local show_naughtiness = GetModConfigData("Show_naughtiness") -- 显示淘气值
 
 local MY_STRINGS =
 {
@@ -1505,10 +1505,10 @@ local function GetTileDataAtPoint(x, y, z)
 	end
 
 	if not _nutrientgrid or not _moisturegrid or not _drinkersgrid or not _overlaygrid then
-		if not _nutrientgrid then print("[Show Me (中文)] 警告：未找到上值 _nutrientgrid") end
-		if not _moisturegrid then print("[Show Me (中文)] 警告：未找到上值 _moisturegrid") end
-		if not _drinkersgrid then print("[Show Me (中文)] 警告：未找到上值 _drinkersgrid") end
-		if not _overlaygrid then print("[Show Me (中文)] 警告：未找到上值 _overlaygrid") end
+		if not _nutrientgrid then print("Show Me (中文) 警告：未找到上值 _nutrientgrid") end
+		if not _moisturegrid then print("Show Me (中文) 警告：未找到上值 _moisturegrid") end
+		if not _drinkersgrid then print("Show Me (中文) 警告：未找到上值 _drinkersgrid") end
+		if not _overlaygrid then print("Show Me (中文) 警告：未找到上值 _overlaygrid") end
 		return
 	end
 
@@ -2944,7 +2944,7 @@ do
 	end
 
 	--服务器上的处理程序
-	AddModRPCHandler("ShowMeSHint", "Hint", function(player, guid, item)	--服务器RPC执行客户端发来的请求
+	AddModRPCHandler("ShowMeSHint", "Hint", function(player, guid, item) --服务器RPC执行客户端发来的请求
         if not (_G.checknumber(guid) and _G.checkentity(item)) then
             printinvalid("ShowMeSHint.Hint", player)
             return
@@ -2967,10 +2967,21 @@ do
 	AddPrefabPostInit("player_classified",function(inst)
 		inst.showme_hint2 = ""
 		inst.net_showme_hint2 = _G.net_string(inst.GUID, "showme_hintbua.", "showme_hint_dirty2")
+		if show_naughtiness then
+			inst.net_showme_kramped = {
+				actions = _G.net_byte(inst.GUID, "showme_kramped_actions", "showme_kramped_actions_dirty"),
+				threshold = _G.net_byte(inst.GUID, "showme_kramped_threshold"),
+			}
+		end
 		if CLIENT_SIDE then
 			inst:ListenForEvent("showme_hint_dirty2",function(inst)
 				inst.showme_hint2 = inst.net_showme_hint2:value()
 			end)
+			if show_naughtiness then
+				inst:ListenForEvent("showme_kramped_actions_dirty",function(inst)
+					OnShowMeNaughtyAction() -- 见 showme_naughtiness.lua
+				end)
+			end
 		end
 	end)
 end
@@ -3211,10 +3222,10 @@ if not _G.KnownModIndex:IsModEnabledAny("workshop-3363111676") then -- 开启高
 	end
 end
 ----------------------------------------
-if GetModConfigData("Show_range") ~= false then		--显示范围加载的文件，客户端
+if GetModConfigData("Show_range") then --显示范围加载的文件，客户端
 	modimport("scripts/showme_range_indicators.lua")
 end
 
-if GetModConfigData("Show_naughtiness") ~= false then	--显示顽皮值加载的文件，服务端
+if show_naughtiness then --显示淘气值加载的文件
 	modimport("scripts/showme_naughtiness.lua")
 end

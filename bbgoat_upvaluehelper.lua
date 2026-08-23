@@ -156,8 +156,61 @@ local function SetUpvalue(start_fn, new_fn, ...)
     debug.setupvalue(scope_fn, _fn_i, new_fn)
 end
 
+local function FunctionTest(fn, file, test, source, listener)
+    if fn and type(fn) ~= "function" then return false end
+    local data = debug.getinfo(fn)
+    if file and type(file) == "string" then        --文件名判定
+        local matchstr = "/"..file..".lua"
+        if not data.source or not data.source:match(matchstr) then
+            return false
+        end
+    end
+    if test and type(test) == "function" and  not test(data,source,listener) then return false end    --测试通过
+    return true
+end
+
+-- 获取指定事件的函数 并移除
+-- 调用示例
+--[[
+    local fn = Upvaluehelper.GetEventHandle(TheWorld, "ms_lightwildfireforplayer", "components/wildfires")
+
+    if fn then
+        TheWorld:RemoveEventCallback("ms_lightwildfireforplayer", fn)
+    end
+]]
+local function GetEventHandle(inst, event, file, test)
+    if type(inst) == "table" then
+        if inst.event_listening and inst.event_listening[event] then -- 遍历他在监听的事件 我在监听谁
+            local listenings = inst.event_listening[event]
+            for listening, fns in pairs(listenings) do -- 遍历被监听者
+                if fns and type(fns) == "table" then
+                    for _, fn in pairs(fns) do
+                        if FunctionTest(fn, file, test, listening, inst) then -- 寻找成功就返回
+                            return fn
+                        end
+                    end
+                end
+            end
+        end
+
+        if inst.event_listeners and inst.event_listeners[event] then -- 遍历监听他的事件的 谁在监听我
+            local listeners = inst.event_listeners[event]
+            for listener, fns in pairs(listeners) do -- 遍历监听者
+                if fns and type(fns) == "table" then
+                    for _, fn in pairs(fns) do
+                        if FunctionTest(fn, file, test, inst, listener) then -- 寻找成功就返回
+                            return fn
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
 return {
     FindUpvalue = FindUpvalue,
     GetUpvalue = GetUpvalue,
     SetUpvalue = SetUpvalue,
+    GetEventHandle = GetEventHandle,
 }
