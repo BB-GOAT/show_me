@@ -2969,8 +2969,8 @@ do
 		inst.net_showme_hint2 = _G.net_string(inst.GUID, "showme_hintbua.", "showme_hint_dirty2")
 		if show_naughtiness then
 			inst.net_showme_kramped = {
-				actions = _G.net_byte(inst.GUID, "showme_kramped_actions", "showme_kramped_actions_dirty"),
-				threshold = _G.net_byte(inst.GUID, "showme_kramped_threshold"),
+				actions = _G.net_smallbyte(inst.GUID, "showme_kramped_actions", "showme_kramped_actions_dirty"),
+				threshold = _G.net_smallbyte(inst.GUID, "showme_kramped_threshold"),
 			}
 		end
 		if CLIENT_SIDE then
