@@ -86,7 +86,7 @@ local function lhr_fn()     --避雷针
 end
 
 local function ocep_fn()        --大树干
-	local inst = CreateEntity()
+    local inst = CreateEntity()
     inst.entity:AddTransform()
     inst.entity:AddAnimState()
     inst.persists = false
@@ -95,13 +95,13 @@ local function ocep_fn()        --大树干
         inst:AddComponent("deployhelper")
         inst.components.deployhelper.onenablehelper = OnEnableHelper_ocep
     end
-	-- if RANGE_CHECK_TIME > 1 then
-	-- 	inst:DoTaskInTime(RANGE_CHECK_TIME, function() inst:Remove() end)
-	-- end
+    -- if RANGE_CHECK_TIME > 1 then
+    --     inst:DoTaskInTime(RANGE_CHECK_TIME, function() inst:Remove() end)
+    -- end
 
     return inst
 end
 
 return
-		Prefab( "common/lhr_range_indicator", lhr_fn, assets),
-		Prefab( "common/ocep_range_indicator", ocep_fn, assets)
+        Prefab( "common/lhr_range_indicator", lhr_fn, assets),
+        Prefab( "common/ocep_range_indicator", ocep_fn, assets)
