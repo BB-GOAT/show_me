@@ -2943,7 +2943,7 @@ if SERVER_SIDE then
 			-- 吸血信息
 			local lifesteal_info
 			if inst._lifesteal > 0 then
-				lifesteal_info = string.format(o_t.life_stealing .. "%.2f (" .. o_t.sanity .. "%.2f)",
+				lifesteal_info = string.format(o_t.life_stealing .. "%.2f (" .. MY_DATA.sanity.desc .. "%.2f)",
 					inst._lifesteal,
 					-inst._lifesteal * TUNING.SHADOW_BATTLEAXE.LIFE_STEAL_SANITY_LOSS_SCALE
 				)
@@ -2960,7 +2960,7 @@ if SERVER_SIDE then
 				description = description .. " | " .. boss_progress_string
 			end
 			if inst.components and inst.components.hunger then
-				description = description .. "\n饥饿: " .. round2(inst.components.hunger.current,0) .. " / " .. TUNING.SHADOW_BATTLEAXE.MAX_HUNGER
+				description = description .. "\n" .. MY_DATA.hunger.desc .. round2(inst.components.hunger.current,0) .. " / " .. TUNING.SHADOW_BATTLEAXE.MAX_HUNGER
 			end
 
 			return description
