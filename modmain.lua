@@ -51,9 +51,9 @@ local GetGlobal=function(gname,default)
 	return res
 end
 
---nice round function
-local round2=function(num, idp)
-	return _G.tonumber(string.format("%." .. (idp or 0) .. "f", num))
+--处理浮点数
+local round2=function(num, idp)	-- num处理的目标数字, idp保留的小数位数
+	return _G.tonumber(string.format("%." .. (idp or 0) .. "f", num)) -- 例如：idp传入数字为2，则连接字符串是 %.2f
 end
 
 --本地(增加其他模组的兼容性)
@@ -525,11 +525,18 @@ OTHER_TITLES = {	--%s 是获取官方tuning.lua的对应值，如果模组不是
 	ammo_speed = "子弹速度: +%s",
 	slingshot_speed = "%s 概率不消耗子弹",
 	critterhunger = "饥饿剩余: ",
+	--new
+	level = "等级: ",
+	kills = "击败",
+	life_stealing = "吸血: ",
+	sanity = "精神: ",
 
 	beerpowerpower = "不灵电力: ",
 	waterpowerpower = "不灵水量: ",
 	gaspowerpower = "不灵气体: ",
 }
+
+local o_t = OTHER_TITLES
 
 --从 char 解码到 MY_STRINGS 中的索引
 local function decodeFirstSymbol(sym)
@@ -1529,6 +1536,324 @@ local function GetTileMoistureAtPoint(x, y, z)
 	return data and data.soilmoisture or 0
 end
 
+--安全取值TUNING
+local function safe_tuning(path, default)	-- path传入的值，default手动设置的默认值，当传入的值为nil时使用手动设置的默认值
+    local t = TUNING
+    for part in string.gmatch(path, "[^.]+") do
+        if t[part] == nil then
+            return default
+        end
+        t = t[part]
+    end
+    return t
+end
+
+-- 辅助函数：将结果（字符串或字符串数组）插入 desc_table，自动添加 "@" 前缀
+local function insert_description(result, desc_table)
+    if type(result) == "table" then
+        for _, str in ipairs(result) do
+            if str then
+                table.insert(desc_table, "@" .. str)
+            end
+        end
+    elseif type(result) == "string" then
+        table.insert(desc_table, "@" .. result)
+    end
+    -- 其他类型忽略（如 nil）
+end
+
+-- 注册表1：按 prefab 分发的处理器
+local desc_handlers = {}
+desc_handlers.batbat = function()
+    local drain = safe_tuning("BATBAT_DRAIN", 0)
+    return string.format(o_t.batbat, drain, -0.5 * drain)
+end
+
+desc_handlers.ruins_bat = function()
+    local level = safe_tuning("RUINS_BAT_SHADOW_LEVEL", 0)
+    return string.format(o_t.ruins_bat, level * 10) .. "%"
+end
+
+desc_handlers.ruinshat = function()
+    local level = safe_tuning("RUINSHAT_SHADOW_LEVEL", -1.3)  -- 保证 (level+1.3) 非负
+    return string.format(o_t.ruinshat, (level + 1.3) * 10) .. "%"
+end
+
+desc_handlers.spice_salt = function()
+    local health = safe_tuning("SPICE_MULTIPLIERS.SPICE_SALT.HEALTH", 0)
+    return string.format(o_t.spice_salt, health * 100) .. "%"
+end
+
+desc_handlers.slingshotammo_slow = function()
+    local mult = safe_tuning("SLINGSHOT_AMMO_MOVESPEED_MULT", 1)
+    local dur  = safe_tuning("SLINGSHOT_AMMO_MOVESPEED_DURATION", 0)
+    local percent = math.ceil((mult - 1) * 100)
+    return string.format(o_t.sammo_slow, percent .. "%", dur)
+end
+
+desc_handlers.slingshotammo_honey = function()
+    local penalty = safe_tuning("BEEQUEEN_HONEYTRAIL_SPEED_PENALTY", 1)
+    return string.format(o_t.sammo_honey, math.ceil((penalty - 1) * 100) .. "%")
+end
+
+desc_handlers.slingshotammo_purebrilliance = function()
+    local planar = safe_tuning("SLINGSHOT_BRILLIANCE_MARK_PLANAR_DAMAGE", 0)
+    local timeout = safe_tuning("SLINGSHOT_BRILLIANCE_MARK_TIMEOUT", 0)
+    return string.format(o_t.mpl_hit, planar, timeout)
+end
+
+desc_handlers.slingshotammo_horrorfuel = function()
+    local planar = safe_tuning("SLINGSHOT_HORROR_PLANAR_DAMAGE", 0)
+    local ticks  = safe_tuning("SLINGSHOT_HORROR_TICKS", 0)
+    return string.format(o_t.shf_hit, planar, ticks)
+end
+
+-- 这两个分支调用了 cn("aoe", ...) ，通过一个自定义插入方式处理
+desc_handlers.slingshotammo_stinger = function(item, desc_table)
+    local aoe = safe_tuning("SLINGSHOT_AMMO_DAMAGE_STINGER_AOE", 0)
+    cn("aoe", aoe)   -- 假设 cn 是全局函数，直接调用
+    -- 不返回任何描述（因为 cn 内部已插入）
+    return nil
+end
+
+desc_handlers.slingshotammo_moonglass = function(item, desc_table)
+    local aoe = safe_tuning("SLINGSHOT_AMMO_DAMAGE_MOONGLASS_AOE", 0)
+    cn("aoe", aoe)
+    return nil
+end
+
+desc_handlers.slingshot_band_pigskin = function()
+    local range = safe_tuning("SLINGSHOT_MOD_BONUS_RANGE_1", 0)
+    local speed = safe_tuning("SLINGSHOT_MOD_SPEED_MULT_1", 0)
+    return {
+        string.format(o_t.slingshot_range, range),
+        string.format(o_t.ammo_speed, speed)
+    }
+end
+
+desc_handlers.slingshot_band_tentacle = function()
+    local range = safe_tuning("SLINGSHOT_MOD_BONUS_RANGE_2", 0)
+    local speed = safe_tuning("SLINGSHOT_MOD_SPEED_MULT_2", 0)
+    return {
+        string.format(o_t.slingshot_range, range),
+        string.format(o_t.ammo_speed, speed)
+    }
+end
+
+desc_handlers.slingshot_band_mimic = function()
+    local range = safe_tuning("SLINGSHOT_MOD_BONUS_RANGE_2", 0)
+    local speed = safe_tuning("SLINGSHOT_MOD_SPEED_MULT_2", 0)
+    local chance = safe_tuning("SLINGSHOT_MOD_FREE_AMMO_CHANCE", 0)
+    local result = {
+        string.format(o_t.slingshot_range, range),
+        string.format(o_t.ammo_speed, speed),
+        string.format(o_t.slingshot_speed, chance * 100 .. "%")  -- 只返回第三个，由主函数插入
+    }
+    return result
+end
+
+-- -------------------- WX78 模块分支 --------------------
+desc_handlers.wx78module_maxhealth = function()
+    local boost = safe_tuning("WX78_MAXHEALTH_BOOST", 0)
+    local mult = 1   -- 默认
+    return string.format(o_t.maxhealth, boost * mult)
+end
+
+desc_handlers.wx78module_maxhealth2 = function()
+    local boost = safe_tuning("WX78_MAXHEALTH_BOOST", 0)
+    local mult = safe_tuning("WX78_MAXHEALTH2_MULT", 1)
+    return string.format(o_t.maxhealth, boost * mult)
+end
+
+desc_handlers.wx78module_maxsanity = function()
+    local boost = safe_tuning("WX78_MAXSANITY_BOOST", 0)
+    -- 额外插入 sanity 描述（通过 cn）
+    local dapper = safe_tuning("WX78_MAXSANITY_DAPPERNESS", 0)
+    cn("sanity", round2(dapper * 60))
+    return string.format(o_t.maxsanity, boost)
+end
+
+desc_handlers.wx78module_maxsanity1 = function()
+    local boost = safe_tuning("WX78_MAXSANITY1_BOOST", 0)
+    return string.format(o_t.maxsanity, boost)
+end
+
+desc_handlers.wx78module_maxhunger = function()
+    local boost = safe_tuning("WX78_MAXHUNGER_BOOST", 0)
+    local slow = safe_tuning("WX78_MAXHUNGER_SLOWPERCENT", 0)
+    local result = {
+        string.format(o_t.maxhunger, boost),
+        string.format(o_t.hungerslow, (1 - slow) * 100 .. "%")
+    }
+    return result
+end
+
+desc_handlers.wx78module_maxhunger1 = function()
+    local boost = safe_tuning("WX78_MAXHUNGER1_BOOST", 0)
+    return string.format(o_t.maxhunger, boost)
+end
+
+desc_handlers.wx78module_movespeed = function()
+    local added = math.floor(safe_tuning("WILSON_RUN_SPEED", 1) * 4 + 1)
+    cn("speed", added)
+    return nil
+end
+
+desc_handlers.wx78module_movespeed2 = function()
+    local added = math.floor(safe_tuning("WILSON_RUN_SPEED", 1) * 4 + 1)
+    cn("speed", added)
+    cn("other_tag", "wx78_movespeed2")
+    return nil
+end
+
+desc_handlers.wx78module_bee = function()
+    local dapper = safe_tuning("WX78_MAXSANITY_DAPPERNESS", 0)
+    cn("sanity", round2(dapper * 60))
+    local health_pertick = safe_tuning("WX78_BEE_HEALTHPERTICK", 0)
+    local tick_period = safe_tuning("WX78_BEE_TICKPERIOD", 0)
+    local sanity_boost = safe_tuning("WX78_MAXSANITY_BOOST", 0)
+    return {
+        string.format(o_t.healthpertick, health_pertick) .. " / " .. tick_period .. o_t.second,
+        string.format(o_t.maxsanity, sanity_boost)
+    }
+end
+
+desc_handlers.wx78module_music = function()
+    local aura = safe_tuning("WX78_MUSIC_SANITYAURA", 0)
+    cn("sanity", round2(aura * 60, 1))
+    cn("other_tag", "wx78_music")
+    return nil
+end
+
+desc_handlers.wx78module_heat = function()
+    local hot_rate = safe_tuning("WX78_PERISH_HOTRATE", 1)
+    local result = string.format(o_t.wx78_hot_cold, "+" .. (hot_rate - 1) * 100 .. "%")
+    cn("other_tag", "wx78_moisture")
+    cn("other_tag", "wx78_heat")
+    return result
+end
+
+desc_handlers.wx78module_cold = function()
+    local cold_rate = safe_tuning("WX78_PERISH_COLDRATE", 1)
+    local ice_moist = safe_tuning("WX78_COLD_ICEMOISTURE", 0)
+    local result = {
+        string.format(o_t.wx78_hot_cold, (cold_rate - 1) * 100 .. "%"),
+        string.format(o_t.wx78_cold3, ice_moist .. "%")
+    }
+    cn("other_tag", "wx78_cold")
+    return result
+end
+
+-- -------------------- 女武神书 --------------------
+local song_handlers = {}
+local song_tunings = require("prefabs/battlesongdefs").song_defs
+
+song_handlers[song_tunings.battlesong_durability] = function()
+    local mod = safe_tuning("BATTLESONG_DURABILITY_MOD", 0)
+    return string.format(o_t.bs_dy, (1 - mod) * 100) .. "%"
+end
+
+song_handlers[song_tunings.battlesong_healthgain] = function()
+    local delta = safe_tuning("BATTLESONG_HEALTHGAIN_DELTA", 0)
+    local singer = safe_tuning("BATTLESONG_HEALTHGAIN_DELTA_SINGER", 0)
+    return string.format(o_t.bs_hp, delta, singer)
+end
+
+song_handlers[song_tunings.battlesong_sanitygain] = function()
+    local delta = safe_tuning("BATTLESONG_SANITYGAIN_DELTA", 0)
+    return string.format(o_t.bs_san, delta)
+end
+
+song_handlers[song_tunings.battlesong_sanityaura] = function()
+    local mod = safe_tuning("BATTLESONG_NEG_SANITY_AURA_MOD", 0)
+    return string.format(o_t.bs_desan, (1 - mod) * 100) .. "%"
+end
+
+song_handlers[song_tunings.battlesong_fireresistance] = function()
+    local mod = safe_tuning("BATTLESONG_FIRE_RESIST_MOD", 0)
+    return string.format(o_t.bs_fire, (1 - mod) * 100) .. "%"
+end
+
+song_handlers[song_tunings.battlesong_instant_taunt] = function()
+    return o_t.bs_it
+end
+
+song_handlers[song_tunings.battlesong_instant_panic] = function()
+    local panic = safe_tuning("BATTLESONG_PANIC_TIME", 0)
+    return string.format(o_t.bs_ip, panic)
+end
+
+song_handlers[song_tunings.battlesong_shadowaligned] = function()
+    local bonus = safe_tuning("BATTLESONG_SHADOWALIGNED_VS_LUNAR_BONUS", 1)
+    local resist = safe_tuning("BATTLESONG_SHADOWALIGNED_SHADOW_RESIST", 1)
+    return {
+        string.format(o_t.bs_shadow, (bonus - 1) * 100) .. "%",
+        string.format(o_t.bs_shadow2, (resist - 1) * 100) .. "%"
+    }
+end
+
+song_handlers[song_tunings.battlesong_lunaraligned] = function()
+    local bonus = safe_tuning("BATTLESONG_LUNARALIGNED_VS_SHADOW_BONUS", 1)
+    local resist = safe_tuning("BATTLESONG_LUNARALIGNED_LUNAR_RESIST", 1)
+    return {
+        string.format(o_t.bs_lunar, (bonus - 1) * 100) .. "%",
+        string.format(o_t.bs_lunar2, (resist - 1) * 100) .. "%"
+    }
+end
+
+
+-- 主入口：根据 prefab 分发处理（包括 battlesong 子分发）
+local function add_entity_description(item, desc_table)
+    local handler = desc_handlers[item.prefab]
+    if handler then
+        local result = handler(item, desc_table)  -- 传入 desc_table 以便 cn 等操作
+        if result then
+            insert_description(result, desc_table)
+        end
+    end
+end
+
+-- 女武神书
+local function process_songdata(item, desc_table)
+    local handler = song_handlers[item.songdata]
+    if handler then
+        local result = handler(item)
+        if result then
+            insert_description(result, desc_table)
+        end
+    end
+end
+
+-- 阿比盖尔药水
+local function process_potion(item, desc_table)
+    local g_pt = item.potion_tunings
+    if not g_pt then return end
+
+    local day_time = TUNING.TOTAL_DAY_TIME or 480  -- 默认值
+    local f_duration = TUNING.GHOSTLYELIXIR_FASTREGEN_DURATION or 0
+
+    if g_pt.TICK_FN then
+        if g_pt.DURATION == f_duration then
+            local heal = safe_tuning("GHOSTLYELIXIR_FASTREGEN_HEALING", 0)
+            table.insert(desc_table, "@" .. string.format(o_t.healthpertick, heal) .. " /" .. o_t.second .. "," .. SHOWME_STRINGS.chixu .. g_pt.DURATION .. o_t.second)
+        else
+            local heal = safe_tuning("GHOSTLYELIXIR_SLOWREGEN_HEALING", 0)
+            table.insert(desc_table, "@" .. string.format(o_t.healthpertick, heal) .. " /" .. o_t.second .. "," .. SHOWME_STRINGS.chixu .. g_pt.DURATION / day_time .. SHOWME_STRINGS.days)
+        end
+    elseif g_pt.ONDETACH then
+        table.insert(desc_table, "@" .. string.format(o_t.ghost_atk, g_pt.DURATION / day_time))
+    elseif g_pt.speed_hauntable == true then
+        local speed_mult = safe_tuning("GHOSTLYELIXIR_SPEED_LOCO_MULT", 1)
+        table.insert(desc_table, "@" .. string.format(o_t.ghost_sd, (speed_mult - 1) * 100 .. "%", g_pt.DURATION / day_time))
+    elseif g_pt.shield_prefab then
+        if g_pt.shield_prefab == "abigailforcefieldretaliation" then
+            local retaliation = safe_tuning("GHOSTLYELIXIR_RETALIATION_DAMAGE", 0)
+            table.insert(desc_table, "@" .. string.format(o_t.ghost_atkf, retaliation))
+        end
+        table.insert(desc_table, "@" .. string.format(o_t.ghost_shd, g_pt.DURATION / day_time))
+    end
+end
+
 --Основная функция получения описания.
 function GetTestString(item,viewer) --从这里开始，与Tell Me区分
 	--line_cnt = 0
@@ -1536,7 +1861,6 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
 	local prefab = item.prefab
 	local c=item.components
 	local has_owner = false --仅向所有者发送一次信息
-	local o_t = OTHER_TITLES
 	-- local ftime =  function (seconds)	--时间格式化
 		-- local minutes = math.floor(seconds / 60)
 		-- seconds = seconds % 60
@@ -2321,35 +2645,8 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
 			AddBoatStatus(viewer)
 		elseif prefab=="cannonball_rock_item" then
 			cn("dmg", TUNING.CANNONBALL_DAMAGE)
-		elseif prefab=="batbat" then
-			local o_bbd = TUNING.BATBAT_DRAIN
-			table.insert(desc_table, "@"..string.format(o_t.batbat, o_bbd, -.5 * o_bbd))
-		elseif prefab=="ruins_bat" then
-			table.insert(desc_table, "@"..string.format(o_t.ruins_bat, TUNING.RUINS_BAT_SHADOW_LEVEL*10).."%")
-		elseif prefab=="ruinshat" then
-			table.insert(desc_table, "@"..string.format(o_t.ruinshat, (TUNING.RUINSHAT_SHADOW_LEVEL+1.3)*10).."%")
-		elseif prefab=="spice_salt" then
-			table.insert(desc_table, "@"..string.format(o_t.spice_salt, TUNING.SPICE_MULTIPLIERS.SPICE_SALT.HEALTH*100 .."%"))
-		elseif prefab=="slingshotammo_slow" then
-			table.insert(desc_table, "@"..string.format(o_t.sammo_slow, math.ceil((TUNING.SLINGSHOT_AMMO_MOVESPEED_MULT - 1)*100) .. "%", TUNING.SLINGSHOT_AMMO_MOVESPEED_DURATION))
-		elseif prefab=="slingshotammo_honey" then
-			table.insert(desc_table, "@"..string.format(o_t.sammo_honey, math.ceil((TUNING.BEEQUEEN_HONEYTRAIL_SPEED_PENALTY - 1)*100) .. "%"))
-		elseif prefab=="slingshotammo_purebrilliance" then
-			table.insert(desc_table, "@"..string.format(o_t.mpl_hit, TUNING.SLINGSHOT_BRILLIANCE_MARK_PLANAR_DAMAGE, TUNING.SLINGSHOT_BRILLIANCE_MARK_TIMEOUT))
-		elseif prefab=="slingshotammo_horrorfuel" then
-			table.insert(desc_table, "@"..string.format(o_t.shf_hit, TUNING.SLINGSHOT_HORROR_PLANAR_DAMAGE, TUNING.SLINGSHOT_HORROR_TICKS))
-		elseif prefab=="slingshotammo_stinger" then
-			cn("aoe", TUNING.SLINGSHOT_AMMO_DAMAGE_STINGER_AOE)
-		elseif prefab=="slingshotammo_moonglass" then
-			cn("aoe", TUNING.SLINGSHOT_AMMO_DAMAGE_MOONGLASS_AOE)
-		elseif prefab=="slingshot_band_pigskin" then
-			table.insert(desc_table, "@"..string.format(o_t.slingshot_range, TUNING.SLINGSHOT_MOD_BONUS_RANGE_1))
-			table.insert(desc_table, "@"..string.format(o_t.ammo_speed, TUNING.SLINGSHOT_MOD_SPEED_MULT_1))
-		elseif prefab=="slingshot_band_tentacle" or prefab=="slingshot_band_mimic" then
-			table.insert(desc_table, "@"..string.format(o_t.slingshot_range, TUNING.SLINGSHOT_MOD_BONUS_RANGE_2))
-			table.insert(desc_table, "@"..string.format(o_t.ammo_speed, TUNING.SLINGSHOT_MOD_SPEED_MULT_2))
-			if prefab=="slingshot_band_mimic" then table.insert(desc_table, "@"..string.format(o_t.slingshot_speed, TUNING.SLINGSHOT_MOD_FREE_AMMO_CHANCE * 100 .. "%")) end
 		end
+		
 		--其他物品添加标签	VOIDCLOTH
 		local o_t_list = {
 		"orchitwigs",	--1
@@ -2381,102 +2678,18 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
 				end
 			end
 		end
+		
 		-- if item:HasTag("lureplant") then --食人花，加不了标签！什么情况？
 			-- table.insert(desc_table, "@".."233\n23333")
 		-- end
-		if c.ghostlyelixir then	--阿比盖尔的药水
-			local g_pt = item.potion_tunings
-			local day_time = TUNING.TOTAL_DAY_TIME
-			local f_duration = TUNING.GHOSTLYELIXIR_FASTREGEN_DURATION
-			if g_pt.TICK_FN then
-				if g_pt.DURATION == f_duration then
-					table.insert(desc_table, "@"..string.format(o_t.healthpertick, TUNING.GHOSTLYELIXIR_FASTREGEN_HEALING).." /"..o_t.second..","..SHOWME_STRINGS.chixu..g_pt.DURATION..o_t.second)
-				else
-					table.insert(desc_table, "@"..string.format(o_t.healthpertick, TUNING.GHOSTLYELIXIR_SLOWREGEN_HEALING).." /"..o_t.second..","..SHOWME_STRINGS.chixu..g_pt.DURATION/day_time..SHOWME_STRINGS.days)
-				end
-			elseif g_pt.ONDETACH then
-				table.insert(desc_table, "@"..string.format(o_t.ghost_atk, g_pt.DURATION/day_time))
-			elseif g_pt.speed_hauntable == true then
-				table.insert(desc_table, "@"..string.format(o_t.ghost_sd, (TUNING.GHOSTLYELIXIR_SPEED_LOCO_MULT-1)*100 .."%", g_pt.DURATION/day_time))
-			elseif g_pt.shield_prefab then
-				if g_pt.shield_prefab == "abigailforcefieldretaliation" then
-					table.insert(desc_table, "@"..string.format(o_t.ghost_atkf, TUNING.GHOSTLYELIXIR_RETALIATION_DAMAGE))
-				end
-				table.insert(desc_table, "@"..string.format(o_t.ghost_shd, g_pt.DURATION/day_time))
-			end
-		end
-
-		if item:HasTag("battlesong") then	--女武神书
-			local song_tunings = require("prefabs/battlesongdefs").song_defs
-			if item.songdata == song_tunings.battlesong_durability then
-				table.insert(desc_table, "@"..string.format(o_t.bs_dy, (1 - TUNING.BATTLESONG_DURABILITY_MOD) * 100).."%")
-			elseif item.songdata == song_tunings.battlesong_healthgain then
-				table.insert(desc_table, "@"..string.format(o_t.bs_hp, TUNING.BATTLESONG_HEALTHGAIN_DELTA, TUNING.BATTLESONG_HEALTHGAIN_DELTA_SINGER))
-			elseif item.songdata == song_tunings.battlesong_sanitygain then
-				table.insert(desc_table, "@"..string.format(o_t.bs_san, TUNING.BATTLESONG_SANITYGAIN_DELTA))
-			elseif item.songdata == song_tunings.battlesong_sanityaura then
-				table.insert(desc_table, "@"..string.format(o_t.bs_desan, (1 - TUNING.BATTLESONG_NEG_SANITY_AURA_MOD) * 100).."%")
-			elseif item.songdata == song_tunings.battlesong_fireresistance then
-				table.insert(desc_table, "@"..string.format(o_t.bs_fire, (1 - TUNING.BATTLESONG_FIRE_RESIST_MOD) * 100).."%")
-			elseif item.songdata == song_tunings.battlesong_instant_taunt then
-				table.insert(desc_table, "@"..o_t.bs_it)
-			elseif item.songdata == song_tunings.battlesong_instant_panic then
-				table.insert(desc_table, "@"..string.format(o_t.bs_ip, TUNING.BATTLESONG_PANIC_TIME))
-			elseif item.songdata == song_tunings.battlesong_shadowaligned then
-				table.insert(desc_table, "@"..string.format(o_t.bs_shadow, (TUNING.BATTLESONG_SHADOWALIGNED_VS_LUNAR_BONUS - 1) * 100).."%")
-				table.insert(desc_table, "@"..string.format(o_t.bs_shadow2, (TUNING.BATTLESONG_SHADOWALIGNED_SHADOW_RESIST - 1) * 100).."%")
-			elseif item.songdata == song_tunings.battlesong_lunaraligned then
-				table.insert(desc_table, "@"..string.format(o_t.bs_lunar, (TUNING.BATTLESONG_LUNARALIGNED_VS_SHADOW_BONUS - 1) * 100).."%")
-				table.insert(desc_table, "@"..string.format(o_t.bs_lunar2, (TUNING.BATTLESONG_LUNARALIGNED_LUNAR_RESIST - 1) * 100).."%")
-			end
-		end
-		--WX78
-		if prefab=="wx78module_maxhealth" or prefab=="wx78module_maxhealth2" then
-			local wx78_mhp = 1
-			if prefab=="wx78module_maxhealth2" then
-				wx78_mhp = TUNING.WX78_MAXHEALTH2_MULT
-			end
-			table.insert(desc_table, "@"..string.format(o_t.maxhealth, TUNING.WX78_MAXHEALTH_BOOST * wx78_mhp))
-		elseif prefab=="wx78module_maxsanity" or prefab=="wx78module_maxsanity1" then
-			local wx78_san = ""
-			if prefab=="wx78module_maxsanity" then
-				cn("sanity", round2(TUNING.WX78_MAXSANITY_DAPPERNESS * 60))
-				wx78_san = TUNING.WX78_MAXSANITY_BOOST
-			else
-				wx78_san = TUNING.WX78_MAXSANITY1_BOOST
-			end
-			table.insert(desc_table, "@"..string.format(o_t.maxsanity, wx78_san))
-		elseif prefab=="wx78module_maxhunger" or prefab=="wx78module_maxhunger1" then
-			local wx78_mhg = ""
-			if prefab=="wx78module_maxhunger" then
-				wx78_mhg = TUNING.WX78_MAXHUNGER_BOOST
-				table.insert(desc_table, "@"..string.format(o_t.hungerslow, (1-TUNING.WX78_MAXHUNGER_SLOWPERCENT)*100).."%")
-			else
-				wx78_mhg = TUNING.WX78_MAXHUNGER1_BOOST
-			end
-			table.insert(desc_table, "@"..string.format(o_t.maxhunger, wx78_mhg))
-		elseif prefab=="wx78module_movespeed" or prefab=="wx78module_movespeed2" then
-			local added_speed = math.floor(TUNING.WILSON_RUN_SPEED*4+1)
-			cn("speed", added_speed)
-			if prefab=="wx78module_movespeed2" then
-				cn("other_tag", "wx78_movespeed2")
-			end
-		elseif prefab=="wx78module_bee" then
-			cn("sanity", round2(TUNING.WX78_MAXSANITY_DAPPERNESS * 60))
-			table.insert(desc_table, "@"..string.format(o_t.healthpertick, TUNING.WX78_BEE_HEALTHPERTICK).." / "..TUNING.WX78_BEE_TICKPERIOD..o_t.second)
-			table.insert(desc_table, "@"..string.format(o_t.maxsanity, TUNING.WX78_MAXSANITY_BOOST))
-		elseif prefab=="wx78module_music" then
-			cn("sanity", round2(TUNING.WX78_MUSIC_SANITYAURA * 60, 1))
-			cn("other_tag", "wx78_music")
-		elseif prefab=="wx78module_heat" then
-			table.insert(desc_table, "@"..string.format(o_t.wx78_hot_cold, "+"..(TUNING.WX78_PERISH_HOTRATE-1)*100).."%")
-			cn("other_tag", "wx78_moisture")
-			cn("other_tag", "wx78_heat")
-		elseif prefab=="wx78module_cold" then
-			table.insert(desc_table, "@"..string.format(o_t.wx78_hot_cold, (TUNING.WX78_PERISH_COLDRATE-1)*100).."%")
-			table.insert(desc_table, "@"..string.format(o_t.wx78_cold3, TUNING.WX78_COLD_ICEMOISTURE.."%"))
-			cn("other_tag", "wx78_cold")
-		end
+		
+		add_entity_description(item, desc_table)
+		
+		-- 女武神书
+		process_songdata(item, desc_table)
+		-- 阿比盖尔的药水
+		process_potion(item, desc_table)
+		
 		--重生护符
 		if (prefab == "ancient_amulet_red" or prefab == "amulet") and c.hauntable then
 			cn("other_tag", "amulet")
@@ -2689,15 +2902,15 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
         if snapshot then
             for k,v in pairs(snapshot) do
                 if type(v) == "number" then
-                    table.insert(desc_table, "@" .. (k.name or k.prefab or tostring(k)) .. "：剩余 " .. round2(v/TUNING.TOTAL_DAY_TIME,1) .. "天")
+                    table.insert(desc_table, "@" .. (k.name or k.prefab or tostring(k)) .. o_t.will_other .. round2(v/TUNING.TOTAL_DAY_TIME,1) .. SHOWME_STRINGS.days)
                 end
             end
         end
     end
 	return table.concat(desc_table,"\2") --an error with no info
-end
+end	-- 函数GetTestString END
 
-
+-- 服务器处理end
 end
 
 -- 其它单独物品的信息显示
@@ -2714,14 +2927,14 @@ if SERVER_SIDE then
 				this_level_boss_kills = inst.epic_kill_count - TUNING.SHADOW_BATTLEAXE.LEVEL_THRESHOLDS[inst.level]
 				boss_kills_for_next_level = TUNING.SHADOW_BATTLEAXE.LEVEL_THRESHOLDS[inst.level + 1] - TUNING.SHADOW_BATTLEAXE.LEVEL_THRESHOLDS[inst.level]
 			end
-			local level_string = string.format("等级: %s / %s",
+			local level_string = string.format(o_t.level .. "%s / %s",
 				inst.level,
 				max_level
 			)
 			local boss_progress_string
 
 			if boss_kills_for_next_level > 0 then
-				boss_progress_string = string.format("击败BOSS: %s / %s",
+				boss_progress_string = string.format(o_t.kills .. "BOSS: %s / %s",
 					this_level_boss_kills,
 					boss_kills_for_next_level
 				)
@@ -2730,7 +2943,7 @@ if SERVER_SIDE then
 			-- 吸血信息
 			local lifesteal_info
 			if inst._lifesteal > 0 then
-				lifesteal_info = string.format("吸血: %.2f (精神: %.2f)",
+				lifesteal_info = string.format(o_t.life_stealing .. "%.2f (" .. o_t.sanity .. "%.2f)",
 					inst._lifesteal,
 					-inst._lifesteal * TUNING.SHADOW_BATTLEAXE.LIFE_STEAL_SANITY_LOSS_SCALE
 				)
