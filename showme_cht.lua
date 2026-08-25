@@ -1,3 +1,4 @@
+-- 次语言文件使用 MY_STRINGS_OVERRIDE
 MY_STRINGS_OVERRIDE =
 {
     armor = "傷害吸收: " , --A --Armor of the item.

@@ -1,6 +1,11 @@
----@diagnostic disable: lowercase-global
+local L = locale
+local function translate(language_table)
+	language_table.zhr = language_table.zh
+	language_table.zht = language_table.zht or language_table.zh
+	return language_table[L] or language_table.en
+end
 version = "0.60"
-name = "Show Me (中文)"
+name = translate({en = "Show Me (New)", zh = "Show Me (中文)", zht = "Show Me (繁體中文)"})
 author = "Star, +Serp, 傳說覺悟, 冰冰羊"
 -- forumthread = ""
 description = "当前版本: "..version.."\n" ..
@@ -68,6 +73,7 @@ configuration_options =
             {description = "自动", data = "auto", hover = "检测语言包"},
             {description = "简体中文", data = "chs", hover = "简体中文"},
             {description = "繁体中文", data = "cht", hover = "繁体中文"},
+            {description = "English", data = "en", hover = "English"},
         },
         default = "auto",
     },
