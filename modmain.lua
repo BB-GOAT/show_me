@@ -147,54 +147,8 @@ for k,v in pairs(Import(MODROOT .. "showme_chs.lua")) do
     env[k] = v
 end
 
-local support_languages = {
-	-- zh = "chs", --Chinese for Steam
-	-- zhr = "chs", --Chinese for WeGame
-	-- ch = "chs", --Chinese mod
-	-- chs = "chs", --Chinese mod
-	-- sc = "chs", --simple Chinese
-	-- chinese = "chs", --Chinese mod
-	zht = "cht", --traditional Chinese for Steam
-	tc = "cht", --traditional Chinese
-	cht = "cht", --Chinese mod
-}
 
-do
-    -- 链接字符串表
-    local function LinkTables(tbl, fallback)
-        GLOBAL.setmetatable(tbl, {
-            __index = fallback,  -- 查找 tbl 中不存在的键时回退到 fallback
-        })
-
-        -- 对嵌套表格也进行同样的操作
-        for key, value in pairs(tbl) do
-            if type(value) == "table" then
-                LinkTables(value, fallback[key])
-            end
-        end
-    end
-
-    local lang = GetModConfigData("lang", true)
-    if lang == "auto" then
-        lang = GetModConfigData("lang")
-    end
-    print("Detected language for ShowMe: ", lang, lang == "auto" and _G.LanguageTranslator.defaultlang or "")
-
-    if lang == "auto" then
-        lang = _G.LanguageTranslator.defaultlang
-    end
-    lang = lang:lower()
-
-    if support_languages[lang] then
-        local lang_data = Import(MODROOT .. "showme_" .. support_languages[lang] .. ".lua") -- 加载语言
-        for k,v in pairs(lang_data) do
-            LinkTables(v, env[k])
-            env[k] = v
-        end
-    end
-end
-
--- 新的解码函数（自动识别），从 char 解码到 MY_STRINGS 中的索引
+-- 解码函数，自动识别从 char 解码到 MY_STRINGS 中的索引
 local function decodeFirstSymbol(sym)
     -- 1. 如果是一个字符，先尝试旧的映射规则
     if #sym == 1 then
@@ -215,7 +169,7 @@ local function decodeFirstSymbol(sym)
     return 0
 end
 
--- MY_STRINGS新的编码函数（向后兼容 + 无限扩展），解除之前108的上限
+-- MY_STRINGS编码函数
 local function encodeFirstSymbol(idx)
     if idx <= 0 then return "?" end
 
@@ -246,6 +200,61 @@ do
         }
         MY_DATA_BY_ID[i] = k
         i = i + 1
+    end
+end
+
+do
+    local support_languages = {
+        -- zh = "chs", --Chinese for Steam
+        -- zhr = "chs", --Chinese for WeGame
+        -- ch = "chs", --Chinese mod
+        -- chs = "chs", --Chinese mod
+        -- sc = "chs", --simple Chinese
+        -- chinese = "chs", --Chinese mod
+        zht = "cht", --traditional Chinese for Steam
+        tc = "cht", --traditional Chinese
+        cht = "cht", --Chinese mod
+    }
+
+    -- 链接字符串表
+    local function LinkTables(tbl, fallback)
+        GLOBAL.setmetatable(tbl, {
+            __index = fallback,  -- 查找 tbl 中不存在的键时回退到 fallback
+        })
+
+        -- 对嵌套表格也进行同样的操作
+        for key, value in pairs(tbl) do
+            if type(value) == "table" then
+                LinkTables(value, fallback[key])
+            end
+        end
+    end
+
+    local lang = GetModConfigData("lang", true)
+    if lang == "auto" then
+        lang = GetModConfigData("lang")
+    end
+    print("Detected language for ShowMe: ", lang, lang == "auto" and _G.LanguageTranslator.defaultlang or "")
+
+    if lang == "auto" then
+        lang = _G.LanguageTranslator.defaultlang
+    end
+    lang = lang:lower()
+
+    if support_languages[lang] then
+        local lang_data = Import(MODROOT .. "showme_" .. support_languages[lang] .. ".lua") -- 加载语言
+        for k,v in pairs(lang_data) do
+            if k ~= "MY_STRINGS" then
+                LinkTables(v, env[k])
+                env[k] = v
+            else
+                for key, value in pairs(v) do
+                    if MY_DATA[key] then
+                        MY_DATA[key].desc = value
+                    end
+                end
+            end
+        end
     end
 end
 
