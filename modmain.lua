@@ -131,7 +131,8 @@ local show_fueled = GetModConfigData("show_fueled")
 local show_planar_resist = GetModConfigData("show_planar_resist")
 local show_naughtiness = GetModConfigData("Show_naughtiness") -- 显示淘气值
 
---定义语言表
+-- 定义语言表(定义在模组环境以便其它模组调用)
+MY_DATA = {}
 MY_STRINGS = {}              -- 主字符串表
 SHOWME_STRINGS = {}          -- 显示用字符串
 FOOD_TAGS = {}               -- 食物标签
@@ -141,8 +142,57 @@ STRESS_TAGS = {}             -- 作物标签
 OTHER_TAGS = {}              -- 其他标签描述
 OTHER_TITLES = {}            -- 其他标签描述2
 
--- 加载默认语言
-modimport("showme_chs.lua")
+-- 加载语言
+for k,v in pairs(Import(MODROOT .. "showme_chs.lua")) do
+    env[k] = v
+end
+
+local support_languages = {
+	-- zh = "chs", --Chinese for Steam
+	-- zhr = "chs", --Chinese for WeGame
+	-- ch = "chs", --Chinese mod
+	-- chs = "chs", --Chinese mod
+	-- sc = "chs", --simple Chinese
+	-- chinese = "chs", --Chinese mod
+	zht = "cht", --traditional Chinese for Steam
+	tc = "cht", --traditional Chinese
+	cht = "cht", --Chinese mod
+}
+
+do
+    -- 链接字符串表
+    local function LinkTables(tbl, fallback)
+        GLOBAL.setmetatable(tbl, {
+            __index = fallback,  -- 查找 tbl 中不存在的键时回退到 fallback
+        })
+
+        -- 对嵌套表格也进行同样的操作
+        for key, value in pairs(tbl) do
+            if type(value) == "table" then
+                LinkTables(value, fallback[key])
+            end
+        end
+    end
+
+    local lang = GetModConfigData("lang", true)
+    if lang == "auto" then
+        lang = GetModConfigData("lang")
+    end
+    print("Detected language for ShowMe: ", lang, lang == "auto" and _G.LanguageTranslator.defaultlang or "")
+
+    if lang == "auto" then
+        lang = _G.LanguageTranslator.defaultlang
+    end
+    lang = lang:lower()
+
+    if support_languages[lang] then
+        local lang_data = Import(MODROOT .. "showme_" .. support_languages[lang] .. ".lua") -- 加载语言
+        for k,v in pairs(lang_data) do
+            LinkTables(v, env[k])
+            env[k] = v
+        end
+    end
+end
 
 -- 新的解码函数（自动识别），从 char 解码到 MY_STRINGS 中的索引
 local function decodeFirstSymbol(sym)
@@ -170,11 +220,11 @@ local function encodeFirstSymbol(idx)
     if idx <= 0 then return "?" end
 
     -- 1~108 使用原有的单字符压缩格式（保留历史数据兼容）
-    if idx <= 62 then 
+    if idx <= 62 then
         return string.char(idx + 64)      -- ASCII 65-126（'A' 到 '~'）
-    elseif idx <= 93 then 
+    elseif idx <= 93 then
         return string.char(idx - 31)      -- ASCII 32-62（空格到 '?'）
-    elseif idx <= 108 then 
+    elseif idx <= 108 then
         return string.char(idx - 77)      -- ASCII 17-31（控制字符）
     else
         -- 109 及以上：直接用十进制数字字符串（例如 "109"），让MY_STRINGS不限于108个key
@@ -183,9 +233,10 @@ local function encodeFirstSymbol(idx)
 end
 
 -- 语言调用
-MY_DATA = {}
-for i,v in ipairs(MY_STRINGS) do
-    for k,str in pairs(v) do
+local MY_DATA_BY_ID = {}
+do
+    local i = 1
+    for k,str in _G.orderedPairs(MY_STRINGS) do
         MY_DATA[k] = {
             desc = str,	-- MY_DATA.armor.desc 则显示 防御：
             id = i,	-- 索引ID
@@ -193,96 +244,12 @@ for i,v in ipairs(MY_STRINGS) do
             fn = nil, --默认值: desc .. " " .. param1，可覆盖例如：MY_DATA.buff.fn
             percent = nil, --在数字末尾添加“%”，例如：MY_DATA.sanity_character.percent = true
         }
-        v.key = k --将密钥写入单独的变量。
-        break
+        MY_DATA_BY_ID[i] = k
+        i = i + 1
     end
 end
 
--- 备份所有表（用于补充缺失键），除 INTERNAL_TIMERS 外
-local function shallowCopy(t)
-    local copy = {}
-    for k, v in pairs(t) do
-        copy[k] = v
-    end
-    return copy
-end
-
-local backup_tables = {
-    SHOWME_STRINGS = shallowCopy(SHOWME_STRINGS),
-    FOOD_TAGS = shallowCopy(FOOD_TAGS),
-    INTERNAL_STAGES = shallowCopy(INTERNAL_STAGES),
-    STRESS_TAGS = shallowCopy(STRESS_TAGS),
-    OTHER_TAGS = shallowCopy(OTHER_TAGS),
-    OTHER_TITLES = shallowCopy(OTHER_TITLES),
-    -- 不备份 INTERNAL_TIMERS
-}
-
--- 合并补充函数：将备份中存在的键，若当前表缺失则补回
-local function fillMissing(dest, backup)
-    for k, v in pairs(backup) do
-        if dest[k] == nil then
-            dest[k] = v
-        end
-    end
-end
-
--- 语言更新函数（处理 MY_STRINGS_OVERRIDE 和补充其他表）
-local function UpdateNewLanguage()
-    -- 处理 MY_STRINGS_OVERRIDE（由语言文件提供）更新 MY_DATA.desc
-    if MY_STRINGS_OVERRIDE ~= nil then
-        for k, tr in pairs(MY_STRINGS_OVERRIDE) do
-            local data = MY_DATA[k]
-            if data ~= nil then
-                data.desc = tr
-            end
-        end
-    end
-
-    -- 补充除 INTERNAL_TIMERS 外的表缺失键（从简体备份恢复）
-    fillMissing(SHOWME_STRINGS, backup_tables.SHOWME_STRINGS)
-    fillMissing(FOOD_TAGS, backup_tables.FOOD_TAGS)
-    fillMissing(INTERNAL_STAGES, backup_tables.INTERNAL_STAGES)
-    fillMissing(STRESS_TAGS, backup_tables.STRESS_TAGS)
-    fillMissing(OTHER_TAGS, backup_tables.OTHER_TAGS)
-    fillMissing(OTHER_TITLES, backup_tables.OTHER_TITLES)
-end
-
---将各种可能的语言标识符（如 "zht"、"tc"）统一映射到实际语言文件后缀（"cht"），方便 modimport 加载对应的 showme_cht.lua 文件。
-local support_languages = {
-	-- zh = "chs", --Chinese for Steam
-	-- zhr = "chs", --Chinese for WeGame
-	-- ch = "chs", --Chinese mod
-	-- chs = "chs", --Chinese mod
-	-- sc = "chs", --simple Chinese
-	-- chinese = "chs", --Chinese mod
-	zht = "cht", --traditional Chinese for Steam
-	tc = "cht", --traditional Chinese
-	cht = "cht", --Chinese mod
-}
-
---适配语言
-AddPrefabPostInit("world", function(inst)
-    local lang = GetModConfigData("lang", true)
-    if lang == "auto" then
-        lang = GetModConfigData("lang")
-    end
-    print("Detected language for ShowMe: ", lang, lang == "auto" and _G.LanguageTranslator.defaultlang or "")
-
-    if lang == "auto" then
-        lang = _G.LanguageTranslator.defaultlang
-    end
-    lang = lang:lower()
-
-    if support_languages[lang] ~= nil then
-        lang = support_languages[lang]
-        modimport("showme_" .. lang .. ".lua")   -- 加载语言
-        UpdateNewLanguage()                      -- 应用覆盖并补充缺失键
-    end
-end)
-
-CallDefaultDisplayFn = DefaultDisplayFn --用于语言模块。
 local o_t = OTHER_TITLES
-
 local function DefaultDisplayFn(arr) --输入有一个特殊的结构：{ data, param }。 data 是对 MY_DATA 元素的引用，param 是对数组 p 的引用。
     if arr.data == nil then
         return arr.param_str --以来自服务器的形式显示字符串（没有第一个字符）。 对“@”符号的适配
@@ -629,7 +596,7 @@ local CONST_COUNT = { ['1'] = '(1)', ['2'] = '(2)', ['3'] = '(3)', ['4'] = '(4)'
 }
 
 --包裹生物食物信息
---param[1] - продукт
+--param[1] - 产品
 --param[2] - 剩余天数或为零
 MY_DATA.perish_product.fn = function(arr)
     local name = GetPrefabFancyName(arr.param[1]) .. (
@@ -670,8 +637,6 @@ MY_DATA.food_memory.fn = function(arr)
     perc = perc and (round2(perc * 100) .. '%') or tostring(arr.param[1])
     return arr.data.desc .. '(' .. perc .. '): ' .. DataTimerFn(arr.param[2])
 end
-
---MY_STRINGS_OVERRIDE = nil
 
 if show_food_units == 0 or show_food_units == 2 then
     MY_DATA.units_of.hidden = true
@@ -2554,7 +2519,7 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
         if snapshot then
             for k,v in pairs(snapshot) do
                 if type(v) == "number" then
-                    table.insert(desc_table, "@" .. (k.name or k.prefab or tostring(k)) .. o_t.will_other .. round2(v/TUNING.TOTAL_DAY_TIME,1) .. SHOWME_STRINGS.days)
+                    table.insert(desc_table, "@" .. (k.name or k.prefab or tostring(k)) .. " " .. o_t.will_other .. round2(v/TUNING.TOTAL_DAY_TIME,1) .. SHOWME_STRINGS.days)
                 end
             end
         end
@@ -2725,9 +2690,9 @@ do
                             if v ~= "" then
                                 local param_str = v:sub(2)
                                 local data = { param = UnpackData(param_str,","), param_str=param_str }
-                                local my_s = MY_STRINGS[decodeFirstSymbol(v:sub(1,1))]; -- if "@", must pass nil
-                                if my_s ~= nil then
-                                    data.data = MY_DATA[my_s.key]
+                                local key = MY_DATA_BY_ID[decodeFirstSymbol(v:sub(1,1))]; -- if "@", must pass nil
+                                if key ~= nil then
+                                    data.data = MY_DATA[key]
                                 end
                                 table.insert(arr2,data)
                             end

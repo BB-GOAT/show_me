@@ -1,3 +1,4 @@
+---@diagnostic disable: lowercase-global
 local L = locale
 local function translate(language_table)
 	language_table.zhr = language_table.zh
