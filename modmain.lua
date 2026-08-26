@@ -149,23 +149,23 @@ end
 
 -- 从 char 解码到 MY_STRINGS 中的索引
 local function decodeFirstSymbol(sym)
-	local c = string.byte(sym);
-	local idx;
-	if c>=64 and c<=126 then idx=c-64		-- ASCII 65-126（'A' 到 '~'）
-	elseif c>=32 and c<=62 then idx=c+31	-- ASCII 32-62（空格到 '?'）
-	elseif c>=17 and c<=31 then idx=c+77	-- ASCII 17-31（控制字符）
-	else idx=0 end
-	--print('dec_idx',idx,tostring(MY_STRINGS[idx] and MY_STRINGS[idx].key))
-	return idx
+    local c = string.byte(sym);
+    local idx;
+    if c>=64 and c<=126 then idx=c-64        -- ASCII 65-126（'A' 到 '~'）
+    elseif c>=32 and c<=62 then idx=c+31    -- ASCII 32-62（空格到 '?'）
+    elseif c>=17 and c<=31 then idx=c+77    -- ASCII 17-31（控制字符）
+    else idx=0 end
+    --print('dec_idx',idx,tostring(MY_STRINGS[idx] and MY_STRINGS[idx].key))
+    return idx
 end
 
 local function encodeFirstSymbol(idx)
     if (idx <= 62) then return string.char(idx+64) -- 1-62: chars 65-126
-	elseif (idx <= 93) then return string.char(idx-31) -- 63-93: chars 32-62
-	elseif (idx <= 108) then return string.char(idx-77) -- 94-108: chars = error (17-31)
-	else return string.char(63) end -- error
-	--not 63 and 64
-	--sym = i < 63 and string.char(i+64) or string.char(i-32), -- A+
+    elseif (idx <= 93) then return string.char(idx-31) -- 63-93: chars 32-62
+    elseif (idx <= 108) then return string.char(idx-77) -- 94-108: chars = error (17-31)
+    else return string.char(63) end -- error
+    --not 63 and 64
+    --sym = i < 63 and string.char(i+64) or string.char(i-32), -- A+
 end
 
 -- 语言调用
@@ -174,8 +174,8 @@ do
     local i = 1
     for k,str in _G.orderedPairs(MY_STRINGS) do
         MY_DATA[k] = {
-            desc = str,	-- MY_DATA.armor.desc 则显示 防御：
-            id = i,	-- 索引ID
+            desc = str,    -- MY_DATA.armor.desc 则显示 防御：
+            id = i,    -- 索引ID
             sym = encodeFirstSymbol(i), -- 编码后的字符（如 armor 对应 'A'）
             fn = nil, --默认值: desc .. " " .. param1，可覆盖例如：MY_DATA.buff.fn
             percent = nil, --在数字末尾添加“%”，例如：MY_DATA.sanity_character.percent = true

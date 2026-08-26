@@ -1,5 +1,4 @@
--- Secondary language file using MY_STRINGS_OVERRIDE
-MY_STRINGS_OVERRIDE =
+local MY_STRINGS =    -- 调用 MY_DATA.armor.desc
 {
     armor = "Dmg Absor: " , --A --Armor of the item.
     aggro = "Aggression: " , --B --Score of griefing 
@@ -58,7 +57,6 @@ MY_STRINGS_OVERRIDE =
     durability = 'Durability: ',
     strength = 'Strength: ',
     aoe = "AoE: ",
-    is_admin = "This is an admin!\nHe doesn't play the game,\nso don't mind him." ,
     food_temperature = "Food Temperature: ",
     precipitationrate = "Global Rain: ",
     wetness = "Global Wetness: ",
@@ -71,6 +69,7 @@ MY_STRINGS_OVERRIDE =
     effectiveness = "Effectiveness: ",
     force = "Force: ",
     repairer = "Repair: ",
+    -- Crops
     nutrient = "Nutrient: " ,
     moisture = "Moisture: " ,
     stress_tag = " ",
@@ -79,6 +78,7 @@ MY_STRINGS_OVERRIDE =
     children="Creatures: ",
     basedmg = "Planar Damage: ",
     basearmor = "Planar Defense: ",
+    friendlevels = "Friendship Level: ",
     --Thirst mod
     water = "Water: ",
     salt = "Salt: ",
@@ -87,7 +87,7 @@ MY_STRINGS_OVERRIDE =
     water_poisoned = "Is poisoned!",
 }
 
-SHOWME_STRINGS = {
+local SHOWME_STRINGS = {
     loyal = "forever", --for very loyal pigman with loyalty over 9000
     of = " of ", -- X of Y (reserved)
     units_1 = "1 unit of ",
@@ -101,28 +101,13 @@ SHOWME_STRINGS = {
     already_fresh = "Maximum freshness",
     cheat_fresh = "Cheat mod detected",
     onpickup = " on pick up", --for flowers
-    pressure = 'Pressure( %s ): ',
-    _in = ' in ', -- something in X seconds    
-    jieduan = "Stage",
-	chixu = " Duration",
-	pvp = "pvp: ",
-	norot = "Permanent freshness",
-	hot = "Spoil speed +",
-	weak = "Spoil speed +",
-	cold = "Freshness +",
-	refresh = "Refresh speed +",
-	xiaolv = "Efficiency",
-	fangyu = "Absorb",
-	gongji = "Damage",
-	fangshui = "Waterproof",
-	gandian = "Electrified attack",
-	faguang = "light",
-	huifu = "Health regen",
+    pressure = 'Pressure(%s) ',
+    _in = ' in ',
+    jieduan = "Stage", chixu = " Duration", pvp = "pvp: ", norot = "Permanent freshness", hot = "Spoil speed +", weak = "Spoil speed +", cold = "Freshness +", refresh = "Refresh speed +", xiaolv = "Efficiency", fangyu = "Absorb", gongji = "Damage", fangshui = "Waterproof", gandian = "Electrified attack", faguang = "light", huifu = "Health regen",
 }
 
---Food tags are in genitive case.
---For example: "0.5 units of fruit"
-FOOD_TAGS = { --"dried" and "precook" are excluded.
+--食物信息名称定义，例如【1 单位 veggie】，定义后显示【1单位 蔬菜】
+local FOOD_TAGS = {
     veggie = "Vegetable", fruit = "Fruit", monster = "Monster Meat", sweetener = "Sweetener", meat = "Meat", fish = "Fish", magic = "Magic", egg = "Egg", decoration = "Wings", dairy = "Dairy", fat = "Fat", inedible = "Twigs", frozen = "Ice", ice = "Ice", seed = "Seed", mogu = "Mushroom", petals_legion = "Petal", foliage = "Foliage", rice = "Rice", insectoid = "Insect", gourd = "Gourd", gel = "Gel", jellyfish = "Jellyfish", odoy_salt = "Salt", ndnr_soybean = "Soybean",
     --Waiter 101
     fungus = "Fungus", mushrooms = "Mushrooms", poultry = "Poultry", wings = "Wings", seafood = "Seafood", nut = "Nut", cactus = "Cactus", starch = "Starch", grapes = "Grape", citrus = "Citrus", tuber = "Tuber", shellfish = "Shellfish",
@@ -134,7 +119,8 @@ FOOD_TAGS = { --"dried" and "precook" are excluded.
     cacao_cooked = "Cocoa",
 }
 
-INTERNAL_TIMERS = {
+--给显示预计:xxx定义名称，例如显示【预计:wall_cd 00:30】，定义名称后显示：【沙墙冷却 00:30】
+local INTERNAL_TIMERS = {
     --Antlion
     wall_cd = "Wall", rage = 'Rage', nextrepair = 'Next Repair', eat_cd = "Repair",
     --Squid
@@ -265,7 +251,8 @@ INTERNAL_TIMERS = {
     --Fu Gui (timers too long, skipped)
     evergreenpluckabletimer = "Pick Cooldown", beehivepluckabletimer = "Honey Regen", beequeenhivegrownpluckabletimer = "Blueprint Steal Cooldown",
 }
-INTERNAL_STAGES = {
+
+local INTERNAL_STAGES = {
     --all trees:
     short = "Small", normal = "Medium", tall = "Large", old = "Withered",
     --spiderden:
@@ -273,17 +260,21 @@ INTERNAL_STAGES = {
     --rock_avocado_bush:
     stage_1 = "No Fruit", stage_2 = "Growing", stage_3 = "Ripe", stage_4 = "Cracked",
     --weed_plants:
+    --small --duplicate
+    --med --duplicate
     full = "Mature", bolting = "Bolting", empty = "Empty Branch",
     --farm_plants:
     seed = "Seed", sprout = "Sprout", rotten = "Reverse Growth",
     --smallbird
+    --small --duplicate
+    --tall  --duplicate
     --baby beefalo:
     baby = "Baby", toddler = "Calf", teen = "Teen", grown = "Adult",
     --mod
     blooming = "Blooming", fruitful = "Fruiting",
 }
 
-STRESS_TAGS = { --https://dontstarve.fandom.com/wiki/Farm_Plant
+local STRESS_TAGS = { --https://dontstarve.fandom.com/wiki/Farm_Plant
     nutrients = "Lack of nutrients",
     moisture = "Lack of moisture",
     killjoys = "Killjoys around",
@@ -294,7 +285,7 @@ STRESS_TAGS = { --https://dontstarve.fandom.com/wiki/Farm_Plant
     withered = "Withered",
 }
 
-OTHER_TAGS = {    --Hardcoded values
+local OTHER_TAGS = {    --Hardcoded values
     onemanband = "Tends crops\nPlaying makes pigmen/bunnymen follow",
     amulet = "Haunt to revive",
     book_birds = "Summon birds",
@@ -334,6 +325,7 @@ OTHER_TAGS = {    --Hardcoded values
     armorseashell = "Physical poison protection",
 }
 
+--%s 是获取官方tuning.lua的对应值，如果模组不是通过tuning修改值可能会导致显示不正确
 OTHER_TITLES = {
     spice_salt = "Food health +%s",
     maxhealth = "Max health +%s",
@@ -399,10 +391,21 @@ OTHER_TITLES = {
     level = "Level: ",
     kills = "Kills",
     life_stealing = "Life Stealing: ",
-	nutrient = " %d Water, %d GrowthFormula, %d Compost, %d Manure",
-	naughty = "Naughty: ",
-
+    nutrient = " %d Water, %d GrowthFormula, %d Compost, %d Manure",
+    naughty = "Naughty: ",
+    --MOD
     beerpowerpower = "Bulb power: ",
     waterpowerpower = "Water power: ",
     gaspowerpower = "Gas power: ",
+}
+
+return {
+    MY_STRINGS = MY_STRINGS,
+    SHOWME_STRINGS = SHOWME_STRINGS,
+    FOOD_TAGS = FOOD_TAGS,
+    INTERNAL_TIMERS = INTERNAL_TIMERS,
+    INTERNAL_STAGES = INTERNAL_STAGES,
+    STRESS_TAGS = STRESS_TAGS,
+    OTHER_TAGS = OTHER_TAGS,
+    OTHER_TITLES = OTHER_TITLES,
 }

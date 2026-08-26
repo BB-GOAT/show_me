@@ -1,95 +1,93 @@
--- 主语言文件使用 MY_STRINGS
-MY_STRINGS =	-- 最大108键，调用 MY_DATA.armor.desc
+local MY_STRINGS =    -- 调用 MY_DATA.armor.desc
 {
-    { armor = "防御: " }, --A
-    { aggro = "攻击: " }, --B
-    { cookpot = "正在烹饪: " }, --C (Crock Pot)
-    { dmg = "伤害: " }, --D
-    { electric = "电力: " }, --E --electric power
-    { food = "食物: "},
-    { S2 = "现在是夏天" }, --G
-    { health= "生命: " }, --H --for food
-    { warm = "保暖: " }, --I --winter insulation
-    { kill = "击杀: " }, --J     --for Canibalism 18 mod
-    { kills = "击杀数: " }, --K  --for Canibalism 18 mod
-    { loyal = "忠诚:" }, --L  --pigman and bunnyman
-    { S4 = "现在是秋天" }, --M
-    { remaining_days = "剩余天数: " }, --N
-    { owner = "跟随者: " }, --O --support of various mods
-    { perish = "距离腐烂: " }, --P -- Spoil in N days.
-    { hunger= "饥饿: " }, --Q
-    { range = "范围: " }, --R  --for range weapon or for mobs
-    { sanity= "精神: " }, --S
-    { thickness = "厚度: " }, --T
-    { units_of = "单位" }, --U
-    { resist = "抵抗: " }, --V --against sleep darts, ice staff etc
-    { waterproof = "防水: " }, --W
-    { heal = "生命: " }, --X
-    { fishes = "鱼数量: " }, --Y     --in a pond
-    { fish = "鱼: " }, --Z
-    { sec = "剩余时间(秒): " },  --([)for cooking in Crock Pot
-    { love = "喜爱: " }, --(~)
-    { summer = "隔热: " }, --(])summer insulation
-    { absorb = "伤害吸收: " }, --(^)
-    { S3 = "现在是春天" }, --(_)
-    { temperature = "温度: " }, --a
-    { hp= "生命值: " }, --for characters
-    { armor_character = "基础防御: " },
-    { sanity_character = "基础精神: " }, --S    
-    { fuel = "燃料: " }, --F --for firepit
-    { speed = "移速: " },
-    { uses_of = "次可使用,总次数" },
-    { obedience = "顺从: " },
-    { S1 = "现在是冬天" },
-    { dmg_character = "基础伤害: " },
-    { power="造成伤害: "},-- 通常意味着武器的强度而不是物理伤害
-    { cooldown="冷却: "},
-    { domest = "驯服: " }, -- "Domestication:"
-    { will_die = "剩余: " }, --将在 N 天后死亡（关于宠物或动物）。
-    { will_dry = "剩余: " },
-    { dmg_bonus = "伤害: " }, -- 伤害：+X（表示伤害修正，不是基础伤害）
-    { crop = "" }, --未用，它只是信息类型的关键。 信息 - “物品：百分比”
-    { grow_in = "距离成长: " }, --About grass etc
-    { perish_product = " " }, --一般用在包裹，例如：定义为：已暂停，则显示 剩余天数:已暂停 0.4天
-    { just_time = " " }, --只是信息类型的关键。 信息 - [时间]
-    { timer = "预计: " },
-    { trade_gold = "价值金块: " },
-    { trade_rock = "价值石头: " },
-    { durability = "耐久度: " },
-    { strength = "攻击力: " },
-    { aoe = "群伤: " },
-    { food_temperature = "食物温度: " },
-    { precipitationrate = "世界雨: " },
-    { wetness = "世界湿润: " },
-    { growable = "成长: " },
-    { sanityaura = "精神: " },
-    { fresh = "达到最新鲜"}, --用于食物返鲜显示
-    { frigde = "冰箱"}, --For icebox etc
-    { food_memory = "效果"},
-    { buff = "增益"},
-    { effectiveness = "效率: "},
-    { force = "动力: "}, --船桨
-    { repairer = "修理: "},
+    armor = "防御: ", --A
+    aggro = "攻击: ", --B
+    cookpot = "正在烹饪: ", --C (Crock Pot)
+    dmg = "伤害: ", --D
+    electric = "电力: ", --E --electric power
+    food = "食物: ",
+    S2 = "现在是夏天", --G
+    health= "生命: ", --H --for food
+    warm = "保暖: ", --I --winter insulation
+    kill = "击杀: ", --J     --for Canibalism 18 mod
+    kills = "击杀数: ", --K  --for Canibalism 18 mod
+    loyal = "忠诚:", --L  --pigman and bunnyman
+    S4 = "现在是秋天", --M
+    remaining_days = "剩余天数: ", --N
+    owner = "跟随者: ", --O --support of various mods
+    perish = "距离腐烂: ", --P -- Spoil in N days.
+    hunger= "饥饿: ", --Q
+    range = "范围: ", --R  --for range weapon or for mobs
+    sanity= "精神: ", --S
+    thickness = "厚度: ", --T
+    units_of = "单位", --U
+    resist = "抵抗: ", --V --against sleep darts, ice staff etc
+    waterproof = "防水: ", --W
+    heal = "生命: ", --X
+    fishes = "鱼数量: ", --Y     --in a pond
+    fish = "鱼: ", --Z
+    sec = "剩余时间(秒): ",  --([)for cooking in Crock Pot
+    love = "喜爱: ", --(~)
+    summer = "隔热: ", --(])summer insulation
+    absorb = "伤害吸收: ", --(^)
+    S3 = "现在是春天", --(_)
+    temperature = "温度: ", --a
+    hp= "生命值: ", --for characters
+    armor_character = "基础防御: ",
+    sanity_character = "基础精神: ", --S    
+    fuel = "燃料: ", --F --for firepit
+    speed = "移速: ",
+    uses_of = "次可使用,总次数",
+    obedience = "顺从: ",
+    S1 = "现在是冬天",
+    dmg_character = "基础伤害: ",
+    power="造成伤害: ",-- 通常意味着武器的强度而不是物理伤害
+    cooldown="冷却: ",
+    domest = "驯服: ", -- "Domestication:"
+    will_die = "剩余: ", --将在 N 天后死亡（关于宠物或动物）。
+    will_dry = "剩余: ",
+    dmg_bonus = "伤害: ", -- 伤害：+X（表示伤害修正，不是基础伤害）
+    crop = "", --未用，它只是信息类型的关键。 信息 - “物品：百分比”
+    grow_in = "距离成长: ", --About grass etc
+    perish_product = " ", --一般用在包裹，例如：定义为：已暂停，则显示 剩余天数:已暂停 0.4天
+    just_time = " ", --只是信息类型的关键。 信息 - [时间]
+    timer = "预计: ",
+    trade_gold = "价值金块: ",
+    trade_rock = "价值石头: ",
+    durability = "耐久度: ",
+    strength = "攻击力: ",
+    aoe = "群伤: ",
+    food_temperature = "食物温度: ",
+    precipitationrate = "世界雨: ",
+    wetness = "世界湿润: ",
+    growable = "成长: ",
+    sanityaura = "精神: ",
+    fresh = "达到最新鲜", --用于食物返鲜显示
+    frigde = "冰箱", --For icebox etc
+    food_memory = "效果",
+    buff = "增益",
+    effectiveness = "效率: ",
+    force = "动力: ", --船桨
+    repairer = "修理: ",
     -- 农作物
-    { nutrient = "养分: " },
-    { moisture = "水分: " },
-    { stress_tag = " " },
-    { other_tag = " " }, --其他的TAGS
-    { harvest = "收获: " },
-    { children = "生物: " },
-    { basedmg = "位面伤害: " },
-    { basearmor = "位面防御: " },
-    { friendlevels = "好感度: " },
+    nutrient = "养分: ",
+    moisture = "水分: ",
+    stress_tag = " ",
+    other_tag = " ", --其他的TAGS
+    harvest = "收获: ",
+    children = "生物: ",
+    basedmg = "位面伤害: ",
+    basearmor = "位面防御: ",
+    friendlevels = "好感度: ",
     --Thirst mod
-    { water = "水: " },
-    { salt = "盐: " },
-    { sip = "一口: " },
-    { watergainspeed = "水分增加速度: " },
-    { water_poisoned = "中毒了！" },
+    water = "水: ",
+    salt = "盐: ",
+    sip = "一口: ",
+    watergainspeed = "水分增加速度: ",
+    water_poisoned = "中毒了！",
 }
 
--- 调用 SHOWME_STRINGS.days
-SHOWME_STRINGS = {
+local SHOWME_STRINGS = {
     loyal = "臣服", --忠诚度
     of = "属于 ", -- X of Y (reserved)
     units_1 = "1 单位",
@@ -103,12 +101,13 @@ SHOWME_STRINGS = {
     already_fresh = "最大的新鲜度",
     cheat_fresh = "保鲜返鲜", --容器有返鲜功能存储食物的返回显示
     onpickup = " 采摘时", --对于花
-    pressure = '压力( %s ): ', -- 农作物压力
+    pressure = '压力(%s): ', -- 农作物压力
     _in = ' 大约 ', -- X秒后的东西
     jieduan = "阶段", chixu = " 持续", pvp = "对你是: ", norot = "永久保鲜", hot = "变质速度 +", weak = "变质速度 +", cold = "保鲜倍率 +", refresh = "返鲜速度 +", xiaolv = "效率", fangyu = "防御", gongji = "攻击", fangshui = "防水", gandian = "感电攻击", faguang = "发光", huifu = "生命恢复",
 }
+
 --食物信息名称定义，例如【1 单位 veggie】，定义后显示【1单位 蔬菜】
-FOOD_TAGS = {
+local FOOD_TAGS = {
     veggie = "蔬菜", fruit = "水果", monster = "怪物肉", sweetener = "糖类", meat = "肉类", fish = "鱼类", magic = "魔法", egg = "蛋类", decoration = "鳞翅", dairy = "乳制品", fat = "油脂", inedible = "枝条", frozen = "冰", ice = "冰", seed = "种子", seeds = "种子", mogu = "蘑菇", petals_legion = "花瓣", foliage = "蕨叶", rice = "米", insectoid = "昆虫", gourd = "葫芦", gel = "黏液", jellyfish = "水母", odoy_salt = "盐", ndnr_soybean = "大豆",
     --Waiter 101
     fungus = "菌类", mushrooms = "蘑菇", poultry = "禽肉", wings = "翅膀", seafood = "海鲜", nut = "坚果", cactus = "仙人掌", starch = "淀粉", grapes = "葡萄", citrus = "柑橘", tuber = "块茎", shellfish = "贝类",
@@ -119,8 +118,9 @@ FOOD_TAGS = {
     --Chocolate
     cacao_cooked = "可可",
 }
+
 --给显示预计:xxx定义名称，例如显示【预计:wall_cd 00:30】，定义名称后显示：【沙墙冷却 00:30】
-INTERNAL_TIMERS = {
+local INTERNAL_TIMERS = {
     --蚁狮Antlion
     wall_cd = "沙墙冷却", rage = '距离发怒', nextrepair = '进行恢复', eat_cd = "修复",
     --乌贼squid
@@ -168,7 +168,6 @@ INTERNAL_TIMERS = {
     chomp_cd = "撕咬", command_cd = "号令冰火",
     --大白鲨Shark, Shark Boi
     getdistance = "获取距离", minleaptime = "飞跃", calmtime = "冷静", targetboatdelay = "目标", standing_dive_cd = "跃起潜水", torpedo_cd = "旋转鱼蕾",
-    --gobble_cooldown --duplicate
     --远古箱子sacred_chest.lua
     localoffering = "合成中", localoffering_pst = "提供（pst）",
     --复活的骷髅stalker.lua
@@ -188,7 +187,6 @@ INTERNAL_TIMERS = {
     --其他Others:
     repair = "修理", --尘蛾巢穴dustmothden
     dontfacetime = "不正视", --人鱼merm.lua
-    --childspawner_regentime = "重生",
     growth = "生长", --盐堆saltstack.lua
     lordfruitfly_spawntime = "果蝇", -- farmin_manager.lua
     facetime = "正视", --mermbrain.lua
@@ -254,7 +252,7 @@ INTERNAL_TIMERS = {
     evergreenpluckabletimer = "采摘冷却", beehivepluckabletimer = "蜂蜜再生", beequeenhivegrownpluckabletimer = "偷取图纸冷却",
 }
 
-INTERNAL_STAGES = {
+local INTERNAL_STAGES = {
     --所有的树:
     short = "小", normal = "中", tall = "大", old = "枯萎",
     --蜘蛛巢:
@@ -276,7 +274,7 @@ INTERNAL_STAGES = {
     blooming = "开花", fruitful = "硕果累累",
 }
 
-STRESS_TAGS = { --https://dontstarve.fandom.com/wiki/Farm_Plant
+local STRESS_TAGS = { --https://dontstarve.fandom.com/wiki/Farm_Plant
     nutrients = "缺肥",
     moisture = "缺水",
     killjoys = "有杂物",
@@ -287,7 +285,7 @@ STRESS_TAGS = { --https://dontstarve.fandom.com/wiki/Farm_Plant
     withered = "已枯萎",
 }
 
-OTHER_TAGS = {    --拿不到的数值先写死吧
+local OTHER_TAGS = {    --拿不到的数值先写死吧
     onemanband = "照顾农作物\n演奏可使猪人/兔人跟随",
     amulet = "作祟可复活",
     book_birds = "召唤鸟类",
@@ -327,7 +325,8 @@ OTHER_TAGS = {    --拿不到的数值先写死吧
     armorseashell = "防物理中毒",
 }
 
-OTHER_TITLES = {    --%s 是获取官方tuning.lua的对应值，如果模组不是通过tuning修改值可能会导致显示不正确
+--%s 是获取官方tuning.lua的对应值，如果模组不是通过tuning修改值可能会导致显示不正确
+local OTHER_TITLES = {
     spice_salt = "食物血量 +%s",
     maxhealth = "最大生命值 +%s",
     maxsanity = "最大精神值 +%s",
@@ -389,15 +388,24 @@ OTHER_TITLES = {    --%s 是获取官方tuning.lua的对应值，如果模组不
     ammo_speed = "子弹速度: +%s",
     slingshot_speed = "%s 概率不消耗子弹",
     critterhunger = "饥饿剩余: ",
-    --new
     level = "等级: ",
     kills = "击败",
     life_stealing = "吸血: ",
-	nutrient = " %d 水, %d 催, %d 堆, %d 粪",
-	naughty = "淘气值: ",
-	
-	--MOD
+    nutrient = "%d水, %d催, %d堆, %d粪",
+    naughty = "淘气值: ",
+    --MOD
     beerpowerpower = "不灵电力: ",
     waterpowerpower = "不灵水量: ",
     gaspowerpower = "不灵气体: ",
+}
+
+return {
+    MY_STRINGS = MY_STRINGS,
+    SHOWME_STRINGS = SHOWME_STRINGS,
+    FOOD_TAGS = FOOD_TAGS,
+    INTERNAL_TIMERS = INTERNAL_TIMERS,
+    INTERNAL_STAGES = INTERNAL_STAGES,
+    STRESS_TAGS = STRESS_TAGS,
+    OTHER_TAGS = OTHER_TAGS,
+    OTHER_TITLES = OTHER_TITLES,
 }
