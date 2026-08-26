@@ -503,14 +503,16 @@ local function GetPrefabFancyName(prefab)
     local name = _G.STRINGS.NAMES[string.upper(product)] or showme_item_names[string.upper(product)]
     if name == nil then    --如果NAMES获取不到就获取一个prefab的对象, 为解决部分在容器里不显示中文的问题
         local item = _G.SpawnPrefab(prefab)
-        if item and item.GetDisplayName then
-            name = string.gsub(item:GetDisplayName(), "\n", "")    --通过对象获取 GetDisplayName
-            if name then
-                showme_item_names[string.upper(product)] = name -- 保存到局部变量里
+        if item then
+            if item.GetDisplayName then
+                name = string.gsub(item:GetDisplayName(), "\n", "")    --通过对象获取 GetDisplayName
+                if name then
+                    showme_item_names[string.upper(product)] = name -- 保存到局部变量里
+                end
             end
+            item:Remove()
+            item = nil
         end
-        item:Remove()
-        item = nil
     end
     return name or product
 end
