@@ -1,4 +1,5 @@
-local MY_STRINGS =
+-- 次语言文件使用 MY_STRINGS_OVERRIDE
+MY_STRINGS_OVERRIDE =
 {
     armor = "傷害吸收: " , --A --Armor of the item.
     aggro = "攻擊力: " , --B --Score of griefing 
@@ -70,7 +71,6 @@ local MY_STRINGS =
     effectiveness = "實效: ",
     force = "動力: ",
     repairer = "修理: ",
-    -- 農作物
     nutrient = "養分: " ,
     moisture = "水分: " ,
     stress_tag = " ",
@@ -85,13 +85,9 @@ local MY_STRINGS =
     sip = "一口: ",
     watergainspeed = "水分增加速度: ",
     water_poisoned = "中毒了!",
-    --棱镜
-    pollinated = "受粉: ",
-    sickness = "疾病: ",
-    infested = "侵害: ",
 }
 
-local SHOWME_STRINGS = {
+SHOWME_STRINGS = {
     loyal = "臣服", --for very loyal pigman with loyalty over 9000
     of = " 屬於 ", -- X of Y (reserved)
     units_1 = "1 單位",
@@ -105,13 +101,14 @@ local SHOWME_STRINGS = {
     already_fresh = "最大的新鮮度",
     cheat_fresh = "保鮮返鮮",
     onpickup = " 采摘时", --for flowers
-    pressure = '壓力(%s) ',
+    pressure = '壓力( %s ): ',
     _in = ' 大約 ', -- something in X seconds    
     jieduan = "階段", chixu = " 持續", pvp = "對你是: ", norot = "永久保鮮", hot = "變質速度 +", weak = "變質速度 +", cold = "保鮮倍率 +", refresh = "返鮮速度 +", xiaolv = "效率", fangyu = "防禦", gongji = "攻擊", fangshui = "防水", gandian = "感電攻擊", faguang = "發光", huifu = "生命恢復",
 }
 
---食物信息名称定义，例如【1 单位 veggie】，定义后显示【1单位 蔬菜】
-local FOOD_TAGS = {
+--Food tags are in genitive case.
+--For example: "0.5 units of fruit"
+FOOD_TAGS = { --"dried" and "precook" are excluded.
     veggie = "蔬菜", fruit = "水果", monster = "怪物肉", sweetener = "糖類", meat = "肉類", fish = "魚類", magic = "魔法", egg = "蛋類", decoration = "鱗翅", dairy = "乳製品", fat = "油脂", inedible = "枝條", frozen = "冰", ice = "冰", seed = "種子", mogu = "蘑菇", petals_legion = "花瓣", foliage = "蕨葉", rice = "米", insectoid = "昆蟲", gourd = "葫蘆", gel = "黏液", jellyfish = "水母", odoy_salt = "盐", ndnr_soybean = "大豆",
     --Waiter 101
     fungus = "菌類", mushrooms = "蘑菇", poultry = "禽肉", wings = "翅膀", seafood = "海鮮", nut = "堅果", cactus = "仙人掌", starch = "澱粉", grapes = "葡萄", citrus = "柑橘", tuber = "塊莖", shellfish = "貝類",
@@ -120,11 +117,10 @@ local FOOD_TAGS = {
     --Camp Cuisine: Re-Lunched
     bulb = "螢光果", spices = "香料", challa = "哈拉麵包", flour = "麵粉",
     --Chocolate
-    cacao_cooked = "可可",
+    cacao_cooked == "可可",
 }
 
---给显示预计:xxx定义名称，例如显示【预计:wall_cd 00:30】，定义名称后显示：【沙墙冷却 00:30】
-local INTERNAL_TIMERS = {
+INTERNAL_TIMERS = {
     --蚁狮Antlion
     wall_cd = "沙牆冷卻", rage = '距離發怒', nextrepair = '進行治愈', eat_cd = "修復",
     --乌贼squid
@@ -172,6 +168,7 @@ local INTERNAL_TIMERS = {
     chomp_cd = "撕咬", command_cd = "號令冰火",
     --大白鲨Shark, Shark Boi
     getdistance = "獲取距離", minleaptime = "飛躍", calmtime = "冷靜", targetboatdelay = "目標", standing_dive_cd = "躍起潛水", torpedo_cd = "旋轉魚蕾",
+    --gobble_cooldown --duplicate
     --远古箱子sacred_chest.lua
     localoffering = "合成中", localoffering_pst = "提供（pst）",
     --复活的骷髅stalker.lua
@@ -191,6 +188,7 @@ local INTERNAL_TIMERS = {
     --其他Others:
     repair = "修理", --尘蛾巢穴dustmothden
     dontfacetime = "不正視", --人鱼merm.lua
+    --childspawner_regentime = "重生",
     growth = "生長", --盐堆saltstack.lua
     lordfruitfly_spawntime = "果蠅", -- farmin_manager.lua
     facetime = "正視", --mermbrain.lua
@@ -255,8 +253,7 @@ local INTERNAL_TIMERS = {
     --富贵(定时器名称太长了, 占用太多行, 放弃)
     evergreenpluckabletimer = "采摘冷卻", beehivepluckabletimer = "蜂蜜再生", beequeenhivegrownpluckabletimer = "偷取圖紙冷卻",
 }
-
-local INTERNAL_STAGES = {
+INTERNAL_STAGES = {
     --all trees:
     short = "小", normal = "中", tall = "大", old = "枯萎",
     --spiderden:
@@ -278,18 +275,18 @@ local INTERNAL_STAGES = {
     blooming = "開花", fruitful = "碩果累累",
 }
 
-local STRESS_TAGS = { --https://dontstarve.fandom.com/wiki/Farm_Plant
-    nutrients = "肥料",
-    moisture = "缺少水分",
-    killjoys = "雜物",
-    family = "家族",
-    season = "季節",
+STRESS_TAGS = { --https://dontstarve.fandom.com/wiki/Farm_Plant
+    nutrients = "缺肥",
+    moisture = "缺水",
+    killjoys = "有雜物",
+    family = "缺家族",
+    season = "反季",
     overcrowding = "擁擠",
     happiness = "不開心",
     withered = "已枯萎",
 }
 
-local OTHER_TAGS = {    --拿不到的数值先写死吧
+OTHER_TAGS = {    --拿不到的数值先写死吧
     onemanband = "照顧農作物\n演奏可使豬人/兔人跟隨",
     amulet = "作祟可復活",
     book_birds = "召喚鳥類",
@@ -329,8 +326,7 @@ local OTHER_TAGS = {    --拿不到的数值先写死吧
     armorseashell = "防物理中毒",
 }
 
---%s 是获取官方tuning.lua的对应值，如果模组不是通过tuning修改值可能会导致显示不正确
-local OTHER_TITLES = {
+OTHER_TITLES = {
     spice_salt = "食物血量 +%s",
     maxhealth = "最大生命值 +%s",
     maxsanity = "最大精神值 +%s",
@@ -392,27 +388,21 @@ local OTHER_TITLES = {
     ammo_speed = "子彈速度: +%s",
     slingshot_speed = "%s 概率不消耗子彈",
     critterhunger = "飢餓剩餘: ",
-
-    --new
     level = "等級: ",
     kills = "擊敗",
     life_stealing = "吸血: ",
-    sanity = "精神: ",
-	nutrient = "%d水，%d催，%d堆，%d糞",
+	nutrient = "%d 水, %d 催, %d 堆, %d 糞",
+	kramped = "淘氣值: ",
 
-    --MOD
     beerpowerpower = "不靈電力: ",
     waterpowerpower = "不靈水量: ",
     gaspowerpower = "不靈氣體: ",
 }
 
-return {
-    MY_STRINGS = MY_STRINGS,
-    SHOWME_STRINGS = SHOWME_STRINGS,
-    FOOD_TAGS = FOOD_TAGS,
-    INTERNAL_TIMERS = INTERNAL_TIMERS,
-    INTERNAL_STAGES = INTERNAL_STAGES,
-    STRESS_TAGS = STRESS_TAGS,
-    OTHER_TAGS = OTHER_TAGS,
-    OTHER_TITLES = OTHER_TITLES,
-}
+-- MY_DATA.perish.fn = function(arr)
+    -- return "將會在 " .. arr.param[1] .. SHOWME_STRINGS.days .. "時" .. arr.data.desc
+-- end
+
+MY_DATA.uses_of.fn = function(arr)
+    return "耐久度: " .. arr.param[1] .. " / " .. arr.param[2]
+end
