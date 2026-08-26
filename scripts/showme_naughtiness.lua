@@ -70,7 +70,7 @@ if CLIENT_SIDE then
             if player_classified then
                 local actions = player_classified.net_showme_kramped.actions:value()
                 local threshold = player_classified.net_showme_kramped.threshold:value()
-                local str = string.format(" 淘气值：%d / %d ",actions, threshold)
+                local str = string.format(OTHER_TITLES.naughty .. "%d / %d ",actions, threshold)
                 _G.ThePlayer.components.talker:Say(str)
             end
         end

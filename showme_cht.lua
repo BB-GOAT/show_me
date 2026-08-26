@@ -392,7 +392,7 @@ OTHER_TITLES = {
     kills = "擊敗",
     life_stealing = "吸血: ",
 	nutrient = "%d 水, %d 催, %d 堆, %d 糞",
-	kramped = "淘氣值: ",
+	naughty = "淘氣值: ",
 
     beerpowerpower = "不靈電力: ",
     waterpowerpower = "不靈水量: ",

@@ -394,7 +394,7 @@ OTHER_TITLES = {    --%s 是获取官方tuning.lua的对应值，如果模组不
     kills = "击败",
     life_stealing = "吸血: ",
 	nutrient = " %d 水, %d 催, %d 堆, %d 粪",
-	kramped = "淘气值: ",
+	naughty = "淘气值: ",
 	
 	--MOD
     beerpowerpower = "不灵电力: ",

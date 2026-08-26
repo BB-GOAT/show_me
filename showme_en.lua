@@ -400,7 +400,7 @@ OTHER_TITLES = {
     kills = "Kills",
     life_stealing = "Life Stealing: ",
 	nutrient = " %d Water, %d GrowthFormula, %d Compost, %d Manure",
-	kramped = "naughty: ",
+	naughty = "Naughty: ",
 
     beerpowerpower = "Bulb power: ",
     waterpowerpower = "Water power: ",
