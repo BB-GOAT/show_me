@@ -147,43 +147,25 @@ for k,v in pairs(Import(MODROOT .. "showme_chs.lua")) do
     env[k] = v
 end
 
-
--- 解码函数，自动识别从 char 解码到 MY_STRINGS 中的索引
+-- 从 char 解码到 MY_STRINGS 中的索引
 local function decodeFirstSymbol(sym)
-    -- 1. 如果是一个字符，先尝试旧的映射规则
-    if #sym == 1 then
-        local c = string.byte(sym)
-        if c >= 64 and c <= 126 then return c - 64
-        elseif c >= 32 and c <= 62 then return c + 31
-        elseif c >= 17 and c <= 31 then return c + 77
-        end
-    end
-
-    -- 2. 如果是多字符（或单字符数字），尝试转为数字
-    local num = tonumber(sym)
-    if num and num > 0 then
-        return num
-    end
-
-    -- 3. 完全无法识别
-    return 0
+	local c = string.byte(sym);
+	local idx;
+	if c>=64 and c<=126 then idx=c-64		-- ASCII 65-126（'A' 到 '~'）
+	elseif c>=32 and c<=62 then idx=c+31	-- ASCII 32-62（空格到 '?'）
+	elseif c>=17 and c<=31 then idx=c+77	-- ASCII 17-31（控制字符）
+	else idx=0 end
+	--print('dec_idx',idx,tostring(MY_STRINGS[idx] and MY_STRINGS[idx].key))
+	return idx
 end
 
--- MY_STRINGS编码函数
 local function encodeFirstSymbol(idx)
-    if idx <= 0 then return "?" end
-
-    -- 1~108 使用原有的单字符压缩格式（保留历史数据兼容）
-    if idx <= 62 then
-        return string.char(idx + 64)      -- ASCII 65-126（'A' 到 '~'）
-    elseif idx <= 93 then
-        return string.char(idx - 31)      -- ASCII 32-62（空格到 '?'）
-    elseif idx <= 108 then
-        return string.char(idx - 77)      -- ASCII 17-31（控制字符）
-    else
-        -- 109 及以上：直接用十进制数字字符串（例如 "109"），让MY_STRINGS不限于108个key
-        return tostring(idx)
-    end
+    if (idx <= 62) then return string.char(idx+64) -- 1-62: chars 65-126
+	elseif (idx <= 93) then return string.char(idx-31) -- 63-93: chars 32-62
+	elseif (idx <= 108) then return string.char(idx-77) -- 94-108: chars = error (17-31)
+	else return string.char(63) end -- error
+	--not 63 and 64
+	--sym = i < 63 and string.char(i+64) or string.char(i-32), -- A+
 end
 
 -- 语言调用
@@ -214,6 +196,7 @@ do
         zht = "cht", --traditional Chinese for Steam
         tc = "cht", --traditional Chinese
         cht = "cht", --Chinese mod
+        en = "en", --English
     }
 
     -- 链接字符串表
@@ -237,7 +220,7 @@ do
     print("Detected language for ShowMe: ", lang, lang == "auto" and _G.LanguageTranslator.defaultlang or "")
 
     if lang == "auto" then
-        lang = _G.LanguageTranslator.defaultlang
+        lang = _G.LanguageTranslator.defaultlang or "en"
     end
     lang = lang:lower()
 
@@ -297,7 +280,7 @@ MY_DATA.stress_tag.fn = function(arr)
     for key, value in pairs(subArr) do
         table.insert(arr1, STRESS_TAGS[value] or "未知")
     end
-    return string.format(SHOWME_STRINGS.pressure, arr.param[1]) .. table.concat(arr1, "，")
+    return string.format(SHOWME_STRINGS.pressure, arr.param[1]) .. table.concat(arr1, ", ")
 end
 
 

@@ -1,12 +1,7 @@
 ---@diagnostic disable: lowercase-global
-local L = locale
-local function translate(language_table)
-	language_table.zhr = language_table.zh
-	language_table.zht = language_table.zht or language_table.zh
-	return language_table[L] or language_table.en
-end
+local L = locale ~= "zh" and locale ~= "zhr" and locale ~= "zht"
 version = "0.60"
-name = translate({en = "Show Me (New)", zh = "Show Me (中文)", zht = "Show Me (繁體中文)"})
+name = L and "Show Me (New)" or "Show Me (中文)"
 author = "Star, +Serp, 傳說覺悟, 冰冰羊"
 -- forumthread = ""
 description = "当前版本: "..version.."\n" ..

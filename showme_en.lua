@@ -394,11 +394,11 @@ OTHER_TITLES = {
     critterhunger = "Hunger left: ",
 
     --new
-    -- level = "等级: ",
-    -- kills = "击败",
-    -- life_stealing = "吸血: ",
-    -- sanity = "精神: ",
-	-- nutrient = "%d水，%d催，%d堆，%d粪",
+    level = "Level: ",
+    kills = "Kills",
+    life_stealing = "Life Stealing: ",
+    sanity = "Sanity: ",
+	nutrient = "%d Water, %d GrowthFormula, %d Compost, %d Manure",
 
     --MOD
     beerpowerpower = "Bulb power: ",
