@@ -365,9 +365,9 @@ local function DataTimerFn(seconds)
         return "???"
     end
     total = math.abs(total)
-    local hours = math.floor(total * 0.0002777777777777) --整小时数。 1/3600
-    local mins = math.floor((total - (hours * 3600)) * 0.01666666666666) --分钟。 1/60
-    local secs = math.floor(total - (hours * 3600) - (mins * 60)) --秒整数
+    local hours = math.floor(total / 3600)
+    local mins = math.floor((total % 3600) / 60)
+    local secs = math.floor(total % 60)
     return
         (hours > 0 and (hours .. ':'
             .. (mins > 9 and mins or ('0' .. mins)) .. ':'
