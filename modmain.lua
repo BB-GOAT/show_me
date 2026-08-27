@@ -2793,8 +2793,8 @@ do
         inst.net_showme_hint2 = _G.net_string(inst.GUID, "showme_hintbua.", "showme_hint_dirty2")
         if show_naughtiness then
             inst.net_showme_kramped = {
-                actions = _G.net_smallbyte(inst.GUID, "showme_kramped_actions", "showme_kramped_actions_dirty"),
-                threshold = _G.net_smallbyte(inst.GUID, "showme_kramped_threshold", "showme_kramped_actions_dirty"),
+                actions = _G.net_smallbyte(inst.GUID, "showme_kramped_actions", "showme_kramped_dirty"),
+                threshold = _G.net_smallbyte(inst.GUID, "showme_kramped_threshold", "showme_kramped_dirty"),
             }
         end
         if CLIENT_SIDE then
@@ -2802,7 +2802,10 @@ do
                 inst.showme_hint2 = inst.net_showme_hint2:value()
             end)
             if show_naughtiness then
-                inst:ListenForEvent("showme_kramped_actions_dirty",function(inst)
+                if _G.KnownModIndex:IsModEnabledAny("workshop-376333686") then
+                    _G.ThePlayer:PushEvent("naughtydelta", { actions = 0, threshold = 0 }) -- 设置 综合状态显示 模组显示的淘气值默认信息
+                end
+                inst:ListenForEvent("showme_kramped_dirty",function(inst)
                     OnShowMeNaughtyAction() -- 见 showme_naughtiness.lua
                 end)
             end
