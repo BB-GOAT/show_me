@@ -2794,7 +2794,7 @@ do
         if show_naughtiness then
             inst.net_showme_kramped = {
                 actions = _G.net_smallbyte(inst.GUID, "showme_kramped_actions", "showme_kramped_actions_dirty"),
-                threshold = _G.net_smallbyte(inst.GUID, "showme_kramped_threshold"),
+                threshold = _G.net_smallbyte(inst.GUID, "showme_kramped_threshold", "showme_kramped_actions_dirty"),
             }
         end
         if CLIENT_SIDE then

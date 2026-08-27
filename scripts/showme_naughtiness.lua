@@ -4,30 +4,51 @@ local SERVER_SIDE = TheNet:GetIsServer() --服务器
 local CLIENT_SIDE = TheNet:GetIsClient() or (SERVER_SIDE and not TheNet:IsDedicated())    --本地
 
 if SERVER_SIDE then
-    AddPrefabPostInit("world", function(self)
-        local function fn()
-            local OnKilledOther = Upvaluehelper.GetEventHandle(self, "killed", "components/kramped")
-            if not OnKilledOther then print("Show Me (中文) 警告：未找到淘气值相关函数 OnKilledOther") return end
-            local _OnNaughtyAction, found_i, pre_fn = Upvaluehelper.GetUpvalue(OnKilledOther, "OnNaughtyAction")
-            if not (_OnNaughtyAction and found_i and pre_fn) then print("Show Me (中文) 警告：未找到上值 OnNaughtyAction") return end
+    AddComponentPostInit("kramped", function(self)
+        local OnKilledOther
+        for i,v in pairs(_G.TheWorld.event_listening.ms_playerjoined[_G.TheWorld]) do
+            if _G.debug.getinfo(v, "S").source == "scripts/components/kramped.lua" then
+                OnKilledOther = Upvaluehelper.GetUpvalue(v, "OnKilledOther")
+            end
+        end
 
-            local function OnShowMeNaughtyAction(playerdata)
-                local player_classified = playerdata and playerdata.player and playerdata.player.player_classified
-                if player_classified then
-                    player_classified.net_showme_kramped.actions:set(playerdata.actions)
-                    player_classified.net_showme_kramped.threshold:set(playerdata.threshold)
+        if not OnKilledOther then print("Show Me (中文) 警告：未找到淘气值相关函数 OnKilledOther") return end
+        local _OnNaughtyAction, found_i, pre_fn = Upvaluehelper.GetUpvalue(OnKilledOther, "OnNaughtyAction")
+        if not (_OnNaughtyAction and found_i and pre_fn) then print("Show Me (中文) 警告：未找到淘气值相关上值 OnNaughtyAction") return end
+
+        local function OnShowMeNaughtyAction(playerdata)
+            local player_classified = playerdata and playerdata.player and playerdata.player.player_classified
+            if player_classified then
+                player_classified.net_showme_kramped.actions:set(playerdata.actions)
+                player_classified.net_showme_kramped.threshold:set(playerdata.threshold)
+            end
+        end
+
+        local OnNaughtyAction = function(how_naughty, playerdata, ...)
+            _OnNaughtyAction(how_naughty, playerdata, ...)
+            OnShowMeNaughtyAction(playerdata)
+        end
+        _G.debug.setupvalue(pre_fn, found_i, OnNaughtyAction)
+
+        -- 初始化玩家淘气值数据
+        local _activeplayers = Upvaluehelper.GetUpvalue(self.GetDebugString, "_activeplayers")
+        if not _activeplayers then print("Show Me (中文) 警告：未找到淘气值相关上值 _activeplayers") return end
+        _G.setmetatable(_activeplayers, {
+            __newindex = function(self, player, playerdata)
+                _G.rawset(self, player, playerdata)
+                if TUNING.KRAMPUS_THRESHOLD ~= -1 and OnKilledOther then
+                    OnKilledOther(player, { -- 模拟玩家杀死了一只格罗姆
+                        victim = {
+                            prefab = "glommer",
+                            HasTag = function(...) return false end,
+                        },
+                        stackmult = 0, -- 获得的淘气值 ×0
+                    })
+                else
+                    _activeplayers[player].threshold = 0
                 end
             end
-
-            local OnNaughtyAction = function(how_naughty, playerdata, ...)
-                _OnNaughtyAction(how_naughty, playerdata, ...)
-                OnShowMeNaughtyAction(playerdata)
-            end
-            _G.debug.setupvalue(pre_fn, found_i, OnNaughtyAction)
-
-            self:RemoveEventCallback("ms_playerjoined", fn) -- 移除监听器，HOOK只需要一次就可以了
-        end
-        self:ListenForEvent("ms_playerjoined", fn)
+        })
     end)
 end
 
