@@ -147,25 +147,14 @@ for k,v in pairs(Import(MODROOT .. "showme_chs.lua")) do
     env[k] = v
 end
 
--- 从 char 解码到 MY_STRINGS 中的索引
-local function decodeFirstSymbol(sym)
-    local c = string.byte(sym);
-    local idx;
-    if c>=64 and c<=126 then idx=c-64        -- ASCII 65-126（'A' 到 '~'）
-    elseif c>=32 and c<=62 then idx=c+31    -- ASCII 32-62（空格到 '?'）
-    elseif c>=17 and c<=31 then idx=c+77    -- ASCII 17-31（控制字符）
-    else idx=0 end
-    --print('dec_idx',idx,tostring(MY_STRINGS[idx] and MY_STRINGS[idx].key))
-    return idx
+-- 从 "?idx:" 前缀解码到 MY_STRINGS 中的索引
+local function decodeDataPrefix(str)
+    local _, stop_pos, id = string.find(str, "^%?(%d+):")
+    return tonumber(id) or 0, stop_pos and (stop_pos + 1) or 2
 end
 
-local function encodeFirstSymbol(idx)
-    if (idx <= 62) then return string.char(idx+64) -- 1-62: chars 65-126
-    elseif (idx <= 93) then return string.char(idx-31) -- 63-93: chars 32-62
-    elseif (idx <= 108) then return string.char(idx-77) -- 94-108: chars = error (17-31)
-    else return string.char(63) end -- error
-    --not 63 and 64
-    --sym = i < 63 and string.char(i+64) or string.char(i-32), -- A+
+local function encodeDataPrefix(idx)
+    return "?" .. tostring(idx) .. ":"
 end
 
 -- 语言调用
@@ -176,7 +165,7 @@ do
         MY_DATA[k] = {
             desc = str,    -- MY_DATA.armor.desc 则显示 防御：
             id = i,    -- 索引ID
-            sym = encodeFirstSymbol(i), -- 编码后的字符（如 armor 对应 'A'）
+            sym = encodeDataPrefix(i), -- 编码后的前缀（如 "?1:"）
             fn = nil, --默认值: desc .. " " .. param1，可覆盖例如：MY_DATA.buff.fn
             percent = nil, --在数字末尾添加“%”，例如：MY_DATA.sanity_character.percent = true
         }
@@ -793,6 +782,10 @@ if CLIENT_SIDE then
         end
         if AOS then
             SendModRPCToServer(MOD_RPC.ShowMe.AOS)
+        end
+
+        if _G.KnownModIndex:IsModEnabledAny("workshop-376333686") then
+            inst:PushEvent("naughtydelta", { actions = 0, threshold = 0 }) -- 设置 综合状态显示 模组显示的淘气值默认信息
         end
     end
     AddPlayersAfterInit(FixClient)
@@ -2682,9 +2675,10 @@ do
                         local arr2 = {} --以易于理解的形式形成一组数据。
                         for i,v in ipairs(str2) do
                             if v ~= "" then
-                                local param_str = v:sub(2)
+                                local idx, param_start = decodeDataPrefix(v)
+                                local param_str = v:sub(param_start)
                                 local data = { param = UnpackData(param_str,","), param_str=param_str }
-                                local key = MY_DATA_BY_ID[decodeFirstSymbol(v:sub(1,1))]; -- if "@", must pass nil
+                                local key = MY_DATA_BY_ID[idx]; -- if "@", must pass nil
                                 if key ~= nil then
                                     data.data = MY_DATA[key]
                                 end
@@ -2802,9 +2796,6 @@ do
                 inst.showme_hint2 = inst.net_showme_hint2:value()
             end)
             if show_naughtiness then
-                if _G.KnownModIndex:IsModEnabledAny("workshop-376333686") then
-                    _G.ThePlayer:PushEvent("naughtydelta", { actions = 0, threshold = 0 }) -- 设置 综合状态显示 模组显示的淘气值默认信息
-                end
                 inst:ListenForEvent("showme_kramped_dirty",function(inst)
                     OnShowMeNaughtyAction() -- 见 showme_naughtiness.lua
                 end)
