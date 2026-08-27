@@ -88,11 +88,15 @@ if CLIENT_SIDE then
     else -- 未开启 综合状态显示
         function OnShowMeNaughtyAction()
             local player_classified = _G.ThePlayer and _G.ThePlayer.player_classified
+            local last_actions = 0
             if player_classified then
                 local actions = player_classified.net_showme_kramped.actions:value()
                 local threshold = player_classified.net_showme_kramped.threshold:value()
                 local str = string.format(OTHER_TITLES.naughty .. "%d / %d ",actions, threshold)
-                _G.ThePlayer.components.talker:Say(str)
+                if actions > last_actions then
+                    _G.ThePlayer.components.talker:Say(str)
+                end
+                last_actions = actions
             end
         end
     end
