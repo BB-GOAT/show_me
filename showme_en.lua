@@ -101,7 +101,7 @@ local SHOWME_STRINGS = {
     already_fresh = "Maximum freshness",
     cheat_fresh = "Cheat mod detected",
     onpickup = " on pick up", --for flowers
-    pressure = 'Pressure(%s) ',
+    pressure = 'Pressure( %s ) ',
     _in = ' in ',
     jieduan = "Stage", chixu = " Duration", pvp = "pvp: ", norot = "Permanent freshness", hot = "Spoil speed +", weak = "Spoil speed +", cold = "Freshness +", refresh = "Refresh speed +", xiaolv = "Efficiency", fangyu = "Absorb", gongji = "Damage", fangshui = "Waterproof", gandian = "Electrified attack", faguang = "light", huifu = "Health regen",
 }
@@ -391,7 +391,7 @@ OTHER_TITLES = {
     level = "Level: ",
     kills = "Kills",
     life_stealing = "Life Stealing: ",
-    nutrient = " %d Water, %d GrowthFormula, %d Compost, %d Manure",
+    nutrient = "%d Water, %d GrowthFormula, %d Compost, %d Manure",
     naughty = "Naughty: ",
     --MOD
     beerpowerpower = "Bulb power: ",

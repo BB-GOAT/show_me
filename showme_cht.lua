@@ -101,7 +101,7 @@ local SHOWME_STRINGS = {
     already_fresh = "最大的新鮮度",
     cheat_fresh = "保鮮返鮮",
     onpickup = " 采摘时", --for flowers
-    pressure = '壓力(%s): ',
+    pressure = '壓力( %s ): ',
     _in = ' 大約 ', -- something in X seconds    
     jieduan = "階段", chixu = " 持續", pvp = "對你是: ", norot = "永久保鮮", hot = "變質速度 +", weak = "變質速度 +", cold = "保鮮倍率 +", refresh = "返鮮速度 +", xiaolv = "效率", fangyu = "防禦", gongji = "攻擊", fangshui = "防水", gandian = "感電攻擊", faguang = "發光", huifu = "生命恢復",
 }
@@ -391,7 +391,7 @@ local OTHER_TITLES = {
     level = "等級: ",
     kills = "擊敗",
     life_stealing = "吸血: ",
-    nutrient = "%d水, %d催, %d堆, %d糞",
+    nutrient = "%d 水, %d 催, %d 堆, %d 糞",
     naughty = "淘氣值: ",
     --MOD
     beerpowerpower = "不靈電力: ",

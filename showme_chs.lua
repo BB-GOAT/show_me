@@ -101,7 +101,7 @@ local SHOWME_STRINGS = {
     already_fresh = "最大的新鲜度",
     cheat_fresh = "保鲜返鲜", --容器有返鲜功能存储食物的返回显示
     onpickup = " 采摘时", --对于花
-    pressure = '压力(%s): ', -- 农作物压力
+    pressure = '压力( %s ): ', -- 农作物压力
     _in = ' 大约 ', -- X秒后的东西
     jieduan = "阶段", chixu = " 持续", pvp = "对你是: ", norot = "永久保鲜", hot = "变质速度 +", weak = "变质速度 +", cold = "保鲜倍率 +", refresh = "返鲜速度 +", xiaolv = "效率", fangyu = "防御", gongji = "攻击", fangshui = "防水", gandian = "感电攻击", faguang = "发光", huifu = "生命恢复",
 }
@@ -391,7 +391,7 @@ local OTHER_TITLES = {
     level = "等级: ",
     kills = "击败",
     life_stealing = "吸血: ",
-    nutrient = "%d水, %d催, %d堆, %d粪",
+    nutrient = "%d 水, %d 催, %d 堆, %d 粪",
     naughty = "淘气值: ",
     --MOD
     beerpowerpower = "不灵电力: ",
