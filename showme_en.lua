@@ -391,7 +391,7 @@ OTHER_TITLES = {
     level = "Level: ",
     kills = "Kills",
     life_stealing = "Life Stealing: ",
-    nutrient = "%d Water, %d GrowthFormula, %d Compost, %d Manure",
+    nutrient = "%s Water, %s GrowthFormula, %s Compost, %s Manure",
     naughty = "Naughty: ",
     --MOD
     beerpowerpower = "Bulb power: ",
