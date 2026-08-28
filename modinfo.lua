@@ -1,21 +1,17 @@
 ---@diagnostic disable: lowercase-global
 local L = locale ~= "zh" and locale ~= "zhr" and locale ~= "zht"
-version = "0.60"
+version = "0.61"
 name = L and "Show Me (New)" or "Show Me (中文)"
 author = "Star, +Serp, 傳說覺悟, 冰冰羊"
 -- forumthread = ""
 description = "当前版本: "..version.."\n" ..
 [[
 最新更新：
-合并【Show Me 补丁】模组内容到【Show Me(中文)】模组中！
-- 支持显示新版晾肉架晾晒倒计时
-- 加强种田信息显示
-- 开启高亮查找模组时关掉Show Me的高亮显示功能，节省性能
-- 修复地图0点刷物品的BUG
-- 添加【暗影槌】物品信息显示
-- 显示血量功能不再检测Health Info模组（已过时）
-- 生物的饥饿值和精神值始终显示
-- 检测到开启Insight模组时不加载Show Me模组
+- 重写淘气值显示功能，如果开启了【综合状态显示】模组能直接在对应的UI内显示
+- 添加模组英文翻译
+- 修改模组语言加载逻辑
+- 修复DataTimerFn函数的时间精度问题（现在不会显示1分60秒这种东西了，而是正确显示为2分钟）
+- 其它细节优化
 
 历史更新日志请前往创意工坊页面查看
 
@@ -39,7 +35,7 @@ priority = 0.00666155465 --Priority does not matter.
 
 server_filter_tags = {
     "showme",
-    "showme 0.60",
+    "showme " .. version,
     "提示语句",
 }
 
