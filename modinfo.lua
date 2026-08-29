@@ -1,6 +1,7 @@
 ---@diagnostic disable: lowercase-global
 local L = locale ~= "zh" and locale ~= "zhr" and locale ~= "zht"
-version = "0.61"
+version = "0.61.1"
+version_compatible = "0.61"
 name = L and "Show Me (New)" or "Show Me (中文)"
 author = "Star, +Serp, 傳說覺悟, 冰冰羊"
 -- forumthread = ""
@@ -274,7 +275,7 @@ configuration_options =
     {
         name = "Show_naughtiness",
         label = "淘气值显示",
-        hover = "显示玩家的淘气值\n如果开启了【综合状态显示】模组，淘气值将显示它的在小部件里，否则在人物头顶说出淘气值",
+        hover = "显示玩家的淘气值\n如果开启了【综合状态显示】模组，淘气值将显示在它的小部件里，否则在人物头顶说出淘气值",
         options = {
             {description = "关闭", data = false},
             {description = "开启", data = true, hover = "使用有问题就关掉吧"},

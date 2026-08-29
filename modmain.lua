@@ -252,7 +252,7 @@ end
 
 --农作物
 MY_DATA.nutrient.fn = function(arr)
-    return string.format(o_t.nutrient, arr.param[1] or "?", arr.param[2] or "?", arr.param[3] or "?", arr.param[4] or "?")
+    return string.format(o_t.nutrient, arr.param[1] or 0, arr.param[2] or 0, arr.param[3] or 0, arr.param[4] or 0)
 end
 
 local function slice(tbl, start)

@@ -391,7 +391,7 @@ local OTHER_TITLES = {
     level = "等級: ",
     kills = "擊敗",
     life_stealing = "吸血: ",
-    nutrient = "%s 水, %s 催, %s 堆, %s 糞",
+    nutrient = "%d 水, %d 催, %d 堆, %d 糞",
     naughty = "淘氣值: ",
     --MOD
     beerpowerpower = "不靈電力: ",
