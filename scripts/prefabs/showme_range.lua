@@ -3,9 +3,9 @@ local assets=
     Asset("ANIM", "anim/winona_spotlight_placement.zip"),
     Asset("ANIM", "anim/firefighter_placement.zip"),
 }
-PLACER_SCALE = 1.5
+local PLACER_SCALE = 1.5
 
-function OnEnableHelper_lhr(inst, enabled)
+local function OnEnableHelper_lhr(inst, enabled)
     if enabled then
         if inst.helper == nil then
             inst.helper = CreateEntity()
@@ -38,7 +38,7 @@ function OnEnableHelper_lhr(inst, enabled)
     end
 end
 
-function OnEnableHelper_ocep(inst, enabled)
+local function OnEnableHelper_ocep(inst, enabled)
     if enabled then
         if inst.helper == nil then
             inst.helper = CreateEntity()

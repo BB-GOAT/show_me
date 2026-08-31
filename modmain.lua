@@ -784,8 +784,8 @@ if CLIENT_SIDE then
             SendModRPCToServer(MOD_RPC.ShowMe.AOS)
         end
 
-        if _G.KnownModIndex:IsModEnabledAny("workshop-376333686") then
-            inst:PushEvent("naughtydelta", { actions = 0, threshold = 0 }) -- 设置 综合状态显示 模组显示的淘气值默认信息
+        if show_naughtiness and _G.KnownModIndex:IsModEnabledAny("workshop-376333686") then
+            OnShowMeNaughtyAction() -- 初始化 综合状态显示 模组显示的淘气值默认信息
         end
     end
     AddPlayersAfterInit(FixClient)

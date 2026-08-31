@@ -1,6 +1,6 @@
 ---@diagnostic disable: lowercase-global
 local L = locale ~= "zh" and locale ~= "zhr" and locale ~= "zht"
-version = "0.61.1"
+version = "0.61.2"
 version_compatible = "0.61"
 name = L and "Show Me (New)" or "Show Me (中文)"
 author = "Star, +Serp, 傳說覺悟, 冰冰羊"
@@ -8,6 +8,8 @@ author = "Star, +Serp, 傳說覺悟, 冰冰羊"
 description = "当前版本: "..version.."\n" ..
 [[
 最新更新：
+- 修复淘气值功能的一些小问题
+
 - 重写淘气值显示功能，如果开启了【综合状态显示】模组能直接在对应的UI内显示
 - 添加模组英文翻译
 - 修改模组语言加载逻辑

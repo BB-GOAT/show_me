@@ -86,9 +86,9 @@ if CLIENT_SIDE then
             end
         end
     else -- 未开启 综合状态显示
+        local last_actions = 0
         function OnShowMeNaughtyAction()
             local player_classified = _G.ThePlayer and _G.ThePlayer.player_classified
-            local last_actions = 0
             if player_classified then
                 local actions = player_classified.net_showme_kramped.actions:value()
                 local threshold = player_classified.net_showme_kramped.threshold:value()
