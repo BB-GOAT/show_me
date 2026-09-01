@@ -61,7 +61,7 @@ configuration_options =
 {
     {
         name = "lang",
-        label = "语言",
+        label = "语言 Language",
         --hover = "",
         options =
         {
