@@ -101,7 +101,7 @@ local SHOWME_STRINGS = {
     already_fresh = "最大的新鲜度",
     cheat_fresh = "保鲜返鲜", --容器有返鲜功能存储食物的返回显示
     onpickup = " 采摘时", --对于花
-    pressure = '压力( %s ): ', -- 农作物压力
+    pressure = '压力( %s )', -- 农作物压力
     _in = ' 大约 ', -- X秒后的东西
     jieduan = "阶段", chixu = " 持续", pvp = "对你是: ", norot = "永久保鲜", hot = "变质速度 +", weak = "变质速度 +", cold = "保鲜倍率 +", refresh = "返鲜速度 +", xiaolv = "效率", fangyu = "防御", gongji = "攻击", fangshui = "防水", gandian = "感电攻击", faguang = "发光", huifu = "生命恢复",
 }
@@ -117,6 +117,7 @@ local FOOD_TAGS = {
     bulb = "荧光果", spices = "香料", challa = "哈拉面包", flour = "面粉",
     --Chocolate
     cacao_cooked = "可可",
+	lily_legion = "蹄莲花瓣", rose_legion = "蔷薇花瓣", orchid_legion = "兰草花瓣", foliage_legion = "蕨叶", bat_legion = "蝙蝠翅膀",
 }
 
 --给显示预计:xxx定义名称，例如显示【预计:wall_cd 00:30】，定义名称后显示：【沙墙冷却 00:30】
@@ -239,6 +240,7 @@ local INTERNAL_TIMERS = {
     summon_delay = "正在召唤", warning = "预警", spawneyes_cd = "生成小眼", leash_cd = "施展法术", charge_cd = "冲撞",
     --暗影与月亮阵营
     targetswitched = "目标切换", attack_cooldown = "攻击冷却", idletimer = "柱立时间", try_crystals = "正在扩张",trynextstage = "下一阶段", seedmiasma = "溶合暗影", close = "裂隙关闭", jump_cooldown = "跳跃攻击", chase_tick = "分裂", finish_spawn = "完成生成", start_explosion = "爆炸", spawn_delay = "生成延迟", start_ball_growing = "膨胀", stalk_cd = "缓行", roar_cd = "咆哮", loot_spawn_cd = "再次生成",
+	push_sleep_anim = "睡眠", expiretime = "失效时间", quickjump_cd = "快速跳跃", stunned = "虚弱", active_time = "活跃",
     --神话
     growup = "成长", light = "灯光剩余", peach = "桃子剩余", blackbear = "黑风刷新", despawn = "消失", flyaway = "飞走", goaway = "离开", cd = "冷却", myth_nian_timer = "年兽", nian_leave = "年兽占据", bomb_cd = "腐败云", bombboom = "腐败云引爆", nian_noclose = "不打烊", nian_killed = "商品打折", timeover = "契约", yj_spear_elec = "充能",
     TreeDance = "树舞", --大小生物

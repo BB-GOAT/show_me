@@ -101,7 +101,7 @@ local SHOWME_STRINGS = {
     already_fresh = "Maximum freshness",
     cheat_fresh = "Cheat mod detected",
     onpickup = " on pick up", --for flowers
-    pressure = 'Pressure( %s ) ',
+    pressure = 'Pressure( %s )',
     _in = ' in ',
     jieduan = "Stage", chixu = " Duration", pvp = "pvp: ", norot = "Permanent freshness", hot = "Spoil speed +", weak = "Spoil speed +", cold = "Freshness +", refresh = "Refresh speed +", xiaolv = "Efficiency", fangyu = "Absorb", gongji = "Damage", fangshui = "Waterproof", gandian = "Electrified attack", faguang = "light", huifu = "Health regen",
 }
@@ -117,6 +117,7 @@ local FOOD_TAGS = {
     bulb = "Light Bulb", spices = "Spices", challa = "Challah", flour = "Flour",
     --Chocolate
     cacao_cooked = "Cocoa",
+	lily_legion = "lily", rose_legion = "rose", orchid_legion = "orchid", foliage_legion = "foliage", bat_legion = "bat",
 }
 
 --给显示预计:xxx定义名称，例如显示【预计:wall_cd 00:30】，定义名称后显示：【沙墙冷却 00:30】
@@ -239,6 +240,7 @@ local INTERNAL_TIMERS = {
     summon_delay = "Summoning", warning = "Warning", spawneyes_cd = "Spawn Eye", leash_cd = "Leash", charge_cd = "Charge",
     --Shadow and Moon Factions
     targetswitched = "Target Switch", attack_cooldown = "Attack", idletimer = "Idle Time", try_crystals = "Try Crystals", trynextstage = "Next Stage", seedmiasma = "Merge Shadow", close = "Rift Close", jump_cooldown = "Jump Attack", chase_tick = "Split", finish_spawn = "Finish Spawn", start_explosion = "Explosion", spawn_delay = "Spawn Delay", start_ball_growing = "Expand", stalk_cd = "Stalk", roar_cd = "Roar",
+	push_sleep_anim = "Push Sleep", expiretime = "Expire Time", quickjump_cd = "Quickjump", stunned = "Stunned", active_time = "Active",
     --Myth
     growup = "Grow", light = "Light Left", peach = "Peach Left", blackbear = "Black Wind Respawn", despawn = "Disappear", flyaway = "Fly Away", goaway = "Leave", cd = "Cooldown", myth_nian_timer = "Nian Beast", nian_leave = "Nian Occupies", bomb_cd = "Corruption Cloud", bombboom = "Corruption Cloud Explode", nian_noclose = "Always Open", nian_killed = "Discount", timeover = "Contract", yj_spear_elec = "Charge",
     TreeDance = "Tree Dance",

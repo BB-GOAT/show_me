@@ -269,7 +269,7 @@ MY_DATA.stress_tag.fn = function(arr)
     for key, value in pairs(subArr) do
         table.insert(arr1, STRESS_TAGS[value] or "未知")
     end
-    return string.format(SHOWME_STRINGS.pressure, arr.param[1]) .. table.concat(arr1, ", ")
+    return string.format(SHOWME_STRINGS.pressure, arr.param[1]) .. "\n" .. table.concat(arr1, ", ")
 end
 
 
