@@ -75,13 +75,17 @@ local function lhr_fn()     --避雷针
     local inst = CreateEntity()
     inst.entity:AddTransform()
     inst.entity:AddAnimState()
+    inst.entity:AddNetwork()
     inst.persists = false
 
+    -- Dedicated server does not need deployhelper.
     if not TheNet:IsDedicated() then
         inst:AddComponent("deployhelper")
         inst.components.deployhelper.onenablehelper = OnEnableHelper_lhr
     end
-    --inst:ListenForEvent("onremove", function () inst:Remove() end)
+
+    inst.entity:SetPristine()
+
     return inst
 end
 
@@ -89,15 +93,16 @@ local function ocep_fn()        --大树干
     local inst = CreateEntity()
     inst.entity:AddTransform()
     inst.entity:AddAnimState()
+    inst.entity:AddNetwork()
     inst.persists = false
 
+    -- Dedicated server does not need deployhelper.
     if not TheNet:IsDedicated() then
         inst:AddComponent("deployhelper")
         inst.components.deployhelper.onenablehelper = OnEnableHelper_ocep
     end
-    -- if RANGE_CHECK_TIME > 1 then
-    --     inst:DoTaskInTime(RANGE_CHECK_TIME, function() inst:Remove() end)
-    -- end
+
+    inst.entity:SetPristine()
 
     return inst
 end

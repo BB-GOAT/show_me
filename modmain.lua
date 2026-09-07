@@ -3040,7 +3040,9 @@ if not _G.KnownModIndex:IsModEnabledAny("workshop-3363111676") then -- 开启高
     end
 end
 ----------------------------------------
-if GetModConfigData("Show_range") then --显示范围加载的文件，客户端
+
+PrefabFiles = { "showme_range" } --加载prefab文件
+if GetModConfigData("Show_range") and TheNet:GetIsServer() then --范围显示功能
     modimport("scripts/showme_range_indicators.lua")
 end
 
