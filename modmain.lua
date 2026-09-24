@@ -529,7 +529,15 @@ MY_DATA.uses_of.fn = function(arr)
 end
 --距离腐烂
 MY_DATA.perish.fn = function(arr)
-    return arr.data.desc .. " " .. arr.param[1] .. SHOWME_STRINGS.days
+    local desc = arr.data.desc
+    if arr.data == MY_DATA.perish then
+        if arr.param[2] == "stale" then
+            desc = SHOWME_STRINGS.stale_in
+        elseif arr.param[2] == "spoiled" then
+            desc = SHOWME_STRINGS.spoiled_in
+        end
+    end
+    return desc .. " " .. arr.param[1] .. SHOWME_STRINGS.days
 end
 --将生物的距离腐烂定义为距离死亡
 local PerishFunction = function(arr)
@@ -940,9 +948,9 @@ local function GetPerishTime(inst, c)
         local delta = old_val / modifier
         if delta ~= nil then --and delta >= 0 then
             if delta < 0 and c.perishable.perishtime and c.perishable.perishtime > 0 then --modifier < 0 !
-                return delta, (c.perishable.perishremainingtime - c.perishable.perishtime) / modifier;
+                return delta, (c.perishable.perishremainingtime - c.perishable.perishtime) / modifier, modifier;
             end
-            return delta
+            return delta, nil, modifier
         end
     end
 end
@@ -1960,7 +1968,7 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
             end
         end
         if item_info_mod == 0 and c.perishable ~= nil and c.perishable.updatetask ~= nil then    --鱼，死亡到腐烂：x 天
-            local time, fresh = GetPerishTime(item, c)
+            local time, fresh, perish_modifier = GetPerishTime(item, c)
             if time ~= nil then
                 if time < 0 then
                     if fresh then
@@ -1973,7 +1981,22 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
                     if item:HasTag("critter") then
                         table.insert(desc_table, "@"..o_t.critterhunger..tostring(round2(time/TUNING.TOTAL_DAY_TIME,1))..SHOWME_STRINGS.days)
                     else
-                        cn("perish",round2(time/TUNING.TOTAL_DAY_TIME,1))
+                        local countdown_stage
+                        local countdown_time = time
+                        if c.edible ~= nil and perish_modifier > 0 then
+                            local remaining = c.perishable.perishremainingtime
+                            local total = c.perishable.perishtime
+                            if total ~= nil and total > 0 then
+                                if remaining >= total * TUNING.PERISH_FRESH then
+                                    countdown_stage = "stale"
+                                    countdown_time = (remaining - total * TUNING.PERISH_FRESH) / perish_modifier
+                                elseif remaining > total * TUNING.PERISH_STALE then
+                                    countdown_stage = "spoiled"
+                                    countdown_time = (remaining - total * TUNING.PERISH_STALE) / perish_modifier
+                                end
+                            end
+                        end
+                        cn("perish", round2(countdown_time/TUNING.TOTAL_DAY_TIME,1), countdown_stage)
                     end
                 end
             end
