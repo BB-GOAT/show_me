@@ -85,6 +85,7 @@ local MY_STRINGS =
     sip = "一口: ",
     watergainspeed = "水分增加速度: ",
     water_poisoned = "中毒了!",
+	true_number = "實際數量: ",
 }
 
 local SHOWME_STRINGS = {
@@ -242,7 +243,7 @@ local INTERNAL_TIMERS = {
     summon_delay = "正在召喚", warning = "預警", spawneyes_cd = "生成小眼", leash_cd = "施展法術", charge_cd = "衝撞",
     --暗影与月亮阵营
     targetswitched = "目标切换", attack_cooldown = "攻击冷却", idletimer = "柱立时间", try_crystals = "下次扩张",trynextstage = "下一阶段", seedmiasma = "溶合暗影", close = "裂隙关闭", jump_cooldown = "跳跃攻击", chase_tick = "分裂", finish_spawn = "完成生成", start_explosion = "爆炸", spawn_delay = "生成延迟", start_ball_growing = "膨胀", stalk_cd = "缓行", roar_cd = "咆哮",
-	push_sleep_anim = "睡眠", expiretime = "失效時間", quickjump_cd = "快速跳躍", stunned = "虛弱", active_time = "活躍",
+	push_sleep_anim = "睡眠", expiretime = "失效時間", quickjump_cd = "快速跳躍", stunned = "虛弱", active_time = "活躍", supernova_cd = "超新星",
     --神话
     growup = "成長", light = "燈光剩餘", peach = "桃子剩餘", blackbear = "黑風刷新", despawn = "消失", flyaway = "飛走", goaway = "離開", cd = "冷卻", myth_nian_timer = "年獸", nian_leave = "年獸佔據", bomb_cd = "腐敗雲", bombboom = "腐敗雲引爆", nian_noclose = "不打烊", nian_killed = "商品打折", timeover = "契約", yj_spear_elec = "充能",
     TreeDance = "樹舞", --大小生物

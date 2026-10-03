@@ -2390,6 +2390,13 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
         if c.friendlevels then    --好感度
             cn("friendlevels",round2(c.friendlevels.level,0))
         end
+		-- 堆叠上限显示
+		if c.stackable and c.stackable.StackSize then
+			local n = c.stackable:StackSize()
+			if n and type(n)=="number" and n > 999 then
+				cn("true_number",round2(n,0))
+			end
+		end
         --Stress points 新版耕地农作物状态显示
         local TS_crop = GetModConfigData("T_crop")
         if TS_crop then
