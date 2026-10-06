@@ -24,6 +24,7 @@
         end
     end
 --]]
+GLOBAL.setmetatable(env, { __index = function(t, k) return GLOBAL.rawget(GLOBAL, k) end })	-- 给漏写GLOBAL和_G的上保险
 
 local _G = GLOBAL
 if _G.KnownModIndex:IsModEnabledAny("workshop-2189004162") then
@@ -56,7 +57,7 @@ local round2=function(num, idp)    -- num处理的目标数字, idp保留的小�
     return _G.tonumber(string.format("%." .. (idp or 0) .. "f", num)) -- 例如：idp传入数字为2，则连接字符串是 %.2f
 end
 
---本地(增加其他模组的兼容性)
+-- 增加其他模组的兼容性
 local mods = GetGlobal("mods",{})
 
 local GetTime = _G.GetTime    --计时器
@@ -1067,10 +1068,10 @@ local C_FINITEUSES_PREFAB = { -- mult to num "uses" for each prefab
     spider_whistle = 0.5,
 }
 
-local USELESS_TIMERS = {
+local USELESS_TIMERS = {	-- 生物巢定时器屏蔽
     --default for all prefabs
     toadstool = { channeltick = true },
-    all = { ChildSpawner_RegenPeriod = true, ChildSpawner_SpawnPeriod = true, },
+    all = { ChildSpawner_RegenPeriod = true, ChildSpawner_SpawnPeriod = true, },	-- 下次刷新, 下次放出
 }
 
 local function IsUselessTimer(prefab,name)
@@ -1629,6 +1630,48 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
                 end
             end
         end
+		--食人花
+		if prefab == "lureplant" then
+			local ms = c.minionspawner
+			if ms then
+				local meat_needed = math.ceil(ms.maxminions / 2)
+				local pm = o_t.lureplant_eyes .. tostring(ms.numminions) .. " / " .. tostring(ms.maxminions)
+
+				if item.hibernatetask then
+					-- 休眠, 多久长根
+					local t = _G.GetTaskRemaining(item.hibernatetask)
+					if t and t > 0 then
+						if ms.maxminions == 0 then	-- 若最大眼球草为0, 倒计时结束就长叶肉
+							pm = o_t.lureplant_meat_soon .. DataTimerFn(t)
+						else
+							pm = pm .. " | " .. o_t.lureplant_wake .. DataTimerFn(t)
+						end
+					end
+				elseif item.lure == nil and not (c.shelf and c.shelf.itemonshelf) then
+					-- 长根了且没有诱饵
+					if ms.numminions >= meat_needed then
+						-- 眼球草够了：下一次 TryRevealBait 就会 SpawnPrefab("plantmeat")
+						local wait = 1
+						if item.task then
+							local t = _G.GetTaskRemaining(item.task)
+							if t and t > 0 then wait = t end
+						end
+						pm = pm .. " | " .. o_t.lureplant_meat_soon .. DataTimerFn(wait)	-- 叶肉长出时间
+					elseif ms.spawninprogress and ms.nextspawninfo then
+						-- 眼球草不够：估算直到凑够 meat_needed 的时间
+						local elapsed = GetTime() - ms.nextspawninfo.start
+						local remaining = math.max(0, ms.nextspawninfo.time - elapsed)
+						local need = meat_needed - ms.numminions
+						local avg = (ms.minionspawntime.min + ms.minionspawntime.max) / 2
+						-- 第一只眼球草等 remaining，之后每只平均 avg
+						local estimate = remaining + math.max(0, need - 1) * avg
+						pm = pm .. " | " .. o_t.lureplant_meat_est .. DataTimerFn(estimate)	-- 无法精准，只能大约长肉时间
+					end
+				end
+
+				table.insert(desc_table, "@" .. pm)
+			end
+		end
     else --elseif prefab~="rocks" and prefab~="flint" then --No rocks and flint
         --Part 1: primary info
         --烹饪锅
@@ -2305,11 +2348,7 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
                 end
             end
         end
-
-        -- if item:HasTag("lureplant") then --食人花，加不了标签！什么情况？
-            -- table.insert(desc_table, "@".."233\n23333")
-        -- end
-
+		
         add_entity_description(item, desc_table)
 
         -- 女武神书
@@ -2397,6 +2436,46 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
 				cn("true_number",round2(n,0))
 			end
 		end
+		-- 寄居蟹房子的装饰度
+		local pds = c.pearldecorationscore
+		if pds and pds.GetScore then
+			local line = o_t.decor_score .. tostring(round2(pds:GetScore(), 1))
+			if pds.IsEnabled then
+				line = line .. (pds:IsEnabled()
+					and ""
+					or " (" .. o_t.decor_disabled  .. ")")
+			end
+			table.insert(desc_table, "@" .. line)
+		end
+		-- 铥矿奖章, 仅在地洞世界显示当前噩梦阶段剩余时间, 读秒有点不准但能用就行
+		if prefab == "nightmare_timepiece" and _G.TheWorld:HasTag("cave") then
+			-- print("[ShowMe-DBG] === dumping world.components ===")
+			-- for k, v in pairs(_G.TheWorld.components) do
+				-- print(string.format("[ShowMe-DBG]   %s : %s", tostring(k), type(v)))
+			-- end
+			local phase = _G.TheWorld.state.nightmarephase
+			local progress = _G.TheWorld.state.nightmaretimeinphase
+
+			if phase and phase ~= "none" and progress then
+				local SEG_TIME  = _G.TUNING.SEG_TIME or 30
+				local PHASE_SEGS = {
+					calm = _G.TUNING.NIGHTMARE_SEGS and _G.TUNING.NIGHTMARE_SEGS.CALM,
+					warn = _G.TUNING.NIGHTMARE_SEGS and _G.TUNING.NIGHTMARE_SEGS.WARN,
+					wild = _G.TUNING.NIGHTMARE_SEGS and _G.TUNING.NIGHTMARE_SEGS.WILD,
+					dawn = _G.TUNING.NIGHTMARE_SEGS and _G.TUNING.NIGHTMARE_SEGS.DAWN,
+				}
+				local segs = PHASE_SEGS[phase]
+
+				if segs and segs > 0 then
+					-- 基础时长 = seg 数 × SEG_TIME；忽略 0~NIGHTMARE_SEG_VARIATION 的随机加成
+					local remaining = segs * SEG_TIME * (1 - progress)
+					if remaining > 0 then
+						local name = o_t["nightmare_" .. phase] or phase
+						table.insert(desc_table, "@" .. name .. ": " .. DataTimerFn(remaining))
+					end
+				end
+			end
+		end
         --Stress points 新版耕地农作物状态显示
         local TS_crop = GetModConfigData("T_crop")
         if TS_crop then
@@ -2438,16 +2517,42 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
         local blg = c.gaspower
         if c.gaspower ~= nil then table.insert(desc_table, "@"..o_t.gaspowerpower.."< "..blg.power.." / "..blg.PowerMax.." >") end
     end
-    --blend
+	
     --生物巢,生物：6/6
     if c.childspawner then
-        --local outside = tonumber(c.childspawner.numchildrenoutside) -- buggy (often +1 more)
-        --local extra = tonumber(c.childspawner.maxemergencycommit) -- extra guards
-        local inside = tonumber(c.childspawner.childreninside)
-        local maximum = tonumber(c.childspawner.maxchildren)
-        if inside and maximum then
-            cn("children",round2(inside,0),round2(maximum,0))
-        end
+		local function IsSpawnerHouse(prefab)
+			return prefab == "mermhouse_crafted" or prefab == "mermwatchtower"
+		end
+		
+		local inside = math.floor(tonumber(c.childspawner.childreninside) or 0)
+		local maximum = math.floor(tonumber(c.childspawner.maxchildren) or 0)
+		local child_name = GetPrefabFancyName(c.childspawner.childname or MY_DATA.children.desc) .. ": " -- 直接从官方字符串拿生物名
+		
+		if IsSpawnerHouse(prefab) then -- 用于人鱼屋
+			local spawner = c.childspawner
+
+			local outside = spawner.CountChildrenOutside and spawner:CountChildrenOutside() or 0	-- 外出的
+			local total = inside + outside	-- 屋内 + 屋外
+
+			local cur_max = child_name .. total .. " / " .. maximum
+
+			-- 判定"已停止"的两种依据（满足任一即视为停止）
+			local timer = c.worldsettingstimer
+			local tm = timer and timer.GetTimeLeft and timer:GetTimeLeft("ChildSpawner_RegenPeriod")
+
+			if total >= maximum or not tm then
+				-- 已达上限 或 计时器未在跑（例如白天 StopSpawning / 世界设置禁用）
+				cur_max = cur_max .. " (" .. SHOWME_STRINGS.stopped .. ")"
+			elseif tm > 0 then
+				cur_max = cur_max .. " | " .. o_t.spawn_in .. DataTimerFn(tm)
+			end
+
+			table.insert(desc_table, "@" .. cur_max)
+        else
+			if inside and maximum then
+				cn("children",round2(inside,0),round2(maximum,0))
+			end
+		end
     end
 
     --从武器信息看:
