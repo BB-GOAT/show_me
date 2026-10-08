@@ -1071,7 +1071,10 @@ local C_FINITEUSES_PREFAB = { -- mult to num "uses" for each prefab
 local USELESS_TIMERS = {	-- 生物巢定时器屏蔽
     --default for all prefabs
     toadstool = { channeltick = true },
-    all = { ChildSpawner_RegenPeriod = true, ChildSpawner_SpawnPeriod = true, },	-- 下次刷新, 下次放出
+    all = { ChildSpawner_RegenPeriod = true, ChildSpawner_SpawnPeriod = true, dominant = true },	-- 下次刷新, 下次放出
+	wobybig = { decay = true },	-- 沃比的消失屏蔽掉
+    wobysmall = { decay = true },
+    hermitcrab = { speak_time = true, complain_time = true, salad = true },
 }
 
 local function IsUselessTimer(prefab,name)
@@ -1920,6 +1923,7 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
                     sn = "+" .. tostring(sn)
                 end
                 cn("food",hg,sn,hp)
+				
                 if ed.temperaturedelta ~= 0 then -- 食物有温度
                     if ed.temperatureduration ~= 0 and ed.chill < 1 and viewer ~= nil and viewer.components.temperature ~= nil then
                         local delta_multiplier = 1
@@ -1956,49 +1960,48 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
                         cn("buff","Attack",round2(TUNING.BUFF_ATTACK_MULTIPLIER,1),round2(TUNING.BUFF_ATTACK_DURATION/TUNING.TOTAL_DAY_TIME))
                     end
                 end
-                --Warly effects
+                --Warly BUFF
+				local _shown_buffs = {}		-- 给食物BUFF加去重表, 没错就是为了防止N条 生命恢复 持续 x 天
                 for _,struct in pairs(cooking.recipes) do
-                    for food,v in pairs(struct) do
-                        if food == prefab then
-                            if not v.prefabs then
-                                break
-                            end
-                            for i,buff_name in ipairs(v.prefabs) do
-                                local duration = nil
-                                local power = nil
-                                local data = KNOWN_BUFFS[buff_name]
-                                if data then
-                                    if type(data.duration) == 'function' then
-                                        duration = data.duration()
-                                    else
-                                        duration=TUNING[data.duration]
-                                    end
-                                    if data.power then
-                                        power=TUNING[data.power]
-                                    end
-                                    if data.shift and data.power then
-                                        power = power + 1
-                                    end
-                                    buff_name = data.name
-                                else
-                                    local up = buff_name:upper();
-                                    duration = TUNING[up .. '_DURATION']
-                                    power = TUNING[up .. '_MULTIPLIER'] or TUNING[up .. '_MODIFIER']
-                                    if buff_name:find("buff_",1,true) == 1 then
-                                        buff_name = buff_name:sub(6)
-                                    end
-                                    if buff_name:find("buff",#buff_name-3,true) then
-                                        buff_name = buff_name:sub(1,#buff_name-4)
-                                    end
-                                end
-                                if duration then
-                                    duration = round2(duration / TUNING.TOTAL_DAY_TIME,1)
-                                    cn("buff",buff_name,duration,power)
-                                end
-                            end
-                        end
-                    end
-                end
+					for food,v in pairs(struct) do
+						if food == prefab and v.prefabs then
+							for i,buff_name in ipairs(v.prefabs) do
+								local duration = nil
+								local power = nil
+								local data = KNOWN_BUFFS[buff_name]
+								if data then
+									if type(data.duration) == 'function' then
+										duration = data.duration()
+									else
+										duration = TUNING[data.duration]
+									end
+									if data.power then
+										power = TUNING[data.power]
+									end
+									if data.shift and data.power then
+										power = power + 1
+									end
+									buff_name = data.name
+								else
+									local up = buff_name:upper()
+									duration = TUNING[up .. '_DURATION']
+									power = TUNING[up .. '_MULTIPLIER'] or TUNING[up .. '_MODIFIER']
+									if buff_name:find("buff_",1,true) == 1 then
+										buff_name = buff_name:sub(6)
+									end
+									if buff_name:find("buff",#buff_name-3,true) then
+										buff_name = buff_name:sub(1,#buff_name-4)
+									end
+								end
+								if duration and not _shown_buffs[buff_name] then
+									_shown_buffs[buff_name] = true
+									duration = round2(duration / TUNING.TOTAL_DAY_TIME,1)
+									cn("buff",buff_name,duration,power)
+								end
+							end
+						end
+					end
+				end
             end
         end
         if show_nutrients ~= false then --肥料信息
@@ -2476,6 +2479,11 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
 					end
 				end
 			end
+		end
+		if prefab == "wobybig" and c.hunger then
+			local cur = math.floor(c.hunger.current + 0.5)
+			local max = math.floor(c.hunger.max + 0.5)
+			table.insert(desc_table, "@" .. MY_DATA.hunger.desc .. cur .. " / " .. max)
 		end
         --Stress points 新版耕地农作物状态显示
         local TS_crop = GetModConfigData("T_crop")

@@ -150,7 +150,7 @@ local INTERNAL_TIMERS = {
     --Walrus Camp
     walrus = "MacTusk", little_walrus = "Wee MacTusk", icehound = "Blue Hound",
     --Hermit Crab
-    speak_time = "Speak", complain_time = "Complain", salad = "Salad", bottledelay = "Bottle", fishingtime = "Fishing",
+    bottledelay = "Bottle", fishingtime = "Fishing",
     --hermit_grannied plus GUID -- dynamic GUID, cannot translate
     --Maxwell Shadow Clone
     obliviate = "Contract", -- will disappear after this time, better defined as contract

@@ -150,7 +150,7 @@ local INTERNAL_TIMERS = {
     --海象营地的计时器名称：Timer names for warlus_camp:
     walrus = "海象刷新", little_walrus = "小海象刷新", icehound = "冰狗刷新",
     --寄居蟹hermitcrab.lua:
-    speak_time = "發牢騷", complain_time = "抱怨", salad = "花沙拉", bottledelay = "扔瓶子", fishingtime = "釣魚",
+    bottledelay = "扔瓶子", fishingtime = "釣魚",
     --hermit_grannied plus GUID -- 该词条会动态添加GUID，无法翻译
     --老麦影分身
     obliviate = "契約", --会在该时间后消失，定义为契约会更好
