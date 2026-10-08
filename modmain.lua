@@ -1898,14 +1898,15 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
                     end
                 end
                 local base_mult = viewer ~= nil and viewer.components.foodmemory ~= nil and viewer.components.foodmemory:GetFoodMultiplier(prefab) or 1
-                do --check multiplier
-                    local hp_mult = (ed.healthabsorption or 1) * base_mult
-                    local hg_mult = (ed.hungerabsorption or 1) * base_mult
-                    local sn_mult = (ed.sanityabsorption or 1) * base_mult
-                    hp = hp * hp_mult
-                    hg = hg * hg_mult
-                    sn = sn * sn_mult
-                end
+                do	-- 进食者的吸收倍率, 增加eater组件检查
+					local eater = viewer and viewer.components and viewer.components.eater
+					local hp_mult = (ed.healthabsorption or 1) * base_mult * (eater and eater.healthabsorption or 1)
+					local hg_mult = (ed.hungerabsorption or 1) * base_mult * (eater and eater.hungerabsorption or 1)
+					local sn_mult = (ed.sanityabsorption or 1) * base_mult * (eater and eater.sanityabsorption or 1)
+					hp = hp * hp_mult
+					hg = hg * hg_mult
+					sn = sn * sn_mult
+				end
                 if prefab == "petals_evil" then
                     sn = round2(sn - _G.TUNING.SANITY_TINY,1)
                 end
