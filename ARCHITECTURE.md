@@ -2,6 +2,7 @@
 
 > 基于 v0.61.2（git 8bd0865）整理。行号为该版本快照，代码更新后会漂移，以"区块 + 函数名"定位为准。
 > 用途：后续重构/修 BUG 时先查此文档，确认要改的部分在整体架构中的位置与牵连面。
+> 重构任务清单见 `TODO.md`。
 
 ---
 
@@ -17,8 +18,11 @@
 
 | 文件 | 行数 | 角色 |
 |---|---|---|
-| `modinfo.lua` | 286 | 模组元数据 + 全部配置项定义（语言/食物样式/血量/容器颜色/淘气值等） |
-| `modmain.lua` | 3197 | 核心：语言系统、编码协议、服务器描述生成（GetTestString）、客户端 hoverer hook、容器高亮 |
+| `modinfo.lua` | ~300 | 模组元数据 + 全部配置项定义（语言/食物样式/血量/容器颜色/淘气值/use_beta 等） |
+| `modmain.lua` | 3197 | 稳定版入口：头部有 Beta 转发段（见二·一），其余为原版逻辑，**冻结不轻易改** |
+| `modmain2.lua` | ~3220 | **Beta 版（重构工作区）**：modmain 的完整副本，所有重构在此进行 |
+| `TODO.md` | - | 重构任务清单 |
+| `scripts/showme_descriptors/` | - | 预留：按组件/prefab 拆分的描述处理器目录（参考 Insight 模组结构） |
 | `bbgoat_upvaluehelper.lua` | 215 | 通用工具库（冰冰羊维护，同步自 bbgoat_utils）：递归查找/替换函数上值、查找事件回调 |
 | `scripts/showme_naughtiness.lua` | 103 | 淘气值：服务端 hook kramped 组件同步 netvar；客户端两种显示路径 |
 | `scripts/showme_range_indicators.lua` | 58 | 范围圈挂载逻辑（服务端，监听拾取/装备/丢弃/移除事件） |
@@ -26,6 +30,26 @@
 | `showme_chs.lua` / `showme_cht.lua` / `showme_en.lua` | 429×3 | 语言包，三文件结构完全一致，7 张表（见六） |
 
 ---
+
+### 二·一、双入口开发机制（Beta 转发）
+
+```
+modinfo.lua  →  use_beta 配置（默认 false）
+modmain.lua 头部临时代码：
+    if GetModConfigData("use_beta") then
+        modimport("modmain2.lua")
+        return
+    end
+    -- 否则继续执行原版逻辑
+```
+
+工作规则（后续重构统一遵守）：
+
+1. **modmain2.lua 是唯一重构工作区**。所有逻辑修改先在 modmain2 做，玩家默认仍走 modmain（稳定版），开启 use_beta 的用户走重构版。
+2. **modmain.lua 冻结**。只有两种情况才动它：Beta 转发段本身的调整；共享代码的改动会破坏原版行为时的兼容性修补。
+3. **共享资源改动必须双向兼容**：`showme_*.lua` 语言文件、`scripts/showme_naughtiness.lua`、`scripts/showme_range_indicators.lua`、`scripts/prefabs/showme_range.lua`、`bbgoat_upvaluehelper.lua` 被两个入口共同加载（同一时刻只有一个入口在跑，但关闭 use_beta 后原版必须照常工作）。改这些文件前先确认 modmain 不受影响；TODO 里"合并语言表"这类结构性改动落地时，modmain2 改用新结构、语言文件需同时保留旧表供 modmain 读取，直至重构完成合并版本发布。
+4. modmain2 的 env `__index` 兜底 metatable 带调试输出（本地开发环境 modname 非 workshop- 时，凡是从全局环境兜底取值都会打印调用点），用于揪出祖传代码里漏写 `GLOBAL` 的访问；重构中每处被打印的访问都应改为显式 `GLOBAL.`/`_G.`，让兜底逐渐失业。
+5. 切换 use_beta 需重新加载模组/重开世界才能生效，测试时注意。
 
 ## 三、核心数据流（悬停提示链路）
 
@@ -181,6 +205,7 @@
 
 ## 九、修改注意事项
 
+- 所有逻辑重构在 `modmain2.lua` 进行（见二·一）；modmain.lua 冻结，仅做兼容性修补。
 - `bbgoat_upvaluehelper.lua` 是从【冰冰羊的模组运行库】同步的外部库，**不要本地改造**，要改去上游（GitHub: BB-GOAT/bbgoat_utils）。
 - 涉及 kramped / farming_manager / statusdisplays 的 hook 全靠 debug 库抽上值，游戏更新或其它模组先 hook 会取错——Upvaluehelper 的 `fn_filter` 参数可限定来源文件，必要时加上。
 - `MY_STRINGS` 加词条会改变后续所有 id；三份语言文件必须同步增删，且 cht/en 的 `MY_STRINGS` 键集合需与 chs 一致（回退链兜底缺失键）。

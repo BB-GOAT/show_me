@@ -79,74 +79,45 @@ local SERVER_SIDE = TheNet:GetIsServer()    --服务器
 local CLIENT_SIDE =     TheNet:GetIsClient() or (SERVER_SIDE and not TheNet:IsDedicated())    --本地
 
 local tonumber = _G.tonumber
-local food_order = tonumber(GetModConfigData("food_order",true)) or 0
-if food_order == 0 then
-    food_order = tonumber(GetModConfigData("food_order")) or 0
-end
---TUNING.SHOWME_FOOD_ORDER = food_order --兼容 Tell Me
-local food_style = tonumber(GetModConfigData("food_style",true)) or 0
-if food_style == 0 then
-    food_style = tonumber(GetModConfigData("food_style")) or 0
-end
---TUNING.SHOWME_FOOD_STYLE = food_style
 
-local display_hp = tonumber(GetModConfigData("display_hp",true)) or -1
-if display_hp == -1 then
-    display_hp = tonumber(GetModConfigData("display_hp")) or -1
-end
-
-
-local food_estimation = tonumber(GetModConfigData("food_estimation",true)) or -1
-if food_estimation == -1 then
-    food_estimation = tonumber(GetModConfigData("food_estimation")) or 0
+--- 读取模组配置
+--- 优先级：客户端设置 > 服务器设置；任一端取"默认"选项即表示跟随另一端。
+---@param optionname string 配置项名称
+---@param default any "默认"值，用于判断是否跟随另一端
+---@return any value 实际生效的配置值
+local function Switch(optionname, default)
+    local value = GetModConfigData(optionname, true) -- 客户端设置
+    if value == default then
+        local server = GetModConfigData(optionname) -- 服务器设置
+        if server ~= default then
+            value = server
+        end
+    end
+    return value
 end
 
-local show_food_units = tonumber(GetModConfigData("show_food_units",true)) or -1
-if show_food_units == -1 then
-    show_food_units = tonumber(GetModConfigData("show_food_units")) or 0
-end
-print('show_food_units',show_food_units,GetModConfigData("show_food_units",true),GetModConfigData("show_food_units"))
+local food_order = Switch("food_order", 0) -- 食物属性格式
+local food_style = Switch("food_style", 0) -- 食物属性样式
+local display_hp = Switch("display_hp", -1) -- 显示血量
+local food_estimation = Switch("food_estimation", -1) -- 预计腐烂
+local show_food_units = Switch("show_food_units", -1) -- 显示食物单位
+local show_uses = Switch("show_uses", -1) -- 显示工具用途
 
-local show_uses = tonumber(GetModConfigData("show_uses",true)) or -1
-if show_uses == -1 then
-    show_uses = tonumber(GetModConfigData("show_uses")) or 0
-end
-print('show_uses',show_uses,GetModConfigData("show_uses",true),GetModConfigData("show_uses"))
+local chestR = Switch("chestR", -1) -- 红色值
+chestR = chestR == -1 and 0.3 or chestR
+local chestG = Switch("chestG", -1) -- 绿色值
+chestG = chestG == -1 and 1 or chestG
+local chestB = Switch("chestB", -1) -- 蓝色值
+chestB = chestB == -1 and 1 or chestB
 
-local chestR = tonumber(GetModConfigData('chestR',true)) or -1
-if chestR == -1 then
-    chestR = tonumber(GetModConfigData('chestR')) or 0.3
-    if (chestR == -1) then chestR = 0.3 end
-end
-local chestG = tonumber(GetModConfigData('chestG',true)) or -1
-if chestG == -1 then
-    chestG = tonumber(GetModConfigData('chestG')) or 1
-    if (chestG == -1) then chestG = 1 end
-end
-local chestB = tonumber(GetModConfigData('chestB',true)) or -1
-if chestB == -1 then
-    chestB = tonumber(GetModConfigData('chestB')) or 1
-    if (chestB == -1) then chestB = 1 end
-end
---print('RGB CHEST',chestR,chestG,chestB)
---new derived from id=2188103687
-local show_buddle_item = tonumber(GetModConfigData("show_buddle_item",true)) or 1
-if show_buddle_item == 1 then
-    show_buddle_item = tonumber(GetModConfigData("show_buddle_item")) or 1
-end
-local item_info_mod = tonumber(GetModConfigData("item_info_mod",true)) or 0
-if item_info_mod == 0 then
-    item_info_mod = tonumber(GetModConfigData("item_info_mod")) or 0
-end
-local perish_style = tonumber(GetModConfigData("perish_style", true)) or 0
-if perish_style == 0 then
-    perish_style = tonumber(GetModConfigData("perish_style")) or 0
-end
-local show_nutrients = GetModConfigData("show_nutrients")
-local show_fuel = GetModConfigData("show_fuel")
-local show_fueled = GetModConfigData("show_fueled")
-local show_planar_resist = GetModConfigData("show_planar_resist")
-local show_naughtiness = GetModConfigData("Show_naughtiness") -- 显示淘气值
+local show_buddle_item = Switch("show_buddle_item", 1) -- 显示捆绑包内容
+local item_info_mod = Switch("item_info_mod", 0) -- 兼容item info模组
+local perish_style = Switch("perish_style", 0) -- 食物腐烂样式
+local show_nutrients = Switch("show_nutrients", 1) -- 显示肥料值
+local show_fuel = Switch("show_fuel", true) -- 物品燃料值
+local show_fueled = Switch("show_fueled", 3) -- 穿戴装备天数
+local show_planar_resist = Switch("show_planar_resist", true) -- 显示位面抵抗
+local show_naughtiness = Switch("Show_naughtiness", true) -- 显示淘气值
 
 -- 定义语言表(定义在模组环境以便其它模组调用)
 MY_DATA = {}
@@ -219,10 +190,7 @@ do
         end
     end
 
-    local lang = GetModConfigData("lang", true)
-    if lang == "auto" then
-        lang = GetModConfigData("lang")
-    end
+    local lang = Switch("lang", "auto")
     print("Detected language for ShowMe: ", lang, lang == "auto" and _G.LanguageTranslator.defaultlang or "")
 
     if lang == "auto" then
@@ -912,11 +880,8 @@ for name in pairs(mods.active_mods_by_name) do
         break
     end
 end
---print('is_HealthInfo',is_HealthInfo)
 
 local need_send_hp = display_hp == -1 and not is_HealthInfo or display_hp == 0 or display_hp == 1
---print('need_send_hp',need_send_hp)
---print('display_hp',display_hp)
 
 local is_DisplayFoodValues = mods.active_mods_by_name["Display food values"]
 
@@ -2529,7 +2494,7 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
 			table.insert(desc_table, "@" .. MY_DATA.hunger.desc .. cur .. " / " .. max)
 		end
         --Stress points 新版耕地农作物状态显示
-        local TS_crop = GetModConfigData("T_crop")
+        local TS_crop = Switch("T_crop", true)
         if TS_crop then
             if c.farmplantstress and c.farmplantstress.stress_points then
                 local x, y, z = item.Transform:GetWorldPosition()
@@ -3229,7 +3194,7 @@ end
 ----------------------------------------
 
 PrefabFiles = { "showme_range" } --加载prefab文件
-if GetModConfigData("Show_range") and TheNet:GetIsServer() then --范围显示功能
+if Switch("Show_range", true) and TheNet:GetIsServer() then --范围显示功能
     modimport("scripts/showme_range_indicators.lua")
 end
 
