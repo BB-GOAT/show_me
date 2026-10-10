@@ -957,35 +957,19 @@ local function GetPerishTime(inst, c)
 end
 
 local desc_table
-local function cn(key,param1,param2,param3,param4,param5)
+local function cn(key, ...)
     local data = MY_DATA[key]
     if data == nil then
         return
     end
-    if param1 == nil then
-        table.insert(desc_table, data.sym)
-        return
+    local parts = {}
+    for i = 1, select("#", ...) do
+        local v = select(i, ...)
+        if v ~= nil then
+            parts[#parts + 1] = tostring(v)
+        end
     end
-    if param2 == nil then
-        table.insert(desc_table, data.sym ..tostring(param1))
-        return
-    end
-    if param3 == nil then
-        table.insert(desc_table, data.sym ..tostring(param1) .. "," ..tostring(param2))
-        return
-    end
-    if param4 == nil then
-        table.insert(desc_table, data.sym ..tostring(param1) .. "," ..tostring(param2) .. "," ..tostring(param3))
-        return
-    end
-    if param5 == nil then
-        table.insert(desc_table, data.sym ..tostring(param1) .. "," ..tostring(param2) .. "," ..tostring(param3)
-            .. "," ..tostring(param4))
-        return
-    end
-    table.insert(desc_table, data.sym ..tostring(param1) .. "," ..tostring(param2) .. "," ..tostring(param3)
-        .. "," ..tostring(param4) .. "," ..tostring(param5))
-    return
+    table.insert(desc_table, data.sym .. table.concat(parts, ","))
 end
 
 local SPICIAL_STRUCTURES = {
@@ -1868,12 +1852,12 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
         end
         if item_info_mod == 0 and c.edible and not is_DisplayFoodValues then
             local can_eat = false
-            if viewer and viewer.components.eater then
+            if viewer.components.eater then
                 can_eat = viewer.components.eater:CanEat(item)
             end
             if can_eat then
                 local ed = c.edible
-                local should_Estimate_Stale = viewer and viewer.should_Estimate_Stale --client priority
+                local should_Estimate_Stale = viewer.should_Estimate_Stale --client priority
                 if not should_Estimate_Stale then
                     should_Estimate_Stale = food_estimation ~= 0
                 end
@@ -1889,7 +1873,7 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
                     hg=round2(ed.hungervalue,1)
                     sn=round2(ed.sanityvalue,1)
                 end
-                if viewer ~= nil and viewer.FoodValuesChanger ~= nil then --一种特殊功能，其目的是在食用时改变食物。
+                if viewer.FoodValuesChanger ~= nil then --一种特殊功能，其目的是在食用时改变食物。
                     --print("+")
                     --确实，在这里我们可以在吃之前稍微看看它的结果。
                     local hp2, hg2, sn2 = viewer:FoodValuesChanger(item)
@@ -1900,9 +1884,9 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
                         sn=round2(sn2,1)
                     end
                 end
-                local base_mult = viewer ~= nil and viewer.components.foodmemory ~= nil and viewer.components.foodmemory:GetFoodMultiplier(prefab) or 1
+                local base_mult = viewer.components.foodmemory ~= nil and viewer.components.foodmemory:GetFoodMultiplier(prefab) or 1
                 do	-- 进食者的吸收倍率, 增加eater组件检查
-					local eater = viewer and viewer.components and viewer.components.eater
+					local eater = viewer.components.eater
 					local hp_mult = (ed.healthabsorption or 1) * base_mult * (eater and eater.healthabsorption or 1)
 					local hg_mult = (ed.hungerabsorption or 1) * base_mult * (eater and eater.hungerabsorption or 1)
 					local sn_mult = (ed.sanityabsorption or 1) * base_mult * (eater and eater.sanityabsorption or 1)
@@ -1923,9 +1907,9 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
                     sn = "+" .. tostring(sn)
                 end
                 cn("food",hg,sn,hp)
-				
+
                 if ed.temperaturedelta ~= 0 then -- 食物有温度
-                    if ed.temperatureduration ~= 0 and ed.chill < 1 and viewer ~= nil and viewer.components.temperature ~= nil then
+                    if ed.temperatureduration ~= 0 and ed.chill < 1 and viewer.components.temperature ~= nil then
                         local delta_multiplier = 1
                         local duration_multiplier = 1
                         if ed.spice and _G.TUNING.SPICE_MULTIPLIERS[ed.spice] then
@@ -2265,6 +2249,24 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
 
             end
         end
+        -- 冬季盛宴树
+        if item:HasTag("winter_tree") then
+            local giftable = viewer.components.wintertreegiftable
+            if giftable and giftable.GetDaysSinceLastGift then
+                local days = giftable:GetDaysSinceLastGift()
+                if type(days) == "number" then
+                    if days >= 4 then
+                        table.insert(desc_table, "@" .. MY_STRINGS.winter_gift_ready)
+                    else
+                        local remaining_days = math.ceil(4 - days)
+                        table.insert(desc_table, "@" .. string.format(
+                            MY_STRINGS.winter_gift_wait,
+                            remaining_days
+                        ))
+                    end
+                end
+            end
+        end
         ------------------Check prefabs?----------------------
         if prefab=="pond" or prefab=="pond_mos" or prefab=="pond_cave" or prefab=="oasislake" then --池塘
             if c.fishable and c.fishable.fishleft then
@@ -2352,7 +2354,7 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
                 end
             end
         end
-		
+
         add_entity_description(item, desc_table)
 
         -- 女武神书
@@ -2526,17 +2528,17 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
         local blg = c.gaspower
         if c.gaspower ~= nil then table.insert(desc_table, "@"..o_t.gaspowerpower.."< "..blg.power.." / "..blg.PowerMax.." >") end
     end
-	
+
     --生物巢,生物：6/6
     if c.childspawner then
 		local function IsSpawnerHouse(prefab)
 			return prefab == "mermhouse_crafted" or prefab == "mermwatchtower"
 		end
-		
+
 		local inside = math.floor(tonumber(c.childspawner.childreninside) or 0)
 		local maximum = math.floor(tonumber(c.childspawner.maxchildren) or 0)
 		local child_name = GetPrefabFancyName(c.childspawner.childname or MY_DATA.children.desc) .. ": " -- 直接从官方字符串拿生物名
-		
+
 		if IsSpawnerHouse(prefab) then -- 用于人鱼屋
 			local spawner = c.childspawner
 
@@ -2565,7 +2567,7 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
     end
 
     --从武器信息看:
-    if viewer and type(viewer)=="table" and viewer.components and viewer.components.inventory then
+    if viewer.components.inventory then
         local weapon = viewer.components.inventory:GetEquippedItem(_G.EQUIPSLOTS.HANDS)
         if weapon then
             local resist = nil --base resist
@@ -2651,26 +2653,6 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
             for k,v in pairs(snapshot) do
                 if type(v) == "number" then
                     table.insert(desc_table, "@" .. (k.name or k.prefab or tostring(k)) .. " " .. o_t.will_other .. round2(v/TUNING.TOTAL_DAY_TIME,1) .. SHOWME_STRINGS.days)
-                end
-            end
-        end
-    end
-    -- 冬季盛宴树
-    if item:HasTag("winter_tree") then
-        local giftable = viewer ~= nil
-            and viewer.components ~= nil
-            and viewer.components.wintertreegiftable
-        if giftable ~= nil and type(giftable.GetDaysSinceLastGift) == "function" then
-            local days = giftable:GetDaysSinceLastGift()
-            if type(days) == "number" then
-                if days >= 4 then
-                    table.insert(desc_table, "@" .. MY_STRINGS.winter_gift_ready)
-                else
-                    local remaining_days = math.ceil(4 - days)
-                    table.insert(desc_table, "@" .. string.format(
-                        MY_STRINGS.winter_gift_wait,
-                        remaining_days
-                    ))
                 end
             end
         end
@@ -2937,7 +2919,7 @@ do
             return
         end
         if item ~= nil and item.components ~= nil then
-            local s = GetTestString(item,player) --在服务器上形成一个字符串。
+            local s = GetTestString(item, player) --在服务器上形成一个字符串
             if s and s ~= "" then
                 player.player_classified.net_showme_hint2:set(tostring(guid)..";"..s) --将其打包成一行并将其发送回同一玩家
             end
