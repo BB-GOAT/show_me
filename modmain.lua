@@ -1004,8 +1004,8 @@ local function cn(key, ...)
         return
     end
     local parts = {}
-    for i = 1, select("#", ...) do
-        local v = select(i, ...)
+    for i = 1, _G.select("#", ...) do
+        local v = _G.select(i, ...)
         if v ~= nil then
             parts[#parts + 1] = tostring(v)
         end

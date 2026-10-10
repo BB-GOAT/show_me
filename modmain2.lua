@@ -46,6 +46,13 @@ end
 
 print(modinfo.name .. " : v" .. modinfo.version)
 
+local function printinvalid(rpcname, player) -- 客户端发送无效RPC时的处理
+    print(string.format("Invalid %s RPC from (%s) %s", rpcname, player.userid or "", player.name or ""))
+
+    --This event is for MODs that want to handle players sending invalid rpcs
+    _G.TheWorld:PushEvent("invalidrpc", { player = player, rpcname = rpcname })
+end
+
 local function Import(modulename)
     local f = _G.kleiloadlua(modulename)
     if f and type(f) == "function" then
@@ -118,6 +125,54 @@ local show_fuel = Switch("show_fuel", true) -- 物品燃料值
 local show_fueled = Switch("show_fueled", 3) -- 穿戴装备天数
 local show_planar_resist = Switch("show_planar_resist", true) -- 显示位面抵抗
 local show_naughtiness = Switch("Show_naughtiness", true) -- 显示淘气值
+
+-- 服务器端模组配置
+local server_config = {
+    food_order = GetModConfigData("food_order"), -- 食物属性格式
+    food_style = GetModConfigData("food_style"), -- 食物属性样式
+    display_hp = GetModConfigData("display_hp"), -- 显示血量
+    food_estimation = GetModConfigData("food_estimation"), -- 预计腐烂
+    show_food_units = GetModConfigData("show_food_units"), -- 显示食物单位
+    show_uses = GetModConfigData("show_uses"), -- 显示工具用途
+    show_buddle_item = GetModConfigData("show_buddle_item"), -- 显示捆绑包内容
+    item_info_mod = GetModConfigData("item_info_mod"), -- 兼容item info模组
+    perish_style = GetModConfigData("perish_style"), -- 食物腐烂样式
+    show_nutrients = GetModConfigData("show_nutrients"), -- 显示肥料值
+    show_fuel = GetModConfigData("show_fuel"), -- 物品燃料值
+    show_fueled = GetModConfigData("show_fueled"), -- 穿戴装备天数
+    show_planar_resist = GetModConfigData("show_planar_resist"), -- 显示位面抵抗
+    show_naughtiness = GetModConfigData("Show_naughtiness"), -- 显示淘气值
+}
+
+local client_config = {
+    food_order = GetModConfigData("food_order", true), -- 食物属性格式
+    food_style = GetModConfigData("food_style", true), -- 食物属性样式
+    display_hp = GetModConfigData("display_hp", true), -- 显示血量
+    food_estimation = GetModConfigData("food_estimation", true), -- 预计腐烂
+    show_food_units = GetModConfigData("show_food_units", true), -- 显示食物单位
+    show_uses = GetModConfigData("show_uses", true), -- 显示工具用途
+    show_buddle_item = GetModConfigData("show_buddle_item", true), -- 显示捆绑包内容
+    item_info_mod = GetModConfigData("item_info_mod", true), -- 兼容item info模组
+    perish_style = GetModConfigData("perish_style", true), -- 食物腐烂样式
+    show_nutrients = GetModConfigData("show_nutrients", true), -- 显示肥料值
+    show_fuel = GetModConfigData("show_fuel", true), -- 物品燃料值
+    show_fueled = GetModConfigData("show_fueled", true), -- 穿戴装备天数
+    show_planar_resist = GetModConfigData("show_planar_resist", true), -- 显示位面抵抗
+    show_naughtiness = GetModConfigData("Show_naughtiness", true), -- 显示淘气值
+}
+local player_config = {}
+AddModRPCHandler("ShowMe","SendConfig",function(player, config)
+    if not _G.checkstring(config) then
+        printinvalid("ShowMe.SendConfig", player)
+        return
+    end
+    config = _G.DecodeAndUnzipString(config)
+    if not _G.type(config) == "table" then
+        printinvalid("ShowMe.SendConfig", player)
+        return
+    end
+    player_config[player] = config
+end)
 
 -- 定义语言表(定义在模组环境以便其它模组调用)
 MY_DATA = {}
@@ -652,13 +707,6 @@ if not need_show_hp then
     MY_DATA.hp.hidden = true
 end
 
-local function printinvalid(rpcname, player)
-    print(string.format("Invalid %s RPC from (%s) %s", rpcname, player.userid or "", player.name or ""))
-
-    --This event is for MODs that want to handle players sending invalid rpcs
-    _G.TheWorld:PushEvent("invalidrpc", { player = player, rpcname = rpcname })
-end
-
 --尝试检测客户端模组并通过 RPC 发送它们
 AddModRPCHandler("ShowMe","AOS",function(inst)
     --调用此函数将禁用此玩家的提示。
@@ -805,6 +853,8 @@ if CLIENT_SIDE then
         if show_naughtiness and _G.KnownModIndex:IsModEnabledAny("workshop-376333686") then
             OnShowMeNaughtyAction() -- 初始化 综合状态显示 模组显示的淘气值默认信息
         end
+
+        SendModRPCToServer(MOD_RPC.ShowMe.SendConfig, _G.ZipAndEncodeString(client_config))
     end
     AddPlayersAfterInit(FixClient)
 end
@@ -969,18 +1019,14 @@ local function cn(key, ...)
         return
     end
     local parts = {}
-    for i = 1, select("#", ...) do
-        local v = select(i, ...)
+    for i = 1, _G.select("#", ...) do
+        local v = _G.select(i, ...)
         if v ~= nil then
             parts[#parts + 1] = tostring(v)
         end
     end
     table.insert(desc_table, data.sym .. table.concat(parts, ","))
 end
-
-local SPICIAL_STRUCTURES = {
-    campfire = true, coldfire = true,
-}
 
 --食物BUFF 信息显示
 --local test_buff_seen = {buff_playerabsorption=1, buff_workeffectiveness=1, buff_attack=1}
@@ -1460,18 +1506,71 @@ local function process_potion(item, desc_table)
     end
 end
 
---Основная функция получения описания.
-function GetTestString(item,viewer) --从这里开始，与Tell Me区分
+-- 支持识别的组件
+local showme_descriptors = {
+    compostingbin = require("showme_descriptors/compostingbin"), -- 堆肥桶
+    fueled = require("showme_descriptors/fueled"), -- 建筑燃料与服饰耐久
+}
+
+-- 描述文件运行在全局环境，modmain2 的 local 工具需经 context.utils 传入；搬移新组件时按需补充
+local descriptor_utils = {
+    round2 = round2,
+    DataTimerFn = DataTimerFn,
+    GetPerishTime = GetPerishTime,
+    GetPrefabFancyName = GetPrefabFancyName,
+    GetDebuffTime = GetDebuffTime,
+    IsUselessTimer = IsUselessTimer,
+    safe_tuning = safe_tuning,
+    Upvaluehelper = Upvaluehelper,
+}
+
+--获取物品信息
+function GetTestString(item, viewer)
     --line_cnt = 0
     desc_table = {} --旧的 desc 将被取消
     local prefab = item.prefab
     local c=item.components
     local has_owner = false --仅向所有者发送一次信息
-    -- local ftime =  function (seconds)    --时间格式化
-        -- local minutes = math.floor(seconds / 60)
-        -- seconds = seconds % 60
-        -- return string.format("%02d:%02d", minutes, seconds)
-    -- end
+
+    local item_descriptors = {}
+    for components_name, component in pairs(item.components or {}) do
+        local descriptor = showme_descriptors[components_name]
+        if descriptor and descriptor.Describe then
+            local context = {
+                player = viewer, -- 获取此信息的玩家
+                entity = item, -- 对应实体
+                utils = descriptor_utils, -- 共享工具函数
+                modenv = env, -- 模组环境
+                config = {
+                    server = server_config, -- 服务器端配置
+                    client = player_config[viewer] or server_config, -- 客户端配置
+                },
+
+                -- 语言数据（相关代码待重构）
+                -- str = { TODO },
+            }
+
+            local result = descriptor.Describe(component, context)
+            if result then
+                table.insert(item_descriptors, result)
+            end
+        end
+    end
+    table.sort(item_descriptors, function(a, b) return (a.priority or 0) > (b.priority or 0) end) -- 优先级高的信息放前面
+
+    -- 条目写入 desc_table：data_key 走 MY_DATA 协议编码（客户端渲染，跟随客户端语言），description 走 "@" 旁路（服务器文本）
+    for _, entry in ipairs(item_descriptors) do
+        if entry.data_key then
+            if MY_DATA[entry.data_key] then
+                cn(entry.data_key, entry.params and _G.unpack(entry.params) or nil)
+            end
+        elseif entry.description then
+            table.insert(desc_table, "@" .. entry.description)
+        end
+    end
+
+    --------------------------------------------------------------------------------------------------------------------
+
     if (prefab=="rock1" or prefab=="rock2") and not viewer.has_AlwaysOnStatus then    --没有开季节时钟则在石头上显示季节与剩余天数
         local w=_G.TheWorld.state
         local tt=round2(w.temperature,1)
@@ -2081,20 +2180,6 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
         if c.temperature and c.temperature.current and type(c.temperature.current) == "number" then
             cn("temperature",round2(c.temperature.current,1))
         end
-        --建筑燃料
-        if c.fueled and c.fueled:GetPercent()>0 and (SPICIAL_STRUCTURES[prefab] or item:HasTag("structure")) then
-            if c.fueled.currentfuel ~= nil then
-                table.insert(desc_table, "@"..o_t.ot_fuel..DataTimerFn(c.fueled.currentfuel).." ( "..math.floor(c.fueled:GetPercent()*100).."% )")
-            end
-            if show_fuel ~= false and c.fueled.bonusmult ~= nil and c.fueled.bonusmult > 1 then
-                table.insert(desc_table, "@"..o_t.ot_fuelval..c.fueled.bonusmult.."x")
-            end
-        end
-        --堆肥桶容量
-        if c.compostingbin and c.compostingbin ~= nil then
-            table.insert(desc_table, "@"..o_t.capacity..c.compostingbin:GetMaterialTotal().." / "..c.compostingbin.max_materials)
-        end
-
         if c.instrument and type(c.instrument.range)=="number" and c.instrument.range>0.4 then
             cn("range",round2(c.instrument.range,0))
         end
@@ -2160,34 +2245,6 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
             end
             if c.saddler.bonusdamage and c.saddler.bonusdamage ~= 0 then
                 cn("dmg_bonus",round2(c.saddler.bonusdamage,1))
-            end
-        end
-        --服饰耐久
-        if show_fueled ~= false then --if c.fueled.rate --效率
-            if c.fueled ~= nil and not item:HasTag("hide_percentage") then
-                local FueledTime = DataTimerFn(c.fueled.currentfuel)
-                local FueledDay = tostring(round2(c.fueled.currentfuel / TUNING.TOTAL_DAY_TIME,1))
-                local FDays = SHOWME_STRINGS.days
-                local s_fval
-                if show_fueled == 1 then    --根据配置，显示不同的样式
-                    s_fval = o_t.fueled..FueledTime
-                elseif show_fueled == 2 then
-                    s_fval = o_t.fueled..FueledDay..FDays
-                else
-                    s_fval = o_t.fueled..FueledTime.." ( "..FueledDay..FDays.." )"
-                end
-                --CAVE, NIGHTMARE, MAGIC, CHEMICAL, WORMLIGHT
-                if (c.fueled.fueltype == _G.FUELTYPE.USAGE or c.fueled.secondaryfueltype == _G.FUELTYPE.USAGE) and not (c.fueled.no_sewing or item:HasTag("heatrock")) then
-                    table.insert(desc_table, "@"..s_fval)
-                elseif c.fueled.fueltype == _G.FUELTYPE.CAVE or c.fueled.secondaryfueltype == _G.FUELTYPE.CAVE or c.fueled.fueltype == _G.FUELTYPE.WORMLIGHT or c.fueled.secondaryfueltype == _G.FUELTYPE.WORMLIGHT then
-                    table.insert(desc_table, "@"..s_fval)
-                elseif (c.fueled.fueltype == _G.FUELTYPE.NIGHTMARE or c.fueled.secondaryfueltype == _G.FUELTYPE.NIGHTMARE) and c.fueled.accepting and not (item:HasTag("pocketwatch") or item:HasTag("fossil") or item:HasTag("structure") or item:HasTag("book")) then
-                    table.insert(desc_table, "@"..s_fval)
-                elseif (c.fueled.fueltype == _G.FUELTYPE.MAGIC or c.fueled.secondaryfueltype == _G.FUELTYPE.MAGIC) and not (item:HasTag("structure") or prefab == "miniboatlantern") then
-                    table.insert(desc_table, "@"..s_fval)
-                elseif prefab == "torch" or prefab == "lighter" or prefab == "nightstick" or prefab == "minifan" or prefab == "walking_stick" then
-                    table.insert(desc_table, "@"..s_fval)
-                end
             end
         end
         --物品价值金块、石头

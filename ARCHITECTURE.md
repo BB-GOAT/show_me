@@ -185,7 +185,7 @@ modmain.lua 头部临时代码：
 2. **物品自定义信息**：给实体挂 `inst.GetShowItemInfo = function(viewer) return str1, str2, str3 end`（暗影收割者即官方风格用例）。
 3. **容器染色接管**：`inst.ShowMeColor = function(changed_to_default) end`。
 4. **检测的模组**：Insight（冲突拒载）、简易血条/Health Bar（血量显示让位）、Display food values（食物三属性让位）、高亮查找 3363111676（容器高亮让位）、综合状态显示 376333686（温度单位/淘气值 UI 联动）。
-5. RPC 通道：`ShowMe.AOS`、`ShowMe.Estimate`（客→服声明）；`ShowMeSHint.Hint`（客→服悬停请求）。netvar：`showme_hintbua.`（hint 串）、`showme_kramped_actions/threshold`、`ShowMe_chestlq_.`（每箱内容名单）。
+5. RPC 通道：`ShowMe.AOS`、`ShowMe.Estimate`、`ShowMe.SendConfig`（客→服声明，客户端 FixClient 时用 ZipAndEncodeString 上报自己的 13 项显示配置，服务器存 `player_config[player]`）；`ShowMeSHint.Hint`（客→服悬停请求）。netvar：`showme_hintbua.`（hint 串）、`showme_kramped_actions/threshold`、`ShowMe_chestlq_.`（每箱内容名单）。`context.config.client` 未上报时由调度器用 `server_config` 兜底，描述文件可直接读取无需判空。
 
 ---
 
