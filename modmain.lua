@@ -126,6 +126,10 @@ local item_info_mod = tonumber(GetModConfigData("item_info_mod",true)) or 0
 if item_info_mod == 0 then
     item_info_mod = tonumber(GetModConfigData("item_info_mod")) or 0
 end
+local perish_style = tonumber(GetModConfigData("perish_style", true)) or 0
+if perish_style == 0 then
+    perish_style = tonumber(GetModConfigData("perish_style")) or 0
+end
 local show_nutrients = GetModConfigData("show_nutrients")
 local show_fuel = GetModConfigData("show_fuel")
 local show_fueled = GetModConfigData("show_fueled")
@@ -530,15 +534,40 @@ MY_DATA.uses_of.fn = function(arr)
 end
 --距离腐烂
 MY_DATA.perish.fn = function(arr)
-    local desc = arr.data.desc
-    if arr.data == MY_DATA.perish then
-        if arr.param[2] == "stale" then
+    local days = SHOWME_STRINGS.days
+    local t1 = arr.param[1]           -- 距下一阶段
+    local stage = arr.param[2]        -- "stale" | "spoiled" | "" 
+    local t2 = arr.param[3] or t1     -- 距真正腐烂（服务端新增的第3参数）
+	local desc = arr.data.desc
+
+    -- 非食物（如 will_die/grow_in 等复用本 fn 的调用），保持原有阶段输出
+    if arr.data ~= MY_DATA.perish then
+        if stage == "stale" then
             desc = SHOWME_STRINGS.stale_in
-        elseif arr.param[2] == "spoiled" then
+        elseif stage == "spoiled" then
             desc = SHOWME_STRINGS.spoiled_in
         end
+        return desc .. t1 .. days
     end
-    return desc .. " " .. arr.param[1] .. SHOWME_STRINGS.days
+
+    if perish_style == 1 then	-- 阶段：距离不新鲜 / 变质 / 腐烂
+        if stage == "stale" then
+            desc = SHOWME_STRINGS.stale_in
+        elseif stage == "spoiled" then
+            desc = SHOWME_STRINGS.spoiled_in
+        end
+        return desc .. t1 .. days
+
+    elseif perish_style == 2 then	-- 两者
+        if stage ~= "stale" and stage ~= "spoiled" then	-- 已经变质：没有下一阶段可报，只显示腐烂
+            return desc .. t1 .. days
+        end
+        local stage_desc = (stage == "stale") and SHOWME_STRINGS.stale_in or SHOWME_STRINGS.spoiled_in
+        return stage_desc .. t1 .. days .. "( " .. t2 .. days .. " )"
+
+    else	-- 默认：距离腐烂
+        return desc .. t2 .. days
+    end
 end
 --将生物的距离腐烂定义为距离死亡
 local PerishFunction = function(arr)
@@ -2027,7 +2056,7 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
                                 end
                             end
                         end
-                        cn("perish", round2(countdown_time/TUNING.TOTAL_DAY_TIME,1), countdown_stage)
+                        cn("perish", round2(countdown_time/TUNING.TOTAL_DAY_TIME,1), countdown_stage or "", round2(time/TUNING.TOTAL_DAY_TIME,1))
                     end
                 end
             end
