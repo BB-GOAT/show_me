@@ -1524,6 +1524,33 @@ local descriptor_utils = {
     Upvaluehelper = Upvaluehelper,
 }
 
+--- 把条目编码进 desc_table：data_key 走 MY_DATA 协议（客户端渲染，跟随客户端语言），description 走 "@" 旁路（服务器文本）
+---@param entry table 条目 { priority, data_key, params } 或 { priority, description }
+local function EncodeEntry(entry)
+    if entry.data_key then
+        cn(entry.data_key, entry.params and _G.unpack(entry.params) or nil) -- cn 内部容错无效 key
+    elseif entry.description then
+        table.insert(desc_table, "@" .. entry.description)
+    end
+end
+
+--- 石头上的季节信息（未开启季节时钟时的替代显示）
+---@return table entries 协议条目数组：当前季节、季节剩余天数、世界温度
+local function GetSeasonEntries()
+    local w = _G.TheWorld.state -- 世界状态
+    local entries = {}
+    local season_keys = { iswinter = "S1", issummer = "S2", isspring = "S3", isautumn = "S4" } -- 四季互斥，只命中一个
+    for flag, key in pairs(season_keys) do
+        if w[flag] then
+            table.insert(entries, { data_key = key })
+            break
+        end
+    end
+    table.insert(entries, { data_key = "remaining_days", params = { w.remainingdaysinseason } })
+    table.insert(entries, { data_key = "temperature", params = { round2(w.temperature, 1) } })
+    return entries
+end
+
 --获取物品信息
 function GetTestString(item, viewer)
     --line_cnt = 0
@@ -1558,29 +1585,17 @@ function GetTestString(item, viewer)
     end
     table.sort(item_descriptors, function(a, b) return (a.priority or 0) > (b.priority or 0) end) -- 优先级高的信息放前面
 
-    -- 条目写入 desc_table：data_key 走 MY_DATA 协议编码（客户端渲染，跟随客户端语言），description 走 "@" 旁路（服务器文本）
+    -- 条目写入 desc_table
     for _, entry in ipairs(item_descriptors) do
-        if entry.data_key then
-            if MY_DATA[entry.data_key] then
-                cn(entry.data_key, entry.params and _G.unpack(entry.params) or nil)
-            end
-        elseif entry.description then
-            table.insert(desc_table, "@" .. entry.description)
-        end
+        EncodeEntry(entry)
     end
 
     --------------------------------------------------------------------------------------------------------------------
 
     if (prefab=="rock1" or prefab=="rock2") and not viewer.has_AlwaysOnStatus then    --没有开季节时钟则在石头上显示季节与剩余天数
-        local w=_G.TheWorld.state
-        local tt=round2(w.temperature,1)
-        if w.iswinter then cn("S1")
-        elseif w.issummer then cn("S2")
-        elseif w.isspring then cn("S3")
-        elseif w.isautumn then cn("S4")
+        for _, entry in ipairs(GetSeasonEntries()) do
+            EncodeEntry(entry)
         end
-        cn("remaining_days",w.remainingdaysinseason)
-        cn("temperature",tt)
     elseif c.health and not item.grow_stage then --Health, Hunger, Sanity Bar
         local h=c.health
         --生物血量
