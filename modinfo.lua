@@ -109,14 +109,14 @@ configuration_options =
     {
         name = "perish_style",
         label = "食物腐烂样式",
-        hover = "默认：预计腐烂",
+        hover = "不新鲜于: 0.1 天( 0.3 天)",
         options =
         {
-            {description = "默认", data = 0, hover = "预计腐烂: 0.3 天"},
+            {description = "总天数", data = 0, hover = "预计腐烂: 0.3 天"},
             {description = "阶段", data = 1, hover = "不新鲜于：0.1 天"},
             {description = "两者", data = 2, hover = "不新鲜于: 0.1 天( 0.3 天)"},
         },
-        default = 0,
+        default = 2,
     },
     {
         name = "show_food_units",
