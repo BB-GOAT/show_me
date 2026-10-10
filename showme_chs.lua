@@ -86,6 +86,8 @@ local MY_STRINGS =    -- 调用 MY_DATA.armor.desc
     watergainspeed = "水分增加速度: ",
     water_poisoned = "中毒了！",
 	true_number = "实际数量: ",
+    winter_gift_ready = "可以打开礼物",
+    winter_gift_wait = "还差 %s 天可以打开礼物",
 }
 
 local SHOWME_STRINGS = {

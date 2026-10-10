@@ -2655,6 +2655,26 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
             end
         end
     end
+    -- 冬季盛宴树
+    if item:HasTag("winter_tree") then
+        local giftable = viewer ~= nil
+            and viewer.components ~= nil
+            and viewer.components.wintertreegiftable
+        if giftable ~= nil and type(giftable.GetDaysSinceLastGift) == "function" then
+            local days = giftable:GetDaysSinceLastGift()
+            if type(days) == "number" then
+                if days >= 4 then
+                    table.insert(desc_table, "@" .. MY_STRINGS.winter_gift_ready)
+                else
+                    local remaining_days = math.ceil(4 - days)
+                    table.insert(desc_table, "@" .. string.format(
+                        MY_STRINGS.winter_gift_wait,
+                        remaining_days
+                    ))
+                end
+            end
+        end
+    end
     return table.concat(desc_table,"\2") --an error with no info
 end    -- 函数GetTestString END
 
