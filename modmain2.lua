@@ -25,20 +25,20 @@
     end
 --]]
 
-----------------------------------------------------------------------------------------------------------------------------
-
--- 临时代码
--- 是否使用Beta版
-if GetModConfigData("use_beta") then
-    modimport("modmain2.lua")
-    return
-end
-
-----------------------------------------------------------------------------------------------------------------------------
-
-GLOBAL.setmetatable(env, { __index = function(t, k) return GLOBAL.rawget(GLOBAL, k) end })	-- 给漏写GLOBAL和_G的上保险
-
 local _G = GLOBAL
+
+-- 给漏写GLOBAL和_G的上保险
+_G.setmetatable(env, {
+    __index = function(t, k)
+        if not modname:find("workshop%-") then
+            local info = _G.debug.getinfo(2)
+            if not string.find(info.source, modname) then return end
+            print("[Show Me 中文] 当前正在尝试从全局环境获取值", k, "调用于", info.source, info.currentline)
+        end
+        return _G.rawget(_G, k)
+    end
+})
+
 if _G.KnownModIndex:IsModEnabledAny("workshop-2189004162") then
     print("Show Me (中文) 检测到有笨蛋同时开启了Show Me和Insight模组，已停止加载Show Me！")
     return

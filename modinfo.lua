@@ -42,6 +42,13 @@ server_filter_tags = {
     "提示语句",
 }
 
+---@param label string|nil 标题
+---@param client_config boolean|nil 是否仅显示在客户端设置页面上
+---@return table
+local function SkipSpace(label, client_config)
+    return { name = "",label = label, hover = "", options = { { description = "", data = false }, }, default = false, client = client_config}
+end
+
 local color_options = {
     {description = "默认", data = -1,},
     {description = "0%", data = 0,},
@@ -59,6 +66,18 @@ local color_options = {
 
 configuration_options =
 {
+    {
+        name = "use_beta",
+        label = "是否使用Beta版本",
+        hover = "",
+        options =
+        {
+            {description = "否", data = false, hover = "否"},
+            {description = "是", data = true, hover = "感谢参与测试~有BUG请及时反馈"},
+        },
+        default = false,
+    },
+    SkipSpace(""),
     {
         name = "lang",
         label = "语言 Language",
