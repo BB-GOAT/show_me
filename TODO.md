@@ -2,6 +2,7 @@
 对于Tag判断，使用一个table表来for循环HasTag
 对于Prefab，复用并改造已有add_entity_description 函数（也使用不同的文件保存单个Prefab的信息获取方式，参考Insight模组）
 - 模组语言文件统一管理，当前使用了 MY_STRINGS、SHOWME_STRINGS、FOOD_TAGS、INTERNAL_TIMERS、INTERNAL_STAGES、STRESS_TAGS、OTHER_TAGS、OTHER_TITLES 表来放不同的字符串，后续应合并表
+- AddBoatStatus函数似乎无法正常工作
 
 - 清理历史遗留无用代码（如果有）
 - 函数使用LuaCATS注释法

@@ -1518,11 +1518,24 @@ local showme_descriptors = {
     growable = require("showme_descriptors/growable"), -- 生长阶段
     sanityaura = require("showme_descriptors/sanityaura"), -- 精神光环
     minionspawner = require("showme_descriptors/minionspawner"), -- 食人花
+    stewer = require("showme_descriptors/stewer"), -- 烹饪锅
+    cooldown = require("showme_descriptors/cooldown"), -- 充能冷却
+    tool = require("showme_descriptors/tool"), -- 工具效率增益
+    oar = require("showme_descriptors/oar"), -- 船桨
+    temperature = require("showme_descriptors/temperature"), -- 实体温度
+    instrument = require("showme_descriptors/instrument"), -- 乐器范围
+    occupiable = require("showme_descriptors/occupiable"), -- 笼中生物
+    dryer = require("showme_descriptors/dryer"), -- 晾肉架
+    saddler = require("showme_descriptors/saddler"), -- 鞍具
+    tradable = require("showme_descriptors/tradable"), -- 交易价值
+    repairer = require("showme_descriptors/repairer"), -- 船修理
+    harvestable = require("showme_descriptors/harvestable"), -- 可收获
 }
 
 -- 描述文件运行在全局环境，modmain2 的 local 工具需经 context.utils 传入；搬移新组件时按需补充
 local descriptor_utils = {
     round2 = round2,
+    KNOWN_BUFFS = KNOWN_BUFFS, -- 食物增益注册表（TUNING 键名与显示名）
     DataTimerFn = DataTimerFn,
     GetPerishTime = GetPerishTime,
     GetPrefabFancyName = GetPrefabFancyName,
@@ -1619,20 +1632,8 @@ function GetTestString(item, viewer)
         end
     elseif c.health and not item.grow_stage then
         --生物显示已全部由组件描述文件输出（血量/饥饿/精神等），无残留可显示项
-    else --elseif prefab~="rocks" and prefab~="flint" then --No rocks and flint
-        --Part 1: primary info
-        --烹饪锅
-        if c.stewer and c.stewer.product and c.stewer.IsCooking and c.stewer:IsCooking() then
-            local tm=round2(c.stewer.targettime-_G.GetTime(),0)
-            if tm<0 then tm=0 end
-            cn("cookpot", c.stewer.product)
-            cn("sec",tm)
-        end
-        --冷却
-        if c.cooldown and c.cooldown.GetTimeToCharged and not c.cooldown.charged then
-            local timer = round2(c.cooldown:GetTimeToCharged(),0)
-            cn("cooldown", timer)
-        end
+    else
+        --Part 1: primary info（烹饪锅、冷却已迁至 showme_descriptors/stewer.lua、cooldown.lua）
         --Part 2: secondary info
         if item_info_mod == 0 then
             if c.armor and c.armor.absorb_percent and type(c.armor.absorb_percent)=="number" then
@@ -1712,24 +1713,7 @@ function GetTestString(item, viewer)
                 cn("range",round2(c.combat.attackrange,1))
             end
         end
-        if c.tool then
-            local found = nil
-            for k,v in pairs(c.tool.actions) do
-                if k == _G.ACTIONS.HAMMER or k == _G.ACTIONS.CHOP or k == _G.ACTIONS.MINE then
-                    found = true
-                    break
-                end
-            end
-            if found then
-                local tm_buff = GetDebuffTime(viewer, 'buff_workeffectiveness')
-                if tm_buff then
-                    local power = TUNING[KNOWN_BUFFS.buff_workeffectiveness.power]
-                    if power then
-                        cn("effectiveness", round2(power*100), round2(tm_buff))
-                    end
-                end
-            end
-        end
+        --工具工作效率增益已迁至 showme_descriptors/tool.lua
         if item_info_mod == 0 and c.insulator and c.insulator.insulation and type(c.insulator.insulation)=="number" and c.insulator.insulation~=0 then
             if c.insulator.SetInsulationEx then --ServerMod
                 local winter,summer = c.insulator:GetInsulationEx()
@@ -1779,9 +1763,7 @@ function GetTestString(item, viewer)
                 end
             end
         end
-        if c.oar and c.oar.force and tonumber(c.oar.force) then
-            cn('force',round2(c.oar.force*100))
-        end
+        --船桨力度已迁至 showme_descriptors/oar.lua
         if item_info_mod == 0 and c.edible and not is_DisplayFoodValues then
             local can_eat = false
             if viewer.components.eater then
@@ -2004,12 +1986,7 @@ function GetTestString(item, viewer)
             cn("uses_of",cur,math.floor(c.finiteuses.total * mult + 0.5))
         end
         --温度
-        if c.temperature and c.temperature.current and type(c.temperature.current) == "number" then
-            cn("temperature",round2(c.temperature.current,1))
-        end
-        if c.instrument and type(c.instrument.range)=="number" and c.instrument.range>0.4 then
-            cn("range",round2(c.instrument.range,0))
-        end
+        --当前温度、乐器范围已迁至 showme_descriptors/temperature.lua、instrument.lua
         if c.crystallizable and c.crystallizable.formation --support of Krizor's mod
             and c.crystallizable.formation.thickness
             and type(c.crystallizable.formation.thickness)=="table"
@@ -2043,46 +2020,8 @@ function GetTestString(item, viewer)
                 has_owner = true
             end
         end
-        if c.occupiable then
-            local item = c.occupiable:GetOccupant()
-            if item then
-                local c = item.components
-                if c.perishable ~= nil and c.perishable.updatetask ~= nil then --这里“易腐烂”的意思是“饥饿”。
-                    local time = GetPerishTime(item, c)
-                    if time ~= nil then
-                        cn("will_die",round2(time/TUNING.TOTAL_DAY_TIME,1))
-                    end
-                end
-            end
-        end
-        if c.dryer and c.dryer.IsDrying then
-            if c.dryer:IsDrying() and c.dryer.GetTimeToDry then
-                cn("will_dry",round2(c.dryer:GetTimeToDry()/TUNING.TOTAL_DAY_TIME,1)) --距离死亡
-                --if c.dryer:IsPaused() then
-                --end
-            elseif c.dryer.IsDone and c.dryer:IsDone() and c.dryer.GetTimeToSpoil then --距离腐烂
-                cn("perish",round2(c.dryer:GetTimeToSpoil()/TUNING.TOTAL_DAY_TIME,1))
-            end
-        end
-        --鞍具
-        if c.saddler then
-            if c.saddler.speedmult and c.saddler.speedmult ~= 0 then
-                local added_speed = math.floor((c.saddler.speedmult - 1)*100 + 0.5) -- (1.4 - 1) == 0.4
-                cn("speed",added_speed)
-            end
-            if c.saddler.bonusdamage and c.saddler.bonusdamage ~= 0 then
-                cn("dmg_bonus",round2(c.saddler.bonusdamage,1))
-            end
-        end
-        --物品价值金块、石头
-        if c.tradable then
-            if c.tradable.goldvalue and c.tradable.goldvalue > 1 then
-                cn("trade_gold", c.tradable.goldvalue)
-            end
-            if c.tradable.rocktribute and c.tradable.rocktribute > 0 and _G.TheWorld.state.issummer then
-                cn("trade_rock", c.tradable.rocktribute)
-            end
-        end
+        --笼中生物倒计时、晾肉架已迁至 showme_descriptors/occupiable.lua、dryer.lua
+        --鞍具、交易价值已迁至 showme_descriptors/saddler.lua、tradable.lua
         --冰箱 etc
         if TUNING.PERISH_FRIDGE_MULT ~= 0.5 and item:HasTag("fridge") then
             local fridge = tonumber(TUNING.PERISH_FRIDGE_MULT);
@@ -2090,29 +2029,7 @@ function GetTestString(item, viewer)
                 cn("frigde",round2(fridge,1))
             end
         end
-        --物品对船的修理值
-        if viewer.boat_status_task and c.repairer and c.repairer.healthrepairvalue and c.repairer.healthrepairvalue ~= 0 then
-            cn("repairer",round2(c.repairer.healthrepairvalue,2))
-        end
-        --收获
-        if c.harvestable then
-            local h = c.harvestable
-            if h.product and h.produce and h.maxproduce and type(h.produce)=='number' and type(h.maxproduce)=='number' then
-                local tt = tonumber(h.targettime)
-                local pt = tonumber(h.pausetime)
-                local paused = not (h.enabled and tt)
-                if tt then
-                    local tm = round2(tt - GetTime(),0)
-                    if tm >= 0 then
-                        cn("harvest",h.product,h.produce,h.maxproduce,tm,paused and 0 or nil)
-                    end
-                elseif pt then
-                    cn("harvest",h.product,h.produce,h.maxproduce,round2(pt,0),0)
-                else
-                    cn("harvest",h.product,h.produce,h.maxproduce)
-                end
-            end
-        end
+        --船修理值、收获已迁至 showme_descriptors/repairer.lua、harvestable.lua
         --弹弓弹药
         if item:HasTag("slingshotammo") then
             local SLINGSHOT_AMMO_DATA = {}    --创建表
