@@ -1617,22 +1617,8 @@ function GetTestString(item, viewer)
         for _, entry in ipairs(GetSeasonEntries()) do
             EncodeEntry(entry)
         end
-    elseif c.health and not item.grow_stage then --Health, Hunger, Sanity Bar
-        if item.kills and type(item.kills) == "number" and item.kills>0 then
-            cn(item.kills==1 and "kill" or "kills",item.kills)
-        end
-        if item.aggro and type(item.aggro) == "number" and item.aggro>0 then
-            cn("aggro",item.aggro)
-        end
-        if item.asunaheal_score and prefab == "asuna" and TUNING.ASUNA_HEAL_SCORE_SWORD
-            and item.asunaheal_score < TUNING.ASUNA_HEAL_SCORE_SWORD
-        then
-            local asuna_proof = round2(math.floor((item.asunaheal_score/TUNING.ASUNA_HEAL_SCORE_SWORD)*100+0.5),0)
-            if asuna_proof > 99 then
-                asuna_proof = 99
-            end
-            table.insert(desc_table, "@Asuna Proof: "..asuna_proof.."%")
-        end
+    elseif c.health and not item.grow_stage then
+        --生物显示已全部由组件描述文件输出（血量/饥饿/精神等），无残留可显示项
     else --elseif prefab~="rocks" and prefab~="flint" then --No rocks and flint
         --Part 1: primary info
         --烹饪锅

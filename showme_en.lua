@@ -1,7 +1,6 @@
 local MY_STRINGS =    -- 调用 MY_DATA.armor.desc
 {
     armor = "Dmg Absor: " , --A --Armor of the item.
-    aggro = "Aggression: " , --B --Score of griefing 
     cookpot = "Cooking: " , --C (Crock Pot)
     dmg = "Damage: " , --D
     electric = "Electricity: " , --E --electric power
@@ -9,8 +8,6 @@ local MY_STRINGS =    -- 调用 MY_DATA.armor.desc
     S2="It's Summer," , --G
     health= "Health: " , --H --for food
     warm = "Insulation: " , --I --winter insulation
-    kill = "Kill: " , --J  --for Canibalism 18 mod (if character murder only once)
-    kills = "Kills: " , --K  --for Canibalism 18 mod (shows count of kills)
     loyal = "Loyalty: " , --L  --pigman and bunnyman
     S4="It's Autumn," , --M
     remaining_days = "Remaining days: " , --N

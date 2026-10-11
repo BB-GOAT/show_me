@@ -1,7 +1,6 @@
 local MY_STRINGS =    -- 调用 MY_DATA.armor.desc
 {
     armor = "防御: ", --A
-    aggro = "攻击: ", --B
     cookpot = "正在烹饪: ", --C (Crock Pot)
     dmg = "伤害: ", --D
     electric = "电力: ", --E --electric power
@@ -9,8 +8,6 @@ local MY_STRINGS =    -- 调用 MY_DATA.armor.desc
     S2 = "现在是夏天", --G
     health= "生命: ", --H --for food
     warm = "保暖: ", --I --winter insulation
-    kill = "击杀: ", --J     --for Canibalism 18 mod
-    kills = "击杀数: ", --K  --for Canibalism 18 mod
     loyal = "忠诚:", --L  --pigman and bunnyman
     S4 = "现在是秋天", --M
     remaining_days = "剩余天数: ", --N

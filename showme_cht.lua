@@ -1,7 +1,6 @@
 local MY_STRINGS =
 {
     armor = "傷害吸收: " , --A --Armor of the item.
-    aggro = "攻擊力: " , --B --Score of griefing 
     cookpot = "正在烹煮: " , --C (Crock Pot)
     dmg = "傷害: " , --D
     electric = "電力: " , --E --electric power
@@ -9,8 +8,6 @@ local MY_STRINGS =
     S2="現在是夏天," , --G
     health= "生命: " , --H --for food
     warm = "凍結抗性: " , --I --winter insulation
-    kill = "擊殺: " , --J  --for Canibalism 18 mod (if character murder only once)
-    kills = "擊殺數: " , --K  --for Canibalism 18 mod (shows count of kills)
     loyal = "忠誠: " , --L  --pigman and bunnyman
     S4="現在是秋天," , --M
     remaining_days = "剩餘天數: " , --N

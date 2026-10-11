@@ -1564,12 +1564,6 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
                 end
             end
         end
-        if item.kills and type(item.kills) == "number" and item.kills>0 then
-            cn(item.kills==1 and "kill" or "kills",item.kills)
-        end
-        if item.aggro and type(item.aggro) == "number" and item.aggro>0 then
-            cn("aggro",item.aggro)
-        end
         --伤害增加百分比。 例如，女武神 +25%
         if c.combat and c.combat.damagemultiplier and c.combat.damagemultiplier ~= 1 then
             local perc = c.combat.damagemultiplier - 1
@@ -1607,15 +1601,6 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
         if h.absorb~=0 or h.playerabsorb~=0 then
             local perc = 1-(1-h.absorb)*(1-h.playerabsorb)
             cn("armor_character",round2(perc*100,0))
-        end
-        if item.asunaheal_score and prefab == "asuna" and TUNING.ASUNA_HEAL_SCORE_SWORD
-            and item.asunaheal_score < TUNING.ASUNA_HEAL_SCORE_SWORD
-        then
-            local asuna_proof = round2(math.floor((item.asunaheal_score/TUNING.ASUNA_HEAL_SCORE_SWORD)*100+0.5),0)
-            if asuna_proof > 99 then
-                asuna_proof = 99
-            end
-            table.insert(desc_table, "@Asuna Proof: "..asuna_proof.."%")
         end
         if c.domesticatable ~= nil then
             if c.domesticatable.GetObedience ~= nil then
