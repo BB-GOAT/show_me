@@ -45,11 +45,11 @@ modmain.lua 头部临时代码：
 
 工作规则（后续重构统一遵守）：
 
-1. **modmain2.lua 是唯一重构工作区**。所有逻辑修改先在 modmain2 做，玩家默认仍走 modmain（稳定版），开启 use_beta 的用户走重构版。
+1. **modmain2.lua 是唯一重构工作区**。所有逻辑修改先在 modmain2 做，玩家默认仍走 modmain（稳定版），开启 use_beta 的用户走重构版。重构期间始终使用use_beta模式
 2. **modmain.lua 冻结**。只有两种情况才动它：Beta 转发段本身的调整；共享代码的改动会破坏原版行为时的兼容性修补。
 3. **共享资源改动必须双向兼容**：`showme_*.lua` 语言文件、`scripts/showme_naughtiness.lua`、`scripts/showme_range_indicators.lua`、`scripts/prefabs/showme_range.lua`、`bbgoat_upvaluehelper.lua` 被两个入口共同加载（同一时刻只有一个入口在跑，但关闭 use_beta 后原版必须照常工作）。改这些文件前先确认 modmain 不受影响；TODO 里"合并语言表"这类结构性改动落地时，modmain2 改用新结构、语言文件需同时保留旧表供 modmain 读取，直至重构完成合并版本发布。
 4. modmain2 的 env `__index` 兜底 metatable 带调试输出（本地开发环境 modname 非 workshop- 时，凡是从全局环境兜底取值都会打印调用点），用于揪出祖传代码里漏写 `GLOBAL` 的访问；重构中每处被打印的访问都应改为显式 `GLOBAL.`/`_G.`，让兜底逐渐失业。
-5. 切换 use_beta 需重新加载模组/重开世界才能生效，测试时注意。
+5. **共享 vs 私有的判断标准是现有使用者数量，不是将来可能有用**：只有一个描述文件使用的数据和函数，直接放在该描述文件内（如 combat.lua 的 is_PvP、fueled.lua 的 SPICIAL_STRUCTURES）；多处真实使用才提升到 utils/server_config。搬走唯一使用者后，modmain2 里的原定义随之删除。
 
 ## 三、核心数据流（悬停提示链路）
 
@@ -204,6 +204,8 @@ modmain.lua 头部临时代码：
 9. `showme_range_indicators.lua` 闭包 `showme_range` 变量复用与 `k` 魔法序号，可读性差。
 
 ## 九、修改注意事项
+
+- **Lua 陷阱：`and`/`or` 表达式会截断函数的多返回值**。`f(x and unpack(t) or nil)` 只会拿到第一个返回值，导致 `unpack` 展开多参数失败（曾造成 hp 条目丢参崩溃）。需要完整展开时把调用单独成句或作为函数末参直接传入：`cn(key, unpack(t or {}))`。
 
 - 所有逻辑重构在 `modmain2.lua` 进行（见二·一）；modmain.lua 冻结，仅做兼容性修补。
 - `bbgoat_upvaluehelper.lua` 是从【冰冰羊的模组运行库】同步的外部库，**不要本地改造**，要改去上游（GitHub: BB-GOAT/bbgoat_utils）。

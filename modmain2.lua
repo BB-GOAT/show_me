@@ -81,7 +81,6 @@ local mods = GetGlobal("mods",{})
 
 local GetTime = _G.GetTime    --计时器
 local TheNet = _G.TheNet
-local is_PvP = TheNet:GetDefaultPvpSetting()    --PVP
 local SERVER_SIDE = TheNet:GetIsServer()    --服务器
 local CLIENT_SIDE =     TheNet:GetIsClient() or (SERVER_SIDE and not TheNet:IsDedicated())    --本地
 
@@ -899,9 +898,6 @@ mods.mod_names = mod_names
 mods.mod_names_nover = mod_names_nover
 
 local function SearchForModsByName()
-    if mods.active_mods_by_name then
-        return --Уже проинициализировано. Либо полная несовместимость.
-    end
     mods.active_mods_by_name = {}
     if not (_G.KnownModIndex and _G.KnownModIndex.savedata and _G.KnownModIndex.savedata.known_mods) then
         print("ERROR COMMON LIB: Can't find KnownModIndex!")
@@ -932,6 +928,7 @@ for name in pairs(mods.active_mods_by_name) do
 end
 
 local need_send_hp = display_hp == -1 and not is_HealthInfo or display_hp == 0 or display_hp == 1
+server_config.need_send_hp = need_send_hp -- 供生物血量描述文件使用
 
 local is_DisplayFoodValues = mods.active_mods_by_name["Display food values"]
 
@@ -1012,6 +1009,7 @@ local function GetPerishTime(inst, c)
     end
 end
 
+local select = _G.select
 local desc_table
 local function cn(key, ...)
     local data = MY_DATA[key]
@@ -1019,8 +1017,8 @@ local function cn(key, ...)
         return
     end
     local parts = {}
-    for i = 1, _G.select("#", ...) do
-        local v = _G.select(i, ...)
+    for i = 1, select("#", ...) do
+        local v = select(i, ...)
         if v ~= nil then
             parts[#parts + 1] = tostring(v)
         end
@@ -1510,6 +1508,16 @@ end
 local showme_descriptors = {
     compostingbin = require("showme_descriptors/compostingbin"), -- 堆肥桶
     fueled = require("showme_descriptors/fueled"), -- 建筑燃料与服饰耐久
+    health = require("showme_descriptors/health"), -- 血量与防御
+    hunger = require("showme_descriptors/hunger"), -- 饥饿
+    perishable = require("showme_descriptors/perishable"), -- 生物剩余寿命
+    sanity = require("showme_descriptors/sanity"), -- 精神
+    follower = require("showme_descriptors/follower"), -- 主人与忠诚
+    combat = require("showme_descriptors/combat"), -- 攻击力与位面
+    domesticatable = require("showme_descriptors/domesticatable"), -- 驯服度
+    growable = require("showme_descriptors/growable"), -- 生长阶段
+    sanityaura = require("showme_descriptors/sanityaura"), -- 精神光环
+    minionspawner = require("showme_descriptors/minionspawner"), -- 食人花
 }
 
 -- 描述文件运行在全局环境，modmain2 的 local 工具需经 context.utils 传入；搬移新组件时按需补充
@@ -1528,7 +1536,7 @@ local descriptor_utils = {
 ---@param entry table 条目 { priority, data_key, params } 或 { priority, description }
 local function EncodeEntry(entry)
     if entry.data_key then
-        cn(entry.data_key, entry.params and _G.unpack(entry.params) or nil) -- cn 内部容错无效 key
+        cn(entry.data_key, _G.unpack(entry.params or {})) -- cn 内部容错无效 key
     elseif entry.description then
         table.insert(desc_table, "@" .. entry.description)
     end
@@ -1579,11 +1587,24 @@ function GetTestString(item, viewer)
 
             local result = descriptor.Describe(component, context)
             if result then
-                table.insert(item_descriptors, result)
+                -- 单条目对象靠 data_key/description 识别，数组则直接展开
+                if result[1] == nil and (result.data_key or result.description) then
+                    result = { result }
+                end
+                for _, entry in ipairs(result) do
+                    entry.order = #item_descriptors -- 插入序号，供同优先级排序保持组件内代码顺序
+                    table.insert(item_descriptors, entry)
+                end
             end
         end
     end
-    table.sort(item_descriptors, function(a, b) return (a.priority or 0) > (b.priority or 0) end) -- 优先级高的信息放前面
+    table.sort(item_descriptors, function(a, b)
+        local pa, pb = a.priority or 0, b.priority or 0
+        if pa ~= pb then
+            return pa > pb -- 优先级高的信息放前面
+        end
+        return a.order < b.order -- Lua 排序不稳定，同优先级按插入顺序
+    end)
 
     -- 条目写入 desc_table
     for _, entry in ipairs(item_descriptors) do
@@ -1597,95 +1618,11 @@ function GetTestString(item, viewer)
             EncodeEntry(entry)
         end
     elseif c.health and not item.grow_stage then --Health, Hunger, Sanity Bar
-        local h=c.health
-        --生物血量
-        if need_send_hp then --c.health
-            local mx;
-            local cur;
-            if (h.minhealth ~= nil and h ~= nil) then
-                mx=math.ceil(h.maxhealth-h.minhealth)
-                cur=math.ceil(h.currenthealth-h.minhealth)
-
-                if cur>mx then cur=mx end
-                cn("hp",cur,mx)
-            end
-        end
-        --生物饥饿
-        if c.hunger then
-            local val = c.hunger:GetPercent()
-            --要么没饥饿值的，要么这根本就不是一个玩家。
-            if c.grogginess or (not c.grogginess and (val > 0 or prefab ~= "beefalo")) then
-                cn("hunger",round2(c.hunger.current,0))
-            end
-        elseif item_info_mod == 0 and c.perishable ~= nil and c.perishable.updatetask ~= nil then --Here "Perishable" means "Hunger".
-            local time = GetPerishTime(item, c)
-            if time ~= nil then
-                cn("will_die",round2(time/TUNING.TOTAL_DAY_TIME,1))
-            end
-        end
-        if c.sanity then
-            local sanity = round2(math.floor(c.sanity:GetPercent()*100+0.5),1)
-            cn("sanity_character",sanity)
-        end
-        --随从
-        if c.follower then
-            if c.follower.leader and c.follower.leader:IsValid() and c.follower.leader:HasTag("player")
-                and c.follower.leader.name and c.follower.leader.name ~= ""
-            then
-                cn("owner",c.follower.leader.name)
-                has_owner = true
-            end
-            if c.follower.maxfollowtime then    --最大跟随时间
-                local mx = c.follower.maxfollowtime
-                local cur = math.floor(c.follower:GetLoyaltyPercent()*mx+0.5)
-                if cur>0 then
-                    cn("loyal",cur,mx)
-                end
-            end
-        end
         if item.kills and type(item.kills) == "number" and item.kills>0 then
             cn(item.kills==1 and "kill" or "kills",item.kills)
         end
         if item.aggro and type(item.aggro) == "number" and item.aggro>0 then
             cn("aggro",item.aggro)
-        end
-        --伤害增加百分比。 例如，女武神 +25%
-        if c.combat and c.combat.damagemultiplier and c.combat.damagemultiplier ~= 1 then
-            local perc = c.combat.damagemultiplier - 1
-            cn("dmg_character",round2(perc*100,0))
-        end
-        --伤害
-        if c.combat and c.combat.defaultdamage and c.combat.defaultdamage > 0 then
-            local com = c.combat
-            local dmg = com.defaultdamage
-            local pvp_perc = tonumber(com.playerdamagepercent) --玩家 NPC 伤害修正，仅适用于无武器
-            if pvp_perc then
-                if pvp_perc == 1 or not is_PvP and prefab == "abigail" then
-                    pvp_perc = nil
-                else
-                    pvp_perc = round2((pvp_perc - 1)*100);
-                    --pvp_perc = tostring(round2(pvp_perc,2))
-                end
-            end
-            cn("strength", tostring(round2(dmg,1)), pvp_perc)
-
-            if c.planardamage and c.planardamage.basedamage and c.planardamage.basedamage > 0 then        --生物位面伤害
-                cn("basedmg", math.floor(c.planardamage.basedamage))    --位面伤害不计算小数？向下整取试试, 不知有没pvp
-            end
-
-            if show_planar_resist and c.planarentity then    --生物位面抵抗
-                table.insert(desc_table, "@"..o_t.dmgresist)
-            end
-
-            if com.areahitdamagepercent then --AoE
-                cn("aoe", math.floor( dmg * com.areahitdamagepercent + 0.5))
-            end
-        end
-
-        --防御
-        if h.absorb~=0 or h.playerabsorb~=0 then
-            local perc = 1-(1-h.absorb)*(1-h.playerabsorb)
-            cn("armor_character",round2(perc*100,0))
         end
         if item.asunaheal_score and prefab == "asuna" and TUNING.ASUNA_HEAL_SCORE_SWORD
             and item.asunaheal_score < TUNING.ASUNA_HEAL_SCORE_SWORD
@@ -1696,89 +1633,6 @@ function GetTestString(item, viewer)
             end
             table.insert(desc_table, "@Asuna Proof: "..asuna_proof.."%")
         end
-        if c.domesticatable ~= nil then
-            if c.domesticatable.GetObedience ~= nil then
-                local obedience = c.domesticatable:GetObedience()
-                if obedience ~= 0 then
-                    cn("obedience",round2(obedience*100,0))
-                end
-            end
-            if c.domesticatable.GetDomestication ~= nil then
-                local domest = c.domesticatable:GetDomestication()
-                if domest ~= 0 then
-                    cn("domest",round2(domest*100,0))
-                end
-            end
-        end
-        if c.growable and c.growable.GetStage then
-            local g = c.growable
-            local t = (g.pausedremaining ~= nil and math.max(0, math.floor(g.pausedremaining)))
-                or (g.targettime ~= nil and math.floor(g.targettime - _G.GetTime()))
-                or nil
-            if t then
-                local stage = g.stage ~= 1 and tonumber(g.stage) or 1;
-                local data = g.stages and g.stages[stage];
-                cn("growable",data and data.name or stage,round2(t),g.pausedremaining ~= nil and 1 or 0);
-            end
-        end
-        if c.sanityaura then
-            local s = c.sanityaura;
-            local aura_val = s.aurafn and s.aurafn(item, viewer) or s.aura
-            if aura_val then
-                if s.fallofffn then -- fallofffn but not distance
-                    local fall = s.fallofffn(item, viewer, 99)
-                    if fall and fall ~= 0 and (fall < 0.98 or fall > 1.02) then
-                        aura_val = aura_val / fall;
-                    end
-                end
-                aura_val = round2(aura_val * TUNING.TOTAL_DAY_TIME * 0.125,1) --240 hardcoded. I'm not sure what it is
-                if aura_val ~= 0 then
-                    cn("sanityaura",aura_val)
-                end
-            end
-        end
-		--食人花
-		if prefab == "lureplant" then
-			local ms = c.minionspawner
-			if ms then
-				local meat_needed = math.ceil(ms.maxminions / 2)
-				local pm = o_t.lureplant_eyes .. tostring(ms.numminions) .. " / " .. tostring(ms.maxminions)
-
-				if item.hibernatetask then
-					-- 休眠, 多久长根
-					local t = _G.GetTaskRemaining(item.hibernatetask)
-					if t and t > 0 then
-						if ms.maxminions == 0 then	-- 若最大眼球草为0, 倒计时结束就长叶肉
-							pm = o_t.lureplant_meat_soon .. DataTimerFn(t)
-						else
-							pm = pm .. " | " .. o_t.lureplant_wake .. DataTimerFn(t)
-						end
-					end
-				elseif item.lure == nil and not (c.shelf and c.shelf.itemonshelf) then
-					-- 长根了且没有诱饵
-					if ms.numminions >= meat_needed then
-						-- 眼球草够了：下一次 TryRevealBait 就会 SpawnPrefab("plantmeat")
-						local wait = 1
-						if item.task then
-							local t = _G.GetTaskRemaining(item.task)
-							if t and t > 0 then wait = t end
-						end
-						pm = pm .. " | " .. o_t.lureplant_meat_soon .. DataTimerFn(wait)	-- 叶肉长出时间
-					elseif ms.spawninprogress and ms.nextspawninfo then
-						-- 眼球草不够：估算直到凑够 meat_needed 的时间
-						local elapsed = GetTime() - ms.nextspawninfo.start
-						local remaining = math.max(0, ms.nextspawninfo.time - elapsed)
-						local need = meat_needed - ms.numminions
-						local avg = (ms.minionspawntime.min + ms.minionspawntime.max) / 2
-						-- 第一只眼球草等 remaining，之后每只平均 avg
-						local estimate = remaining + math.max(0, need - 1) * avg
-						pm = pm .. " | " .. o_t.lureplant_meat_est .. DataTimerFn(estimate)	-- 无法精准，只能大约长肉时间
-					end
-				end
-
-				table.insert(desc_table, "@" .. pm)
-			end
-		end
     else --elseif prefab~="rocks" and prefab~="flint" then --No rocks and flint
         --Part 1: primary info
         --烹饪锅
@@ -1792,18 +1646,6 @@ function GetTestString(item, viewer)
         if c.cooldown and c.cooldown.GetTimeToCharged and not c.cooldown.charged then
             local timer = round2(c.cooldown:GetTimeToCharged(),0)
             cn("cooldown", timer)
-        end
-        --成长
-        if c.growable and c.growable.GetStage then
-            local g = c.growable
-            local t = (g.pausedremaining ~= nil and math.max(0, math.floor(g.pausedremaining)))
-                or (g.targettime ~= nil and math.floor(g.targettime - _G.GetTime()))
-                or nil
-            if t then
-                local stage = g.stage ~= 1 and tonumber(g.stage) or 1;
-                local data = g.stages and g.stages[stage];
-                cn("growable",data and data.name or stage,round2(t),g.pausedremaining ~= nil and 1 or 0);
-            end
         end
         --Part 2: secondary info
         if item_info_mod == 0 then
@@ -1931,22 +1773,6 @@ function GetTestString(item, viewer)
                 cn("sanity",sanity)
             elseif prefab == "flower_evil" then
                 cn("sanity",-_G.TUNING.SANITY_TINY,1)
-            end
-        end
-        if c.sanityaura then
-            local s = c.sanityaura;
-            local aura_val = s.aurafn and s.aurafn(item, viewer) or s.aura
-            if aura_val then
-                if s.fallofffn then -- fallofffn but not distance
-                    local fall = s.fallofffn(item, viewer, 99)
-                    if fall and fall ~= 0 and (fall < 0.98 or fall > 1.02) then
-                        aura_val = aura_val / fall;
-                    end
-                end
-                aura_val = round2(aura_val * TUNING.TOTAL_DAY_TIME * 0.125,1)
-                if aura_val ~= 0 then
-                    cn("sanityaura",aura_val)
-                end
             end
         end
         if c.equippable and c.equippable.walkspeedmult and c.equippable.walkspeedmult ~= 1 then
@@ -2560,11 +2386,6 @@ function GetTestString(item, viewer)
 				end
 			end
 		end
-		if prefab == "wobybig" and c.hunger then
-			local cur = math.floor(c.hunger.current + 0.5)
-			local max = math.floor(c.hunger.max + 0.5)
-			table.insert(desc_table, "@" .. MY_DATA.hunger.desc .. cur .. " / " .. max)
-		end
         --Stress points 新版耕地农作物状态显示
         local TS_crop = Switch("T_crop", true)
         if TS_crop then
@@ -2786,9 +2607,6 @@ if SERVER_SIDE then
             end
             if boss_progress_string then
                 description = description .. " | " .. boss_progress_string
-            end
-            if inst.components and inst.components.hunger then
-                description = description .. "\n" .. MY_DATA.hunger.desc .. round2(inst.components.hunger.current,0) .. " / " .. TUNING.SHADOW_BATTLEAXE.MAX_HUNGER
             end
 
             return description

@@ -1,9 +1,6 @@
 -- fueled 组件：建筑燃料（火堆/结构）与服饰、工具耐久
 local SPICIAL_STRUCTURES = { campfire = true, coldfire = true } -- 非结构但也显示建筑燃料的火堆类
 
----@param self table fueled 组件实例
----@param context table 调度器上下文 { entity, config, utils, modenv }
----@return table|nil result 条目 { priority, description }，无内容时返回 nil
 local Describe = function(self, context)
     local entity = context.entity -- 被查看的实体
     local prefab = entity.prefab
