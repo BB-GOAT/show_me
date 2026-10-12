@@ -1,5 +1,4 @@
--- equippable/dapperness 组件：装备的精神回复与移速加成
--- 注册 equippable 与 dapperness 两个键；sanity*54 为每分钟精神变化换算系数，沿用原实现
+-- equippable/dapperness/walkspeedmult 组件：装备的精神回复与移速加成
 local Describe = function(self, context)
     local c = context.entity.components
     local entries = {}
@@ -21,6 +20,7 @@ local Describe = function(self, context)
         end
     end
 
+    -- 移速（仅在可装备item上显示）
     if self.walkspeedmult and self.walkspeedmult ~= 1 then
         local added_speed = math.floor((self.walkspeedmult - 1) * 100 + 0.5)
         table.insert(entries, { data_key = "speed", params = { added_speed } })

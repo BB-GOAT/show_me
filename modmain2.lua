@@ -105,7 +105,6 @@ end
 local food_order = Switch("food_order", 0) -- 食物属性格式
 local food_style = Switch("food_style", 0) -- 食物属性样式
 -- local display_hp = Switch("display_hp", -1) -- 显示血量
-local food_estimation = Switch("food_estimation", -1) -- 预计腐烂
 local show_food_units = Switch("show_food_units", -1) -- 显示食物单位
 
 local chestR = Switch("chestR", -1) -- 红色值
@@ -700,12 +699,6 @@ AddModRPCHandler("ShowMe","AOS",function(inst)
     inst.has_AlwaysOnStatus = true
 end)
 
---是否考虑特定用户的伤害状态。
-AddModRPCHandler("ShowMe","Estimate",function(inst)
-    --调用此函数将禁用此玩家的提示。
-    inst.should_Estimate_Stale = true
-end)
-
 --local AOS_Temperature_fn --客户端转换游戏温度的功能。 
 
 --We climb into the client interface in order to reduce the displayed temperature
@@ -798,12 +791,6 @@ if CLIENT_SIDE then
     local function FixClient(inst)
         if inst ~= _G.ThePlayer then
             return
-        end
-
-        --以一种 hacky 的方式添加发送食物显示偏好设置
-        if food_estimation == 1 then
-            --print("SendRPC")
-            SendModRPCToServer(MOD_RPC.ShowMe.Estimate)
         end
 
         local status = inst.HUD and inst.HUD.controls and inst.HUD.controls.status
@@ -1529,6 +1516,10 @@ local showme_descriptors = {
     friendlevels = require("showme_descriptors/friendlevels"), -- 好感度
     stackable = require("showme_descriptors/stackable"), -- 超大堆叠实际数量
     pearldecorationscore = require("showme_descriptors/pearldecorationscore"), -- 寄居蟹装饰度
+    farmplantstress = require("showme_descriptors/farmplantstress"), -- 农作物压力
+    beerpower = require("showme_descriptors/beerpower"), -- 不灵电力
+    waterpower = require("showme_descriptors/waterpower"), -- 不灵水量
+    gaspower = require("showme_descriptors/gaspower"), -- 不灵气体
 }
 
 -- 描述文件运行在全局环境，modmain2 的 local 工具需经 context.utils 传入；搬移新组件时按需补充
@@ -1542,6 +1533,8 @@ local descriptor_utils = {
     IsUselessTimer = IsUselessTimer,
     safe_tuning = safe_tuning,
     Upvaluehelper = Upvaluehelper,
+    GetTileNutrientsAtPoint = GetTileNutrientsAtPoint,
+    GetTileMoistureAtPoint = GetTileMoistureAtPoint,
 }
 
 --- 把条目编码进 desc_table：data_key 走 MY_DATA 协议（客户端渲染，跟随客户端语言），description 走 "@" 旁路（服务器文本）
@@ -1898,47 +1891,9 @@ function GetTestString(item, viewer)
 				end
 			end
 		end
-        --Stress points 新版耕地农作物状态显示
-        local TS_crop = Switch("T_crop", true)
-        if TS_crop then
-            if c.farmplantstress and c.farmplantstress.stress_points then
-                local x, y, z = item.Transform:GetWorldPosition()
-                local g = GetTileNutrientsAtPoint(x, y, z)
-                local m = GetTileMoistureAtPoint(x, y, z)
-                cn("nutrient", m, g.formula, g.compost, g.manure)
-
-                local reason = {c.farmplantstress.stress_points}
-                if c.farmplantstress.stressors_testfns then
-                    for k,fn in pairs(c.farmplantstress.stressors_testfns) do
-                        if k == 'happiness' then
-                            if c.farmplantstress.stressors and c.farmplantstress.stressors.happiness then
-                                table.insert(reason, k)
-                            end
-                        else
-                            local bool = fn(item,k,false)
-                            if bool then
-                                table.insert(reason, k)
-                            end
-                        end
-                    end
-                end
-                cn("stress_tag", table.concat(reason, ","))
-            end
-        end
+        --农作物压力已迁至 showme_descriptors/farmplantstress.lua
     end
-    if c.beerpower then
-        local blb = c.beerpower
-        if c.beerpower ~= nil then table.insert(desc_table, "@"..o_t.beerpowerpower.."< "..blb.power.." / "..blb.PowerMax.." >") end
-    end
-    if c.waterpower then
-        local blw = c.waterpower
-        if c.waterpower ~= nil then table.insert(desc_table, "@"..o_t.waterpowerpower.."< "..blw.power.." / "..blw.PowerMax.." >") end
-    end
-
-    if c.gaspower then
-        local blg = c.gaspower
-        if c.gaspower ~= nil then table.insert(desc_table, "@"..o_t.gaspowerpower.."< "..blg.power.." / "..blg.PowerMax.." >") end
-    end
+    --不灵电力/水量/气体已迁至 showme_descriptors/beerpower.lua、waterpower.lua、gaspower.lua
 
     --生物巢,生物：6/6
     if c.childspawner then

@@ -31,14 +31,12 @@ local Describe = function(self, context)
         return nil
     end
 
-    local should_Estimate_Stale = viewer.should_Estimate_Stale -- 客户端 Estimate RPC 声明最优先
-    if not should_Estimate_Stale then
-        local food_estimation = context.config.client.food_estimation
-        if food_estimation == -1 then -- 客户端为默认档(-1)时跟随服务器设置
-            food_estimation = context.config.server.food_estimation
-        end
-        should_Estimate_Stale = food_estimation ~= 0
+    -- food_estimation：客户端显式设置优先，客户端为默认档(-1)时跟随服务器设置
+    local food_estimation = context.config.client.food_estimation
+    if food_estimation == -1 then
+        food_estimation = context.config.server.food_estimation
     end
+    local should_Estimate_Stale = food_estimation ~= 0
 
     local hp, hg, sn
     if should_Estimate_Stale and self.GetSanity then

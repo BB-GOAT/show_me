@@ -2,10 +2,10 @@
 local SPICIAL_STRUCTURES = { campfire = true, coldfire = true } -- 非结构但也显示建筑燃料的火堆类
 
 local Describe = function(self, context)
-    local entity = context.entity -- 被查看的实体
+    local entity = context.entity
     local prefab = entity.prefab
-    local utils = context.utils -- 共享工具函数
-    local config = context.config.client -- 查看者的客户端完整原始配置（未上报时整体回落服务器配置）
+    local utils = context.utils
+    local config = context.config.client
     -- show_fuel / show_fueled：客户端显式设置优先，客户端为默认档（true / 3）时跟随服务器设置
     local show_fuel = config.show_fuel
     if show_fuel then
@@ -15,10 +15,10 @@ local Describe = function(self, context)
     if show_fueled == 3 then
         show_fueled = context.config.server.show_fueled
     end
-    local o_t = context.modenv.OTHER_TITLES -- 服务器语言：格式化词条
-    local s_str = context.modenv.SHOWME_STRINGS -- 服务器语言：辅助词条
+    local o_t = context.modenv.OTHER_TITLES
+    local s_str = context.modenv.SHOWME_STRINGS
 
-    local lines = {} -- 待拼接的多行文本
+    local lines = {}
 
     -- 建筑燃料：火堆类与结构建筑，显示剩余燃烧时间与燃料效率
     if self:GetPercent() > 0 and (SPICIAL_STRUCTURES[prefab] or entity:HasTag("structure")) then
