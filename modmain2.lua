@@ -44,7 +44,7 @@ if _G.KnownModIndex:IsModEnabledAny("workshop-2189004162") then
     return
 end
 
-print(modinfo.name .. " : v" .. modinfo.version)
+print(modinfo.name .. " : v" .. modinfo.version .. " Beta版模式")
 
 local function printinvalid(rpcname, player) -- 客户端发送无效RPC时的处理
     print(string.format("Invalid %s RPC from (%s) %s", rpcname, player.userid or "", player.name or ""))
@@ -1520,6 +1520,7 @@ local showme_descriptors = {
     beerpower = require("showme_descriptors/beerpower"), -- 不灵电力
     waterpower = require("showme_descriptors/waterpower"), -- 不灵水量
     gaspower = require("showme_descriptors/gaspower"), -- 不灵气体
+    childspawner = require("showme_descriptors/childspawner"), -- 生物巢居民数
 }
 
 -- 描述文件运行在全局环境，modmain2 的 local 工具需经 context.utils 传入；搬移新组件时按需补充
@@ -1895,42 +1896,7 @@ function GetTestString(item, viewer)
     end
     --不灵电力/水量/气体已迁至 showme_descriptors/beerpower.lua、waterpower.lua、gaspower.lua
 
-    --生物巢,生物：6/6
-    if c.childspawner then
-		local function IsSpawnerHouse(prefab)
-			return prefab == "mermhouse_crafted" or prefab == "mermwatchtower"
-		end
-
-		local inside = math.floor(tonumber(c.childspawner.childreninside) or 0)
-		local maximum = math.floor(tonumber(c.childspawner.maxchildren) or 0)
-		local child_name = GetPrefabFancyName(c.childspawner.childname or MY_DATA.children.desc) .. ": " -- 直接从官方字符串拿生物名
-
-		if IsSpawnerHouse(prefab) then -- 用于人鱼屋
-			local spawner = c.childspawner
-
-			local outside = spawner.CountChildrenOutside and spawner:CountChildrenOutside() or 0	-- 外出的
-			local total = inside + outside	-- 屋内 + 屋外
-
-			local cur_max = child_name .. total .. " / " .. maximum
-
-			-- 判定"已停止"的两种依据（满足任一即视为停止）
-			local timer = c.worldsettingstimer
-			local tm = timer and timer.GetTimeLeft and timer:GetTimeLeft("ChildSpawner_RegenPeriod")
-
-			if total >= maximum or not tm then
-				-- 已达上限 或 计时器未在跑（例如白天 StopSpawning / 世界设置禁用）
-				cur_max = cur_max .. " (" .. SHOWME_STRINGS.stopped .. ")"
-			elseif tm > 0 then
-				cur_max = cur_max .. " | " .. o_t.spawn_in .. DataTimerFn(tm)
-			end
-
-			table.insert(desc_table, "@" .. cur_max)
-        else
-			if inside and maximum then
-				cn("children",round2(inside,0),round2(maximum,0))
-			end
-		end
-    end
+    --生物巢已迁至 showme_descriptors/childspawner.lua
 
     --从武器信息看:
     if viewer.components.inventory then
