@@ -919,6 +919,7 @@ end
 server_config.is_HealthInfo = is_HealthInfo
 
 local is_DisplayFoodValues = mods.active_mods_by_name["Display food values"]
+server_config.is_DisplayFoodValues = is_DisplayFoodValues -- 服务器检测结果：供 edible 描述文件判断是否隐藏食物属性
 
 local cooking = require("cooking")
 
@@ -1522,6 +1523,7 @@ local showme_descriptors = {
     equippable = require("showme_descriptors/equippable"), -- 装备回san与移速
     dapperness = require("showme_descriptors/equippable"), -- 精神回复（与 equippable 同文件）
     waterproofer = require("showme_descriptors/waterproofer"), -- 防水
+    edible = require("showme_descriptors/edible"), -- 食物属性
 }
 
 -- 描述文件运行在全局环境，modmain2 的 local 工具需经 context.utils 传入；搬移新组件时按需补充
@@ -1638,144 +1640,7 @@ function GetTestString(item, viewer)
         --装备移速加成已迁至 showme_descriptors/equippable.lua
         --防水已迁至 showme_descriptors/waterproofer.lua
         --船桨力度已迁至 showme_descriptors/oar.lua
-        if item_info_mod == 0 and c.edible and not is_DisplayFoodValues then
-            local can_eat = false
-            if viewer.components.eater then
-                can_eat = viewer.components.eater:CanEat(item)
-            end
-            if can_eat then
-                local ed = c.edible
-                local should_Estimate_Stale = viewer.should_Estimate_Stale --client priority
-                if not should_Estimate_Stale then
-                    should_Estimate_Stale = food_estimation ~= 0
-                end
-                local hp,hg,sn
-                if should_Estimate_Stale and ed.GetSanity then
-                    --print("Estimate")
-                    hp=round2(ed:GetHealth(viewer),1)
-                    hg=round2(ed:GetHunger(viewer),1)
-                    sn=round2(ed:GetSanity(viewer),1)
-                else
-                    --print("Not Estimate")
-                    hp=round2(ed.healthvalue,1)
-                    hg=round2(ed.hungervalue,1)
-                    sn=round2(ed.sanityvalue,1)
-                end
-                if viewer.FoodValuesChanger ~= nil then --一种特殊功能，其目的是在食用时改变食物。
-                    --print("+")
-                    --确实，在这里我们可以在吃之前稍微看看它的结果。
-                    local hp2, hg2, sn2 = viewer:FoodValuesChanger(item)
-                    if sn2 ~= nil then
-                        --print("++")
-                        hp=round2(hp2,1)
-                        hg=round2(hg2,1)
-                        sn=round2(sn2,1)
-                    end
-                end
-                local base_mult = viewer.components.foodmemory ~= nil and viewer.components.foodmemory:GetFoodMultiplier(prefab) or 1
-                do	-- 进食者的吸收倍率, 增加eater组件检查
-					local eater = viewer.components.eater
-					local hp_mult = (ed.healthabsorption or 1) * base_mult * (eater and eater.healthabsorption or 1)
-					local hg_mult = (ed.hungerabsorption or 1) * base_mult * (eater and eater.hungerabsorption or 1)
-					local sn_mult = (ed.sanityabsorption or 1) * base_mult * (eater and eater.sanityabsorption or 1)
-					hp = hp * hp_mult
-					hg = hg * hg_mult
-					sn = sn * sn_mult
-				end
-                if prefab == "petals_evil" then
-                    sn = round2(sn - _G.TUNING.SANITY_TINY,1)
-                end
-                if hp > 0 then
-                    hp = "+" .. tostring(hp)
-                end
-                if hg > 0 then
-                    hg = "+" .. tostring(hg)
-                end
-                if sn > 0 then
-                    sn = "+" .. tostring(sn)
-                end
-                cn("food",hg,sn,hp)
-
-                if ed.temperaturedelta ~= 0 then -- 食物有温度
-                    if ed.temperatureduration ~= 0 and ed.chill < 1 and viewer.components.temperature ~= nil then
-                        local delta_multiplier = 1
-                        local duration_multiplier = 1
-                        if ed.spice and _G.TUNING.SPICE_MULTIPLIERS[ed.spice] then
-                            if _G.TUNING.SPICE_MULTIPLIERS[ed.spice].TEMPERATUREDELTA then
-                                delta_multiplier = delta_multiplier + _G.TUNING.SPICE_MULTIPLIERS[ed.spice].TEMPERATUREDELTA
-                            end
-                            if _G.TUNING.SPICE_MULTIPLIERS[ed.spice].TEMPERATUREDURATION then
-                                duration_multiplier = duration_multiplier + _G.TUNING.SPICE_MULTIPLIERS[ed.spice].TEMPERATUREDURATION
-                            end
-                        end
-                        local delta, duration = ed.temperaturedelta * (1 - ed.chill) * delta_multiplier, ed.temperatureduration * duration_multiplier
-                        cn('food_temperature',round2(delta), round2(duration))
-                    end
-                end
-                if base_mult ~= 1 then --食物储存，例如厨子
-                    local fm = viewer.components.foodmemory
-                    if fm.GetBaseFood and fm.foods then
-                        local rec = fm.foods[fm:GetBaseFood(prefab)]
-                        if rec then
-                            local t = _G.GetTaskRemaining(rec.task)
-                            cn('food_memory',round2(base_mult,2),round2(t))
-                        end
-                    end
-                end
-                --香料效果
-                if ed.spice and false then
-                    if ed.spice == 'SPICE_SUGAR' then --spice_sugar
-                        cn("buff","Work",round2(TUNING.BUFF_WORKEFFECTIVENESS_MODIFIER,1),round2(TUNING.BUFF_WORKEFFECTIVENESS_DURATION/TUNING.TOTAL_DAY_TIME))
-                    elseif ed.spice == 'SPICE_GARLIC' then --spice_garlic
-                        cn("buff","Absorb",round2(TUNING.BUFF_PLAYERABSORPTION_MODIFIER + 1,1),round2(TUNING.BUFF_PLAYERABSORPTION_DURATION/TUNING.TOTAL_DAY_TIME))
-                    elseif ed.spice == 'SPICE_CHILI' then --spice_chili
-                        cn("buff","Attack",round2(TUNING.BUFF_ATTACK_MULTIPLIER,1),round2(TUNING.BUFF_ATTACK_DURATION/TUNING.TOTAL_DAY_TIME))
-                    end
-                end
-                --Warly BUFF
-				local _shown_buffs = {}		-- 给食物BUFF加去重表, 没错就是为了防止N条 生命恢复 持续 x 天
-                for _,struct in pairs(cooking.recipes) do
-					for food,v in pairs(struct) do
-						if food == prefab and v.prefabs then
-							for i,buff_name in ipairs(v.prefabs) do
-								local duration = nil
-								local power = nil
-								local data = KNOWN_BUFFS[buff_name]
-								if data then
-									if type(data.duration) == 'function' then
-										duration = data.duration()
-									else
-										duration = TUNING[data.duration]
-									end
-									if data.power then
-										power = TUNING[data.power]
-									end
-									if data.shift and data.power then
-										power = power + 1
-									end
-									buff_name = data.name
-								else
-									local up = buff_name:upper()
-									duration = TUNING[up .. '_DURATION']
-									power = TUNING[up .. '_MULTIPLIER'] or TUNING[up .. '_MODIFIER']
-									if buff_name:find("buff_",1,true) == 1 then
-										buff_name = buff_name:sub(6)
-									end
-									if buff_name:find("buff",#buff_name-3,true) then
-										buff_name = buff_name:sub(1,#buff_name-4)
-									end
-								end
-								if duration and not _shown_buffs[buff_name] then
-									_shown_buffs[buff_name] = true
-									duration = round2(duration / TUNING.TOTAL_DAY_TIME,1)
-									cn("buff",buff_name,duration,power)
-								end
-							end
-						end
-					end
-				end
-            end
-        end
+        --食物属性（含温度/记忆/Warly BUFF）已迁至 showme_descriptors/edible.lua
         if show_nutrients ~= false then --肥料信息
             if c.fertilizer then
                 local _nt = c.fertilizer
