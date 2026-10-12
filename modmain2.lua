@@ -1524,6 +1524,8 @@ local showme_descriptors = {
     waterproofer = require("showme_descriptors/waterproofer"), -- 防水
     edible = require("showme_descriptors/edible"), -- 食物属性
     fertilizer = require("showme_descriptors/fertilizer"), -- 肥料值
+    pickable = require("showme_descriptors/pickable"), -- 采摘倒计时与次数
+    crop = require("showme_descriptors/crop"), -- 旧农场作物生长进度
 }
 
 -- 描述文件运行在全局环境，modmain2 的 local 工具需经 context.utils 传入；搬移新组件时按需补充
@@ -1582,6 +1584,23 @@ local function GetOwnerEntries(item)
         --不知道名字是什么，但这就是“主人”，所以需要取出来，而且这绝对不是user_id。
         table.insert(entries, { data_key = "owner", params = { item.owner } })
         return entries
+    end
+end
+
+local SLINGSHOT_AMMO_DATA -- 弹弓弹药数据
+local function Get_SLINGSHOT_AMMO_DATA() -- 首次获取数据
+    SLINGSHOT_AMMO_DATA = {}
+    for i,v in pairs(_G.Prefabs) do        --获取官方Prefab
+        if v.fn and _G.debug.getinfo(v.fn, "S").source == "scripts/prefabs/slingshotammo.lua" then        --Prefab 的Fn
+            if v.name:sub(-5) == "_proj" then
+                --table.insert(ammo_prefabs, Prefab(name, function() return fn(data) end, assets, prefabs))  --新
+                --table.insert(ammo_prefabs, Prefab(v.name.."_proj", function() return projectile_fn(v) end, assets, prefabs))  --旧
+                local ammo_data = Upvaluehelper.GetUpvalue(v.fn, "data") --"v" > "data"
+                if ammo_data ~= nil and type(ammo_data) == "table" then
+                    SLINGSHOT_AMMO_DATA[ammo_data.name] = ammo_data
+                end
+            end
+        end
     end
 end
 
@@ -1644,7 +1663,7 @@ function GetTestString(item, viewer)
         for _, entry in ipairs(GetSeasonEntries()) do
             EncodeEntry(entry)
         end
-    elseif c.health and not item.grow_stage then
+    -- elseif c.health and not item.grow_stage then
         --生物显示已全部由组件描述文件输出（血量/饥饿/精神等），无残留可显示项
     else
         --Part 1: primary info（烹饪锅、冷却已迁至 showme_descriptors/stewer.lua、cooldown.lua）
@@ -1701,30 +1720,14 @@ function GetTestString(item, viewer)
         --船修理值、收获已迁至 showme_descriptors/repairer.lua、harvestable.lua
         --弹弓弹药
         if item:HasTag("slingshotammo") then
-            local SLINGSHOT_AMMO_DATA = {}    --创建表
-            for i,v in pairs(_G.Prefabs) do        --获取官方Prefab
-                if v.fn and _G.debug.getinfo(v.fn, "S").source == "scripts/prefabs/slingshotammo.lua" then        --Prefab 的Fn
-                    if v.name:sub(-5) == "_proj" then
-                        --table.insert(ammo_prefabs, Prefab(name, function() return fn(data) end, assets, prefabs))  --新
-                        --table.insert(ammo_prefabs, Prefab(v.name.."_proj", function() return projectile_fn(v) end, assets, prefabs))  --旧
-                        local ammo_data = Upvaluehelper.GetUpvalue(v.fn, "data") --"v" > "data"
-                        if ammo_data ~= nil and type(ammo_data) == "table" then
-                            SLINGSHOT_AMMO_DATA[ammo_data.name] = ammo_data
-                        end
-                    end
-                end
-            end
-
-            local function GetSlingshotAmmoData(inst)
-                return SLINGSHOT_AMMO_DATA[prefab]
-            end
-            local ammo_data = GetSlingshotAmmoData(ammo)
+            if not SLINGSHOT_AMMO_DATA then Get_SLINGSHOT_AMMO_DATA() end
+            local ammo_data = SLINGSHOT_AMMO_DATA and SLINGSHOT_AMMO_DATA[prefab]
             if ammo_data ~= nil then
                 if ammo_data.damage ~= nil then cn("dmg", ammo_data.damage) end
                 if ammo_data.planar ~= nil then cn("basedmg", ammo_data.planar) end
-
             end
         end
+
         -- 冬季盛宴树
         if item:HasTag("winter_tree") then
             local giftable = viewer.components.wintertreegiftable
@@ -1856,26 +1859,9 @@ function GetTestString(item, viewer)
             if custom2 then table.insert(desc_table, "@"..tostring(custom2)) end
             if custom3 then table.insert(desc_table, "@"..tostring(custom3)) end
         end
-        if c.pickable and c.pickable.task then --草和树苗
-            local targettime = c.pickable.targettime
-            if targettime then
-                local delta = targettime - GetTime()
-                if delta > 0 then
-                    cn("grow_in",round2(delta/TUNING.TOTAL_DAY_TIME,1)) --days
-                end
-            end
-        end
-        --可采摘次数
-        if c.pickable and c.pickable.transplanted and c.pickable.cycles_left ~= nil and c.pickable.max_cycles ~= nil then
-            table.insert(desc_table, "@"..o_t.ot_pickable..c.pickable.cycles_left.." / "..c.pickable.max_cycles)
-        end
-        --种植的幼苗，一般用在旧农场
-        if c.crop and c.crop.product_prefab and c.crop.product_prefab and c.crop.growthpercent
-            and type(c.crop.growthpercent) == 'number' and c.crop.growthpercent < 1
-        then
-            --作物的生长百分比
-            cn("crop",c.crop.product_prefab,round2(c.crop.growthpercent*100,0))
-        end
+
+        --采摘倒计时/次数已迁至 showme_descriptors/pickable.lua
+        --旧农场作物生长进度已迁至 showme_descriptors/crop.lua
         if show_buddle_item == 1 and c.unwrappable and c.unwrappable.itemdata and type(c.unwrappable.itemdata) == 'table' then
             --包裹信息？？每样一行
             for i,v in ipairs(c.unwrappable.itemdata) do
