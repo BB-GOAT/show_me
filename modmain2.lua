@@ -82,7 +82,7 @@ local mods = GetGlobal("mods",{})
 local GetTime = _G.GetTime    --计时器
 local TheNet = _G.TheNet
 local SERVER_SIDE = TheNet:GetIsServer()    --服务器
-local CLIENT_SIDE =     TheNet:GetIsClient() or (SERVER_SIDE and not TheNet:IsDedicated())    --本地
+local CLIENT_SIDE = TheNet:GetIsClient() or (SERVER_SIDE and not TheNet:IsDedicated())    --本地
 
 local tonumber = _G.tonumber
 
@@ -104,10 +104,9 @@ end
 
 local food_order = Switch("food_order", 0) -- 食物属性格式
 local food_style = Switch("food_style", 0) -- 食物属性样式
-local display_hp = Switch("display_hp", -1) -- 显示血量
+-- local display_hp = Switch("display_hp", -1) -- 显示血量
 local food_estimation = Switch("food_estimation", -1) -- 预计腐烂
 local show_food_units = Switch("show_food_units", -1) -- 显示食物单位
-local show_uses = Switch("show_uses", -1) -- 显示工具用途
 
 local chestR = Switch("chestR", -1) -- 红色值
 chestR = chestR == -1 and 0.3 or chestR
@@ -121,9 +120,9 @@ local item_info_mod = Switch("item_info_mod", 0) -- 兼容item info模组
 local perish_style = Switch("perish_style", 0) -- 食物腐烂样式
 local show_nutrients = Switch("show_nutrients", 1) -- 显示肥料值
 local show_fuel = Switch("show_fuel", true) -- 物品燃料值
-local show_fueled = Switch("show_fueled", 3) -- 穿戴装备天数
-local show_planar_resist = Switch("show_planar_resist", true) -- 显示位面抵抗
-local show_naughtiness = Switch("Show_naughtiness", true) -- 显示淘气值
+-- local show_fueled = Switch("show_fueled", 3) -- 穿戴装备天数
+-- local show_planar_resist = Switch("show_planar_resist", true) -- 显示位面抵抗
+local show_naughtiness = GetModConfigData("Show_naughtiness") -- 显示淘气值
 
 -- 服务器端模组配置
 local server_config = {
@@ -140,7 +139,6 @@ local server_config = {
     show_fuel = GetModConfigData("show_fuel"), -- 物品燃料值
     show_fueled = GetModConfigData("show_fueled"), -- 穿戴装备天数
     show_planar_resist = GetModConfigData("show_planar_resist"), -- 显示位面抵抗
-    show_naughtiness = GetModConfigData("Show_naughtiness"), -- 显示淘气值
 }
 
 local client_config = {
@@ -157,9 +155,15 @@ local client_config = {
     show_fuel = GetModConfigData("show_fuel", true), -- 物品燃料值
     show_fueled = GetModConfigData("show_fueled", true), -- 穿戴装备天数
     show_planar_resist = GetModConfigData("show_planar_resist", true), -- 显示位面抵抗
-    show_naughtiness = GetModConfigData("Show_naughtiness", true), -- 显示淘气值
 }
 local player_config = {}
+
+-- 各配置项的 modinfo 默认值：客户端上报前过滤未修改项，未修改项沿用服务器设置（对齐原 Switch 的客户端优先语义）
+local config_defaults = {}
+for _, opt in ipairs(modinfo.configuration_options) do
+    config_defaults[opt.name] = opt.default
+end
+
 AddModRPCHandler("ShowMe","SendConfig",function(player, config)
     if not _G.checkstring(config) then
         printinvalid("ShowMe.SendConfig", player)
@@ -170,7 +174,19 @@ AddModRPCHandler("ShowMe","SendConfig",function(player, config)
         printinvalid("ShowMe.SendConfig", player)
         return
     end
-    player_config[player] = config
+    -- 客户端只上报非默认项，此处以服务器配置补全，得到该玩家的生效配置
+    local merged = {}
+    for k, v in pairs(server_config) do
+        if v == 2 then
+            merged[k] = v -- 禁止档：服务器强制，忽略客户端设置
+        elseif config[k] ~= nil then
+            merged[k] = config[k] -- 不用 and/or：布尔 false 值会被 or 截断回落
+        else
+            merged[k] = v
+        end
+    end
+
+    player_config[player] = merged
 end)
 
 -- 定义语言表(定义在模组环境以便其它模组调用)
@@ -697,15 +713,6 @@ if show_food_units == 0 or show_food_units == 2 then
     MY_DATA.units_of.hidden = true
 end
 
-if show_uses == 0 or show_uses == 2 then
-    MY_DATA.uses_of.hidden = true
-end
-
-local need_show_hp = display_hp == -1 or display_hp == 1
-if not need_show_hp then
-    MY_DATA.hp.hidden = true
-end
-
 --尝试检测客户端模组并通过 RPC 发送它们
 AddModRPCHandler("ShowMe","AOS",function(inst)
     --调用此函数将禁用此玩家的提示。
@@ -853,7 +860,14 @@ if CLIENT_SIDE then
             OnShowMeNaughtyAction() -- 初始化 综合状态显示 模组显示的淘气值默认信息
         end
 
-        SendModRPCToServer(MOD_RPC.ShowMe.SendConfig, _G.ZipAndEncodeString(client_config))
+        -- 仅上报客户端主动修改过的配置项，未修改项由服务器端回落服务器设置
+        local payload = {}
+        for k, v in pairs(client_config) do
+            if v ~= config_defaults[k] then
+                payload[k] = v
+            end
+        end
+        SendModRPCToServer(MOD_RPC.ShowMe.SendConfig, _G.ZipAndEncodeString(payload))
     end
     AddPlayersAfterInit(FixClient)
 end
@@ -926,9 +940,7 @@ for name in pairs(mods.active_mods_by_name) do
         break
     end
 end
-
-local need_send_hp = display_hp == -1 and not is_HealthInfo or display_hp == 0 or display_hp == 1
-server_config.need_send_hp = need_send_hp -- 供生物血量描述文件使用
+server_config.is_HealthInfo = is_HealthInfo
 
 local is_DisplayFoodValues = mods.active_mods_by_name["Display food values"]
 
@@ -1095,12 +1107,6 @@ local function AddBoatStatus(viewer)
         inst.boat_status_task = nil
     end)
 end
-
-local C_FINITEUSES_PREFAB = { -- mult to num "uses" for each prefab
-    spiderden_bedazzler = 0.05,
-    spider_repellent = 0.1,
-    spider_whistle = 0.5,
-}
 
 local USELESS_TIMERS = {	-- 生物巢定时器屏蔽
     --default for all prefabs
@@ -1530,6 +1536,15 @@ local showme_descriptors = {
     tradable = require("showme_descriptors/tradable"), -- 交易价值
     repairer = require("showme_descriptors/repairer"), -- 船修理
     harvestable = require("showme_descriptors/harvestable"), -- 可收获
+    armor = require("showme_descriptors/armor"), -- 护甲防御与耐久
+    weapon = require("showme_descriptors/weapon"), -- 武器伤害
+    zupalexsrangedweapons = require("showme_descriptors/weapon"), -- 远程武器 mod（与 weapon 同文件）
+    projectile = require("showme_descriptors/range"), -- 投射物与纯 combat 物品的攻击范围（生物与武器场景排除）
+    healer = require("showme_descriptors/healer"), -- 治疗量
+    finiteuses = require("showme_descriptors/finiteuses"), -- 使用次数
+    insulator = require("showme_descriptors/insulator"), -- 保暖/隔热
+    equippable = require("showme_descriptors/equippable"), -- 装备回san与移速
+    dapperness = require("showme_descriptors/equippable"), -- 精神回复（与 equippable 同文件）
 }
 
 -- 描述文件运行在全局环境，modmain2 的 local 工具需经 context.utils 传入；搬移新组件时按需补充
@@ -1581,9 +1596,11 @@ function GetTestString(item, viewer)
     local has_owner = false --仅向所有者发送一次信息
 
     local item_descriptors = {}
+    local processed_descriptors = {} -- 同一描述文件注册多个组件键时只执行一次
     for components_name, component in pairs(item.components or {}) do
         local descriptor = showme_descriptors[components_name]
-        if descriptor and descriptor.Describe then
+        if descriptor and descriptor.Describe and not processed_descriptors[descriptor] then
+            processed_descriptors[descriptor] = true
             local context = {
                 player = viewer, -- 获取此信息的玩家
                 entity = item, -- 对应实体
@@ -1635,120 +1652,13 @@ function GetTestString(item, viewer)
     else
         --Part 1: primary info（烹饪锅、冷却已迁至 showme_descriptors/stewer.lua、cooldown.lua）
         --Part 2: secondary info
-        if item_info_mod == 0 then
-            if c.armor and c.armor.absorb_percent and type(c.armor.absorb_percent)=="number" then
-                local r=c.armor.absorb_percent --0.8
-                local tm_buff = GetDebuffTime(viewer, 'buff_playerabsorption')
-                if tm_buff then
-                    local power = TUNING[KNOWN_BUFFS.buff_playerabsorption.power]
-                    if power then
-                        r = r + (1 - r) * power
-                    end
-                end
-                cn("armor",round2(r*100,0),tm_buff and round2(tm_buff))
-                if c.planardefense and c.planardefense.basedefense and type(c.planardefense.basedefense)=="number" then
-                    cn("basearmor",round2(c.planardefense.basedefense,0)..o_t.point)    --新增的防具位面防御，不吃BUFF
-                end
-                --Support of absorption mod.
-                if item.phys and (item.phys.blunt or item.phys.pierc or item.phys.slash) then
-                    local p = item.phys
-                    cn("absorb",(p.blunt or 0).." / "..(p.pierc or 0).." / "..(p.slash or 0))
-                end
-                if c.armor.condition and c.armor.condition > 0 and c.armor.maxcondition  and not item:HasTag("hide_percentage") then    --耐久度
-                    cn("durability", math.floor(c.armor.condition + 0.5), math.floor(c.armor.maxcondition + 0.5))
-                end
-            end
-        end
-        if item_info_mod == 0 then
-            if item.damage and type(item.damage)=="number" and item.damage>0 then    --item的伤害与位面伤害
-                cn("dmg",round2(item.damage,1))
-                if item.basedamage and type(item.basedamage)=="number" and item.basedamage>0 then
-                    cn("basedmg",round2(item.basedamage,1))
-                end
-            elseif c.weapon ~= nil and c.weapon.damage and type(c.weapon.damage)=="number" and c.weapon.damage>0 then
-                local r = c.weapon.damage
-                local tm_buff = GetDebuffTime(viewer, 'buff_attack')
-                if tm_buff then
-                    local power = TUNING[KNOWN_BUFFS.buff_attack.power]
-                    if power then
-                        r = r * power
-                    end
-                end
-                --local prval = string.gsub(string.format("%.1f", (math.sqrt(r * 4 + 64) - 8) * 4),".0","")
-                local prval = tostring(round2((math.sqrt(r * 4 + 64) - 8) * 4,1))
-                local pr_val = ""
-                if show_planar_resist then pr_val = " ( "..o_t.resist..prval.." )" end
-                cn("dmg",round2(r,1)..pr_val, tm_buff and round2(tm_buff))
-
-                if c.planardamage ~= nil and c.planardamage.basedamage and type(c.planardamage.basedamage)=="number" and c.planardamage.basedamage>0 then
-                    cn("basedmg",round2(math.floor(c.planardamage.basedamage)))    --武器/工具的位面伤害，不吃BUFF
-                end
-                --Support of absobtion mod.
-                if item.phys_dmg then
-                    local p = item.phys_dmg == "blunt" and "Blunt" or (
-                        item.phys_dmg == "pierc" and "Piercing" or (
-                            item.phys_dmg == "slash" and "Slashing" or nil
-                        )
-                    )
-                    if p ~= nil then
-                        table.insert(desc_table, "@Type: "..p)
-                    end
-                end
-            elseif c.zupalexsrangedweapons ~= nil
-                and c.zupalexsrangedweapons.GetArrowBaseDamage ~= nil
-                and type(c.zupalexsrangedweapons.GetArrowBaseDamage) == "function"
-            then
-                local dmg = c.zupalexsrangedweapons:GetArrowBaseDamage()
-                if dmg ~= nil and type(dmg) == "number" and dmg > 0 then
-                    cn("dmg",round2(dmg,1))
-                end
-            end
-        end
-        if item_info_mod == 0 then    --物品显示的范围
-            if c.weapon and c.weapon.damage and type(c.weapon.attackrange)=="number" and c.weapon.attackrange>0.3 then
-                cn("range",round2(c.weapon.attackrange,1))
-            elseif c.projectile and c.projectile.damage and type(c.projectile.range)=="number" and c.projectile.range>0.3 then
-                cn("range",round2(c.projectile.range,1))
-            elseif c.combat and c.combat.damage and type(c.combat.attackrange)=="number" and c.combat.attackrange>2.5 then
-                cn("range",round2(c.combat.attackrange,1))
-            end
-        end
+        --护甲、武器伤害、攻击范围已迁至 showme_descriptors/armor.lua、weapon.lua、range.lua（combat 键触发范围，见 range.lua）
         --工具工作效率增益已迁至 showme_descriptors/tool.lua
-        if item_info_mod == 0 and c.insulator and c.insulator.insulation and type(c.insulator.insulation)=="number" and c.insulator.insulation~=0 then
-            if c.insulator.SetInsulationEx then --ServerMod
-                local winter,summer = c.insulator:GetInsulationEx()
-                if winter~=0 then
-                    cn("warm",round2(winter,0))
-                end
-                if summer~=0 then
-                    cn("summer",round2(summer,0))
-                end
-            elseif c.insulator.GetInsulation then
-                local insul,typ = c.insulator:GetInsulation()
-                if insul ~= 0 then
-                    if typ == _G.SEASONS.WINTER then
-                        cn("warm",round2(insul,0))
-                    elseif typ == _G.SEASONS.SUMMER then
-                        cn("summer",round2(insul,0))
-                    end
-                end
-            end
+        --保暖/隔热已迁至 showme_descriptors/insulator.lua
+        if prefab == "flower_evil" then -- 恶魔花无组件锚点，回 san 显示保留在主流程
+            cn("sanity",-_G.TUNING.SANITY_TINY,1)
         end
-        if item_info_mod == 0 then
-            if c.dapperness and c.dapperness.dapperness and type(c.dapperness.dapperness)=="number" and c.dapperness.dapperness~=0 then
-                local sanity = round2(c.dapperness.dapperness*54,1)
-                cn("sanity",sanity)
-            elseif c.equippable and c.equippable.dapperness and type(c.equippable.dapperness)=="number" and c.equippable.dapperness~=0 then
-                local sanity = round2(c.equippable.dapperness*54,1)
-                cn("sanity",sanity)
-            elseif prefab == "flower_evil" then
-                cn("sanity",-_G.TUNING.SANITY_TINY,1)
-            end
-        end
-        if c.equippable and c.equippable.walkspeedmult and c.equippable.walkspeedmult ~= 1 then
-            local added_speed = math.floor((c.equippable.walkspeedmult - 1)*100+0.5)
-            cn("speed",added_speed)
-        end
+        --装备移速加成已迁至 showme_descriptors/equippable.lua
         if item_info_mod == 0 then
             if c.dapperness and c.dapperness.mitigates_rain and prefab ~= "umbrella" then
                 cn("waterproof","90")
@@ -1954,37 +1864,8 @@ function GetTestString(item, viewer)
                 end
             end
         end
-        if item_info_mod == 0 and c.healer then
-            local heal = round2(c.healer.health,1)
-            if heal == 0 then
-                if prefab == 'spider_healer_item' then
-                    heal = TUNING.HEALING_MEDSMALL
-                end
-            end
-            if heal and heal ~= 0 then
-                cn("heal",heal)
-            end
-        end
-        --工具、武器耐久
-        if item_info_mod == 0 and c.finiteuses and not item:HasTag("hide_percentage") then
-            local mult = C_FINITEUSES_PREFAB[prefab]
-            if c.finiteuses.consumption then
-                for k,v in pairs(c.finiteuses.consumption) do
-                    local new_mult = 1/v
-                    if mult == nil or new_mult > mult then
-                        mult = new_mult
-                    end
-                end
-            end
-            if mult == nil then
-                mult = 1
-            end
-            local cur = math.floor(c.finiteuses.current * mult + 0.5)
-            if c.finiteuses.current*mult > cur then
-                cur = cur + 1
-            end
-            cn("uses_of",cur,math.floor(c.finiteuses.total * mult + 0.5))
-        end
+        --治疗量已迁至 showme_descriptors/healer.lua
+        --工具、武器耐久已迁至 showme_descriptors/finiteuses.lua
         --温度
         --当前温度、乐器范围已迁至 showme_descriptors/temperature.lua、instrument.lua
         if c.crystallizable and c.crystallizable.formation --support of Krizor's mod

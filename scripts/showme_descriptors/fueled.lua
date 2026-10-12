@@ -5,7 +5,7 @@ local Describe = function(self, context)
     local entity = context.entity -- 被查看的实体
     local prefab = entity.prefab
     local utils = context.utils -- 共享工具函数
-    local config = context.config.server -- 服务器端配置
+    local config = context.config.client -- 查看者的客户端配置（未上报时回落服务器配置）
     local o_t = context.modenv.OTHER_TITLES -- 服务器语言：格式化词条
     local s_str = context.modenv.SHOWME_STRINGS -- 服务器语言：辅助词条
 

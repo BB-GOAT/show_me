@@ -4,7 +4,7 @@ local is_PvP = TheNet:GetDefaultPvpSetting() --PVP
 local Describe = function(self, context)
     local entity = context.entity
     local utils = context.utils
-    local config = context.config.server
+    local config = context.config.client -- 查看者的客户端配置（未上报时回落服务器配置）
     local entries = {}
 
     if self.damagemultiplier and self.damagemultiplier ~= 1 then
@@ -37,6 +37,17 @@ local Describe = function(self, context)
         if self.areahitdamagepercent then --AoE
             table.insert(entries, { data_key = "aoe", params = { math.floor(dmg * self.areahitdamagepercent + 0.5) } })
         end
+    end
+
+    -- 攻击范围：原版范围链的 combat 兑底分支（纯 combat 物品），
+    -- 生物/武器/投射物场景分别由 health、weapon、range 描述文件处理
+    if context.config.client.item_info_mod == 0
+        and (entity.components.health == nil or entity.grow_stage)
+        and entity.components.weapon == nil
+        and entity.components.projectile == nil
+        and self.attackrange and type(self.attackrange) == "number" and self.attackrange > 2.5
+    then
+        table.insert(entries, { data_key = "range", params = { utils.round2(self.attackrange, 1) } })
     end
 
     if #entries == 0 then
