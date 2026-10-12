@@ -115,7 +115,6 @@ chestG = chestG == -1 and 1 or chestG
 local chestB = Switch("chestB", -1) -- 蓝色值
 chestB = chestB == -1 and 1 or chestB
 
-local show_buddle_item = Switch("show_buddle_item", 1) -- 显示捆绑包内容
 local item_info_mod = Switch("item_info_mod", 0) -- 兼容item info模组
 local perish_style = Switch("perish_style", 0) -- 食物腐烂样式
 local show_fuel = Switch("show_fuel", true) -- 物品燃料值
@@ -1526,6 +1525,8 @@ local showme_descriptors = {
     fertilizer = require("showme_descriptors/fertilizer"), -- 肥料值
     pickable = require("showme_descriptors/pickable"), -- 采摘倒计时与次数
     crop = require("showme_descriptors/crop"), -- 旧农场作物生长进度
+    unwrappable = require("showme_descriptors/unwrappable"), -- 捆绑包内容
+    friendlevels = require("showme_descriptors/friendlevels"), -- 好感度
 }
 
 -- 描述文件运行在全局环境，modmain2 的 local 工具需经 context.utils 传入；搬移新组件时按需补充
@@ -1862,41 +1863,8 @@ function GetTestString(item, viewer)
 
         --采摘倒计时/次数已迁至 showme_descriptors/pickable.lua
         --旧农场作物生长进度已迁至 showme_descriptors/crop.lua
-        if show_buddle_item == 1 and c.unwrappable and c.unwrappable.itemdata and type(c.unwrappable.itemdata) == 'table' then
-            --包裹信息？？每样一行
-            for i,v in ipairs(c.unwrappable.itemdata) do
-                if v.prefab then
-                    --发送预制件的名称和天数。
-                    local delta = v.data and v.data.perishable and v.data.perishable.time
-                    local count = v.data and v.data.stackable and v.data.stackable.stack
-                    cn('perish_product', v.prefab, count or 0, delta and round2(delta/TUNING.TOTAL_DAY_TIME,1))
-                end
-            end
-        end
-        --"Pickle It!" 模组
-        if c.pickler and c.pickler.targettime then
-            local delta = c.pickler.targettime - GetTime()
-            cn('just_time', round2(delta/TUNING.TOTAL_DAY_TIME,1))
-        end
-        --“Thirst”模组，检查“cwater”组件
-        if c.cwater then
-            local w = c.cwater
-            if w.current and w.max then
-                cn('water',round2(w.current,0),round2(w.max,0))
-            end
-            if w.waterperdrink and type(w.waterperdrink)=="number" and w.waterperdrink ~= 0 then
-                cn("sip",round2(w.waterperdrink,0))
-            end
-            if w.watergainspeed and type(w.watergainspeed)=="number" and w.watergainspeed ~= 0 then
-                cn("watergainspeed",round2(w.watergainspeed,0))
-            end
-            if w.poisoned then
-                cn("water_poisoned")
-            end
-        end
-        if c.friendlevels then    --好感度
-            cn("friendlevels",round2(c.friendlevels.level,0))
-        end
+        --捆绑包内容已迁至 showme_descriptors/unwrappable.lua
+        --好感度已迁至 showme_descriptors/friendlevels.lua
 		-- 堆叠上限显示
 		if c.stackable and c.stackable.StackSize then
 			local n = c.stackable:StackSize()
