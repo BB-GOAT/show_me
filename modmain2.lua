@@ -1521,6 +1521,9 @@ local showme_descriptors = {
     waterpower = require("showme_descriptors/waterpower"), -- 不灵水量
     gaspower = require("showme_descriptors/gaspower"), -- 不灵气体
     childspawner = require("showme_descriptors/childspawner"), -- 生物巢居民数
+    timer = require("showme_descriptors/timer"), -- 实体计时器
+    worldsettingstimer = require("showme_descriptors/worldsettingstimer"), -- 世界设置计时器
+    dryingrack = require("showme_descriptors/dryingrack"), -- 新晾肉架
 }
 
 -- 描述文件运行在全局环境，modmain2 的 local 工具需经 context.utils 传入；搬移新组件时按需补充
@@ -1929,66 +1932,10 @@ function GetTestString(item, viewer)
             end
         end
     end
-    if item.inlove and item.inlove>0 then
-        if prefab=="chester" then
-            cn("love",item.inlove/10)
-        else
-            cn("love",item.inlove)
-        end
-    end
-    --Additional
-    if c.timer and c.timer.timers then
-        --local get_time = GetTime()
-        local t = c.timer
-        for name, data in pairs(t.timers) do
-            if not IsUselessTimer(prefab,name) then
-                --GetTimeLeft(name) IsPaused
-                local tm = t:GetTimeLeft(name)
-                local paused = t:IsPaused(name)
-                if tm then
-                    if item:HasTag("critter") then
-                        return
-                    end
-                    cn('timer', round2(tm,0), name, paused and 1 or nil)
-                else
-                    cn('timer', "-", name)
-                end
-            end
-        end
-    end
-    --预计：
-    if c.worldsettingstimer and c.worldsettingstimer.timers and not (prefab == "grass" and c.pickable.transplanted) then --transplanted 可移植的
-        --local get_time = GetTime()
-        local t = c.worldsettingstimer
-        for name, data in pairs(t.timers) do
-            if not IsUselessTimer(prefab,name) then
-                --IsPaused GetMaxTime TimerEnabled GetTimeLeft
-                local tm = t:GetTimeLeft(name)
-                local paused = t:IsPaused(name)
-                if tm then
-                    cn('timer', round2(tm,0), name, paused and 1 or nil)
-                elseif t.GetMaxTime then
-                    local max_tm = t:GetMaxTime(name)
-                    if max_tm then
-                        cn('timer', round2(data.maxtime,0), name, 2)
-                    end
-                else
-                    cn('timer', "-", name)
-                end
-            end
-        end
-    end
-    -- 新晾肉架
-    if c.dryingrack and c.dryingrack.GetDryingInfoSnapshot then
-        local snapshot = c.dryingrack:GetDryingInfoSnapshot()
-        if snapshot then
-            for k,v in pairs(snapshot) do
-                if type(v) == "number" then
-                    table.insert(desc_table, "@" .. (k.name or k.prefab or tostring(k)) .. " " .. o_t.will_other .. round2(v/TUNING.TOTAL_DAY_TIME,1) .. SHOWME_STRINGS.days)
-                end
-            end
-        end
-    end
+
+    --实体计时器已迁至 showme_descriptors/timer.lua
+    --世界设置计时器已迁至 showme_descriptors/worldsettingstimer.lua
+    --新晾肉架快照已迁至 showme_descriptors/dryingrack.lua
     return table.concat(desc_table,"\2") --an error with no info
 end    -- 函数GetTestString END
 

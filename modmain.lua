@@ -2615,13 +2615,7 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
             end
         end
     end
-    if item.inlove and item.inlove>0 then
-        if prefab=="chester" then
-            cn("love",item.inlove/10)
-        else
-            cn("love",item.inlove)
-        end
-    end
+
     --Additional
     if c.timer and c.timer.timers then
         --local get_time = GetTime()

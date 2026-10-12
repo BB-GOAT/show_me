@@ -23,7 +23,6 @@ local MY_STRINGS =    -- 调用 MY_DATA.armor.desc
     fishes = "鱼数量: ", --Y     --in a pond
     fish = "鱼: ", --Z
     sec = "剩余时间(秒): ",  --([)for cooking in Crock Pot
-    love = "喜爱: ", --(~)
     summer = "隔热: ", --(])summer insulation
     absorb = "伤害吸收: ", --(^)
     S3 = "现在是春天", --(_)

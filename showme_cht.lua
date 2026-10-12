@@ -23,7 +23,6 @@ local MY_STRINGS =
     fishes = "魚數量: " , --Y  --Count fishes in a pond
     fish = "魚: " , --Z --Count fishes in a pond if there is only 1 fish
     sec= "剩餘時間(秒): " ,  --for cooking in Crock Pot
-    love = "喜愛: " ,
     summer = "過熱抗性: " , --summer insulation
     absorb = "傷害吸收: " , --Absorb damage
     S3="現在是春天," , --

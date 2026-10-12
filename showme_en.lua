@@ -23,7 +23,6 @@ local MY_STRINGS =    -- 调用 MY_DATA.armor.desc
     fishes = "Fishes: " , --Y  --Count fishes in a pond
     fish = "Fish: " , --Z --Count fishes in a pond if there is only 1 fish
     sec= "Seconds: " ,  --for cooking in Crock Pot
-    love = "Love: " ,
     summer = "Summer: " , --summer insulation
     absorb = "Absorb: " , --Absorb damage
     S3="It's Spring," , --
