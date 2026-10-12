@@ -158,12 +158,6 @@ local client_config = {
 }
 local player_config = {}
 
--- 各配置项的 modinfo 默认值：客户端上报前过滤未修改项，未修改项沿用服务器设置（对齐原 Switch 的客户端优先语义）
-local config_defaults = {}
-for _, opt in ipairs(modinfo.configuration_options) do
-    config_defaults[opt.name] = opt.default
-end
-
 AddModRPCHandler("ShowMe","SendConfig",function(player, config)
     if not _G.checkstring(config) then
         printinvalid("ShowMe.SendConfig", player)
@@ -174,19 +168,8 @@ AddModRPCHandler("ShowMe","SendConfig",function(player, config)
         printinvalid("ShowMe.SendConfig", player)
         return
     end
-    -- 客户端只上报非默认项，此处以服务器配置补全，得到该玩家的生效配置
-    local merged = {}
-    for k, v in pairs(server_config) do
-        if v == 2 then
-            merged[k] = v -- 禁止档：服务器强制，忽略客户端设置
-        elseif config[k] ~= nil then
-            merged[k] = config[k] -- 不用 and/or：布尔 false 值会被 or 截断回落
-        else
-            merged[k] = v
-        end
-    end
 
-    player_config[player] = merged
+    player_config[player] = config
 end)
 
 -- 定义语言表(定义在模组环境以便其它模组调用)
@@ -860,14 +843,7 @@ if CLIENT_SIDE then
             OnShowMeNaughtyAction() -- 初始化 综合状态显示 模组显示的淘气值默认信息
         end
 
-        -- 仅上报客户端主动修改过的配置项，未修改项由服务器端回落服务器设置
-        local payload = {}
-        for k, v in pairs(client_config) do
-            if v ~= config_defaults[k] then
-                payload[k] = v
-            end
-        end
-        SendModRPCToServer(MOD_RPC.ShowMe.SendConfig, _G.ZipAndEncodeString(payload))
+        SendModRPCToServer(MOD_RPC.ShowMe.SendConfig, _G.ZipAndEncodeString(client_config))
     end
     AddPlayersAfterInit(FixClient)
 end
@@ -1545,6 +1521,7 @@ local showme_descriptors = {
     insulator = require("showme_descriptors/insulator"), -- 保暖/隔热
     equippable = require("showme_descriptors/equippable"), -- 装备回san与移速
     dapperness = require("showme_descriptors/equippable"), -- 精神回复（与 equippable 同文件）
+    waterproofer = require("showme_descriptors/waterproofer"), -- 防水
 }
 
 -- 描述文件运行在全局环境，modmain2 的 local 工具需经 context.utils 传入；搬移新组件时按需补充
@@ -1659,20 +1636,7 @@ function GetTestString(item, viewer)
             cn("sanity",-_G.TUNING.SANITY_TINY,1)
         end
         --装备移速加成已迁至 showme_descriptors/equippable.lua
-        if item_info_mod == 0 then
-            if c.dapperness and c.dapperness.mitigates_rain and prefab ~= "umbrella" then
-                cn("waterproof","90")
-            elseif item.protect_from_rain then
-                cn("waterproof",round2((item.protect_from_rain)*100,0))
-            elseif c.waterproofer then
-                local effectiveness = _G.tonumber(c.waterproofer.effectiveness) or 0
-                if effectiveness ~= 0 then
-                    cn("waterproof",round2((effectiveness)*100,0))
-                else
-                    --desc = (desc=="" and "" or (desc.."\n")).."Waterproofer"
-                end
-            end
-        end
+        --防水已迁至 showme_descriptors/waterproofer.lua
         --船桨力度已迁至 showme_descriptors/oar.lua
         if item_info_mod == 0 and c.edible and not is_DisplayFoodValues then
             local can_eat = false

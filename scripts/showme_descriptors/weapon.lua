@@ -1,7 +1,12 @@
 -- weapon 组件：武器伤害（含增益与位面抵抗换算）、位面伤害与特殊伤害类型
 -- 注册 weapon 与 zupalexsrangedweapons（远程武器 mod）两个键，逻辑内部按优先级互斥
 local Describe = function(self, context)
-    if context.config.client.item_info_mod ~= 0 then
+    -- item_info_mod：客户端显式开启优先，客户端为默认档(0)时跟随服务器设置
+    local item_info_mod = context.config.client.item_info_mod
+    if item_info_mod == 0 then
+        item_info_mod = context.config.server.item_info_mod
+    end
+    if item_info_mod ~= 0 then
         return nil
     end
     local entity = context.entity
@@ -16,6 +21,12 @@ local Describe = function(self, context)
         return entries
     end
 
+    -- show_planar_resist：客户端显式关闭优先，客户端为默认档(true)时跟随服务器设置
+    local show_planar_resist = context.config.client.show_planar_resist
+    if show_planar_resist then
+        show_planar_resist = context.config.server.show_planar_resist
+    end
+
     if c.weapon ~= nil and c.weapon.damage and type(c.weapon.damage) == "number" and c.weapon.damage > 0 then
         local r = c.weapon.damage
         local tm_buff = utils.GetDebuffTime(context.player, "buff_attack")
@@ -28,7 +39,7 @@ local Describe = function(self, context)
         -- 位面伤害对暗影/梦魇怪的等效抵抗换算
         local prval = tostring(utils.round2((math.sqrt(r * 4 + 64) - 8) * 4, 1))
         local pr_val = ""
-        if context.config.client.show_planar_resist then
+        if show_planar_resist then
             pr_val = " ( " .. context.modenv.OTHER_TITLES.resist .. prval .. " )"
         end
 

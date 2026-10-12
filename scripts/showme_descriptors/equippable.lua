@@ -4,7 +4,12 @@ local Describe = function(self, context)
     local c = context.entity.components
     local entries = {}
 
-    if context.config.client.item_info_mod == 0 then
+    -- item_info_mod：客户端显式开启优先，客户端为默认档(0)时跟随服务器设置
+    local item_info_mod = context.config.client.item_info_mod
+    if item_info_mod == 0 then
+        item_info_mod = context.config.server.item_info_mod
+    end
+    if item_info_mod == 0 then
         local val
         if c.dapperness and c.dapperness.dapperness and type(c.dapperness.dapperness) == "number" and c.dapperness.dapperness ~= 0 then
             val = c.dapperness.dapperness

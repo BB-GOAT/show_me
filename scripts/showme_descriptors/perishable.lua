@@ -5,7 +5,12 @@ local Describe = function(self, context)
     if c.hunger ~= nil or c.health == nil then
         return nil -- 有 hunger 的生物由 hunger 显示饥饿；无 health 的物品显示腐烂（主瀑布，后续迁入）
     end
-    if context.config.client.item_info_mod ~= 0 or self.updatetask == nil then
+    -- item_info_mod：客户端显式开启优先，客户端为默认档(0)时跟随服务器设置
+    local item_info_mod = context.config.client.item_info_mod
+    if item_info_mod == 0 then
+        item_info_mod = context.config.server.item_info_mod
+    end
+    if item_info_mod ~= 0 or self.updatetask == nil then
         return nil
     end
 

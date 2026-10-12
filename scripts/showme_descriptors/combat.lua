@@ -4,8 +4,18 @@ local is_PvP = TheNet:GetDefaultPvpSetting() --PVP
 local Describe = function(self, context)
     local entity = context.entity
     local utils = context.utils
-    local config = context.config.client -- 查看者的客户端配置（未上报时回落服务器配置）
     local entries = {}
+
+    -- item_info_mod：客户端显式开启优先，客户端为默认档(0)时跟随服务器设置
+    local item_info_mod = context.config.client.item_info_mod
+    if item_info_mod == 0 then
+        item_info_mod = context.config.server.item_info_mod
+    end
+    -- show_planar_resist：客户端显式关闭优先，客户端为默认档(true)时跟随服务器设置
+    local show_planar_resist = context.config.client.show_planar_resist
+    if show_planar_resist then
+        show_planar_resist = context.config.server.show_planar_resist
+    end
 
     if self.damagemultiplier and self.damagemultiplier ~= 1 then
         --伤害增加百分比。 例如，女武神 +25%
@@ -30,7 +40,7 @@ local Describe = function(self, context)
             table.insert(entries, { data_key = "basedmg", params = { math.floor(planardamage.basedamage) } })
         end
 
-        if config.show_planar_resist and entity.components.planarentity then
+        if show_planar_resist and entity.components.planarentity then
             table.insert(entries, { description = context.modenv.OTHER_TITLES.dmgresist })
         end
 
@@ -41,7 +51,7 @@ local Describe = function(self, context)
 
     -- 攻击范围：原版范围链的 combat 兑底分支（纯 combat 物品），
     -- 生物/武器/投射物场景分别由 health、weapon、range 描述文件处理
-    if context.config.client.item_info_mod == 0
+    if item_info_mod == 0
         and (entity.components.health == nil or entity.grow_stage)
         and entity.components.weapon == nil
         and entity.components.projectile == nil

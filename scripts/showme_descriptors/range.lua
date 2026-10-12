@@ -1,7 +1,12 @@
 -- 攻击范围：武器的范围由 weapon.lua 随伤害输出，纯 combat 物品的范围由 combat.lua 输出，本文件处理投射物
 -- 注册 projectile 键触发
 local Describe = function(self, context)
-    if context.config.client.item_info_mod ~= 0 then
+    -- item_info_mod：客户端显式开启优先，客户端为默认档(0)时跟随服务器设置
+    local item_info_mod = context.config.client.item_info_mod
+    if item_info_mod == 0 then
+        item_info_mod = context.config.server.item_info_mod
+    end
+    if item_info_mod ~= 0 then
         return nil
     end
     local entity = context.entity

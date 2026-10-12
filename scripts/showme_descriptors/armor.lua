@@ -1,6 +1,11 @@
 -- armor 组件：护甲防御（含增益）、位面防御、吸收分类与耐久
 local Describe = function(self, context)
-    if context.config.client.item_info_mod ~= 0 then
+    -- item_info_mod：客户端显式开启优先，客户端为默认档(0)时跟随服务器设置
+    local item_info_mod = context.config.client.item_info_mod
+    if item_info_mod == 0 then
+        item_info_mod = context.config.server.item_info_mod
+    end
+    if item_info_mod ~= 0 then
         return nil
     end
     if not (self.absorb_percent and type(self.absorb_percent) == "number") then

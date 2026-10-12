@@ -5,7 +5,16 @@ local Describe = function(self, context)
     local entity = context.entity -- 被查看的实体
     local prefab = entity.prefab
     local utils = context.utils -- 共享工具函数
-    local config = context.config.client -- 查看者的客户端配置（未上报时回落服务器配置）
+    local config = context.config.client -- 查看者的客户端完整原始配置（未上报时整体回落服务器配置）
+    -- show_fuel / show_fueled：客户端显式设置优先，客户端为默认档（true / 3）时跟随服务器设置
+    local show_fuel = config.show_fuel
+    if show_fuel then
+        show_fuel = context.config.server.show_fuel
+    end
+    local show_fueled = config.show_fueled
+    if show_fueled == 3 then
+        show_fueled = context.config.server.show_fueled
+    end
     local o_t = context.modenv.OTHER_TITLES -- 服务器语言：格式化词条
     local s_str = context.modenv.SHOWME_STRINGS -- 服务器语言：辅助词条
 
@@ -16,20 +25,20 @@ local Describe = function(self, context)
         if self.currentfuel ~= nil then
             table.insert(lines, o_t.ot_fuel .. utils.DataTimerFn(self.currentfuel) .. " ( " .. math.floor(self:GetPercent() * 100) .. "% )")
         end
-        if config.show_fuel ~= false and self.bonusmult ~= nil and self.bonusmult > 1 then
+        if show_fuel ~= false and self.bonusmult ~= nil and self.bonusmult > 1 then
             table.insert(lines, o_t.ot_fuelval .. self.bonusmult .. "x")
         end
     end
 
     -- 服饰/工具耐久：按燃料类型与物品类型决定是否显示
-    if config.show_fueled ~= false and not entity:HasTag("hide_percentage") then
+    if show_fueled ~= false and not entity:HasTag("hide_percentage") then
         local FueledTime = utils.DataTimerFn(self.currentfuel)
         local FueledDay = tostring(utils.round2(self.currentfuel / TUNING.TOTAL_DAY_TIME, 1))
         local FDays = s_str.days
         local s_fval
-        if config.show_fueled == 1 then --根据配置，显示不同的样式
+        if show_fueled == 1 then --根据配置，显示不同的样式
             s_fval = o_t.fueled .. FueledTime
-        elseif config.show_fueled == 2 then
+        elseif show_fueled == 2 then
             s_fval = o_t.fueled .. FueledDay .. FDays
         else
             s_fval = o_t.fueled .. FueledTime .. " ( " .. FueledDay .. FDays .. " )"
