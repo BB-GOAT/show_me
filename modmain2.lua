@@ -1527,6 +1527,8 @@ local showme_descriptors = {
     crop = require("showme_descriptors/crop"), -- 旧农场作物生长进度
     unwrappable = require("showme_descriptors/unwrappable"), -- 捆绑包内容
     friendlevels = require("showme_descriptors/friendlevels"), -- 好感度
+    stackable = require("showme_descriptors/stackable"), -- 超大堆叠实际数量
+    pearldecorationscore = require("showme_descriptors/pearldecorationscore"), -- 寄居蟹装饰度
 }
 
 -- 描述文件运行在全局环境，modmain2 的 local 工具需经 context.utils 传入；搬移新组件时按需补充
@@ -1865,24 +1867,8 @@ function GetTestString(item, viewer)
         --旧农场作物生长进度已迁至 showme_descriptors/crop.lua
         --捆绑包内容已迁至 showme_descriptors/unwrappable.lua
         --好感度已迁至 showme_descriptors/friendlevels.lua
-		-- 堆叠上限显示
-		if c.stackable and c.stackable.StackSize then
-			local n = c.stackable:StackSize()
-			if n and type(n)=="number" and n > 999 then
-				cn("true_number",round2(n,0))
-			end
-		end
-		-- 寄居蟹房子的装饰度
-		local pds = c.pearldecorationscore
-		if pds and pds.GetScore then
-			local line = o_t.decor_score .. tostring(round2(pds:GetScore(), 1))
-			if pds.IsEnabled then
-				line = line .. (pds:IsEnabled()
-					and ""
-					or " (" .. o_t.decor_disabled  .. ")")
-			end
-			table.insert(desc_table, "@" .. line)
-		end
+		--堆叠上限已迁至 showme_descriptors/stackable.lua
+		--寄居蟹装饰度已迁至 showme_descriptors/pearldecorationscore.lua
 		-- 铥矿奖章, 仅在地洞世界显示当前噩梦阶段剩余时间, 读秒有点不准但能用就行
 		if prefab == "nightmare_timepiece" and _G.TheWorld:HasTag("cave") then
 			-- print("[ShowMe-DBG] === dumping world.components ===")
