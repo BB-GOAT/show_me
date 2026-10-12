@@ -16,7 +16,6 @@ local MY_STRINGS =    -- 调用 MY_DATA.armor.desc
     hunger= "饥饿: ", --Q
     range = "范围: ", --R  --for range weapon or for mobs
     sanity= "精神: ", --S
-    thickness = "厚度: ", --T
     units_of = "单位", --U
     resist = "抵抗: ", --V --against sleep darts, ice staff etc
     waterproof = "防水: ", --W

@@ -16,7 +16,6 @@ local MY_STRINGS =
     hunger= "飢餓: " , --Q
     range = "範圍: " , --R  --for range weapon or for mobs
     sanity= "理智: " , --S
-    thickness = "厚度: " , --T --It's about thickness of the ice of a pond
     units_of = "單位" , --U
     resist = "抵抗: " , --V --against sleep darts, ice staff etc
     waterproof = "潮濕抗性: " , --W --Resistance against water

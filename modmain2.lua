@@ -1566,13 +1566,31 @@ local function GetSeasonEntries()
     return entries
 end
 
+--- 主人识别三级链：mine 组件昵称 → stealable.owner → item.owner（跟随者/宠物实体的主人显示；字段非组件无法走描述文件锚点）
+---@param item table 被查看的实体
+---@return table|nil entries 协议条目数组：owner 词条；无主人时为 nil
+local function GetOwnerEntries(item)
+    local entries = {}
+    if item.components.mine and item.components.mine.nick then
+        table.insert(entries, { data_key = "owner", params = { item.components.mine.nick } })
+        return entries
+    end
+    if item.stealable and item.stealable.owner and item.stealable.owner ~= "_?\1" then
+        table.insert(entries, { data_key = "owner", params = { item.stealable.owner } })
+        return entries
+    elseif item.owner and type(item.owner) == "string" and string.sub(item.owner, 1, 3) ~= "KU_" then
+        --不知道名字是什么，但这就是“主人”，所以需要取出来，而且这绝对不是user_id。
+        table.insert(entries, { data_key = "owner", params = { item.owner } })
+        return entries
+    end
+end
+
 --获取物品信息
 function GetTestString(item, viewer)
     --line_cnt = 0
     desc_table = {} --旧的 desc 将被取消
     local prefab = item.prefab
     local c=item.components
-    local has_owner = false --仅向所有者发送一次信息
 
     local item_descriptors = {}
     local processed_descriptors = {} -- 同一描述文件注册多个组件键时只执行一次
@@ -1642,40 +1660,7 @@ function GetTestString(item, viewer)
         --船桨力度已迁至 showme_descriptors/oar.lua
         --食物属性（含温度/记忆/Warly BUFF）已迁至 showme_descriptors/edible.lua
         --肥料信息已迁至 showme_descriptors/fertilizer.lua
-        if item_info_mod == 0 and c.perishable ~= nil and c.perishable.updatetask ~= nil then    --鱼，死亡到腐烂：x 天
-            local time, fresh, perish_modifier = GetPerishTime(item, c)
-            if time ~= nil then
-                if time < 0 then
-                    if fresh then
-                        -- if fresh < 0 then
-                            --fresh = 0
-                        -- end
-                        cn("fresh",round2(fresh/TUNING.TOTAL_DAY_TIME,1))
-                    end
-                elseif time ~= math.huge and time ~= -math.huge then
-                    if item:HasTag("critter") then
-                        table.insert(desc_table, "@"..o_t.critterhunger..tostring(round2(time/TUNING.TOTAL_DAY_TIME,1))..SHOWME_STRINGS.days)
-                    else
-                        local countdown_stage
-                        local countdown_time = time
-                        if c.edible ~= nil and perish_modifier > 0 then
-                            local remaining = c.perishable.perishremainingtime
-                            local total = c.perishable.perishtime
-                            if total ~= nil and total > 0 then
-                                if remaining >= total * TUNING.PERISH_FRESH then
-                                    countdown_stage = "stale"
-                                    countdown_time = (remaining - total * TUNING.PERISH_FRESH) / perish_modifier
-                                elseif remaining > total * TUNING.PERISH_STALE then
-                                    countdown_stage = "spoiled"
-                                    countdown_time = (remaining - total * TUNING.PERISH_STALE) / perish_modifier
-                                end
-                            end
-                        end
-                        cn("perish", round2(countdown_time/TUNING.TOTAL_DAY_TIME,1), countdown_stage or "", round2(time/TUNING.TOTAL_DAY_TIME,1))
-                    end
-                end
-            end
-        end
+        --物品腐烂时间已并入 showme_descriptors/perishable.lua（生物寿命同文件）
         --显示食物填充单位
         if ing[prefab] and show_food_units ~= 2 then -- ==2 means that food info is forbidden on the server.
             for k,v in pairs(ing[prefab].tags) do
@@ -1688,14 +1673,7 @@ function GetTestString(item, viewer)
         --工具、武器耐久已迁至 showme_descriptors/finiteuses.lua
         --温度
         --当前温度、乐器范围已迁至 showme_descriptors/temperature.lua、instrument.lua
-        if c.crystallizable and c.crystallizable.formation --support of Krizor's mod
-            and c.crystallizable.formation.thickness
-            and type(c.crystallizable.formation.thickness)=="table"
-            and c.crystallizable.formation.thickness.current
-            and c.crystallizable.formation.thickness.current>0
-        then
-            cn("thickness",round2(c.crystallizable.formation.thickness.current,1))
-        end
+
         --装备饥饿减免
         if prefab=="beargervest" then
             table.insert(desc_table, "@"..string.format(o_t.hungerslow, (1-TUNING.ARMORBEARGER_SLOW_HUNGER)*100).."%")
@@ -1704,21 +1682,11 @@ function GetTestString(item, viewer)
         elseif prefab == "red_mushroomhat" or prefab == "green_mushroomhat" or prefab == "blue_mushroomhat" then
             table.insert(desc_table, "@"..string.format(o_t.hungerslow, (1-TUNING.MUSHROOMHAT_SLOW_HUNGER)*100).."%")
         end
-        --跟随者
-        if c.mine then
-            if c.mine.nick then
-                cn("owner",c.mine.nick)
-                has_owner = true
-            end
-        end
-        if not has_owner then
-            if item.stealable and item.stealable.owner and item.stealable.owner ~= "_?\1" then
-                cn("owner",item.stealable.owner)
-                has_owner = true
-            elseif item.owner and type(item.owner)=="string" and string.sub(item.owner,1,3) ~= "KU_" then
-                --不知道名字是什么，但这就是“主人”，所以需要取出来，而且这绝对不是user_id。
-                cn("owner",item.owner)
-                has_owner = true
+        --主人识别三级链已收敛至 GetOwnerEntries；follower 组件的主人与忠诚度由 follower.lua 处理
+        local owner_entries = GetOwnerEntries(item)
+        if owner_entries then
+            for _, entry in ipairs(owner_entries) do
+                EncodeEntry(entry)
             end
         end
         --笼中生物倒计时、晾肉架已迁至 showme_descriptors/occupiable.lua、dryer.lua

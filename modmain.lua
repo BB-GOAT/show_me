@@ -2118,14 +2118,6 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
         if c.instrument and type(c.instrument.range)=="number" and c.instrument.range>0.4 then
             cn("range",round2(c.instrument.range,0))
         end
-        if c.crystallizable and c.crystallizable.formation --support of Krizor's mod
-            and c.crystallizable.formation.thickness
-            and type(c.crystallizable.formation.thickness)=="table"
-            and c.crystallizable.formation.thickness.current
-            and c.crystallizable.formation.thickness.current>0
-        then
-            cn("thickness",round2(c.crystallizable.formation.thickness.current,1))
-        end
         --装备饥饿减免
         if prefab=="beargervest" then
             table.insert(desc_table, "@"..string.format(o_t.hungerslow, (1-TUNING.ARMORBEARGER_SLOW_HUNGER)*100).."%")

@@ -16,7 +16,6 @@ local MY_STRINGS =    -- 调用 MY_DATA.armor.desc
     hunger= "Hunger: " , --Q
     range = "Range: " , --R  --for range weapon or for mobs
     sanity= "Sanity: " , --S
-    thickness = "Thickness: " , --T --It's about thickness of the ice of a pond
     units_of = "units of" , --U
     resist = "Resistance: " , --V --against sleep darts, ice staff etc
     waterproof = "Waterproof: " , --W --Resistance against water
