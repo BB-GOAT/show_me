@@ -118,7 +118,6 @@ chestB = chestB == -1 and 1 or chestB
 local show_buddle_item = Switch("show_buddle_item", 1) -- 显示捆绑包内容
 local item_info_mod = Switch("item_info_mod", 0) -- 兼容item info模组
 local perish_style = Switch("perish_style", 0) -- 食物腐烂样式
-local show_nutrients = Switch("show_nutrients", 1) -- 显示肥料值
 local show_fuel = Switch("show_fuel", true) -- 物品燃料值
 -- local show_fueled = Switch("show_fueled", 3) -- 穿戴装备天数
 -- local show_planar_resist = Switch("show_planar_resist", true) -- 显示位面抵抗
@@ -1524,6 +1523,7 @@ local showme_descriptors = {
     dapperness = require("showme_descriptors/equippable"), -- 精神回复（与 equippable 同文件）
     waterproofer = require("showme_descriptors/waterproofer"), -- 防水
     edible = require("showme_descriptors/edible"), -- 食物属性
+    fertilizer = require("showme_descriptors/fertilizer"), -- 肥料值
 }
 
 -- 描述文件运行在全局环境，modmain2 的 local 工具需经 context.utils 传入；搬移新组件时按需补充
@@ -1641,16 +1641,7 @@ function GetTestString(item, viewer)
         --防水已迁至 showme_descriptors/waterproofer.lua
         --船桨力度已迁至 showme_descriptors/oar.lua
         --食物属性（含温度/记忆/Warly BUFF）已迁至 showme_descriptors/edible.lua
-        if show_nutrients ~= false then --肥料信息
-            if c.fertilizer then
-                local _nt = c.fertilizer
-                if show_nutrients == 1 then
-                    table.insert(desc_table, "@"..o_t.nutrients_1.._nt.nutrients[1].." / "..o_t.nutrients_2.._nt.nutrients[2].." / "..o_t.nutrients_3.._nt.nutrients[3])
-                elseif show_nutrients == 2 then
-                    table.insert(desc_table, "@"..o_t.nutrients.._nt.nutrients[1].." / ".._nt.nutrients[2].." / ".._nt.nutrients[3])
-                end
-            end
-        end
+        --肥料信息已迁至 showme_descriptors/fertilizer.lua
         if item_info_mod == 0 and c.perishable ~= nil and c.perishable.updatetask ~= nil then    --鱼，死亡到腐烂：x 天
             local time, fresh, perish_modifier = GetPerishTime(item, c)
             if time ~= nil then
