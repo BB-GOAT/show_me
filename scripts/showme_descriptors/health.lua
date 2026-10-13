@@ -8,9 +8,9 @@ local Describe = function(self, context)
     local utils = context.utils
     local entries = {}
 
-    local need_send_hp = context.config.server.display_hp == 1 -- 开
+    local need_send_hp = (context.config.server.display_hp == 1 -- 开
                         or (context.config.server.display_hp == -1 and not context.config.server.is_HealthInfo) -- 自动 + 没开简易血条
-                        or context.config.server.display_hp == 0 -- 关（但不是禁止）
+                        or context.config.server.display_hp == 0) -- 关（但不是禁止）
                         and (context.config.client.display_hp == -1 or context.config.client.display_hp == 1) -- 客户端设置（自动 / 开）
 
     if need_send_hp and self.minhealth ~= nil then
