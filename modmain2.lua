@@ -179,9 +179,11 @@ local GetTileNutrientsAtPoint = tile_data.GetTileNutrientsAtPoint
 local GetTileMoistureAtPoint = tile_data.GetTileMoistureAtPoint
 
 -- 识别启用的其它模组
-local server_mods_data = Import(MODROOT .. "main/check_mods.lua", env)
-server_config.is_HealthInfo = server_mods_data.is_HealthInfo -- 简易血条
-server_config.is_DisplayFoodValues = server_mods_data.is_DisplayFoodValues -- Display food values
+if SERVER_SIDE then
+    local server_mods_data = Import(MODROOT .. "main/check_mods.lua", env)
+    server_config.is_HealthInfo = server_mods_data.is_HealthInfo -- 简易血条
+    server_config.is_DisplayFoodValues = server_mods_data.is_DisplayFoodValues -- Display food values
+end
 
 Import(MODROOT .. "main/hint_system.lua", env) -- 信息显示
 Import(MODROOT .. "main/chest_highlight.lua", env) -- 箱子高亮
