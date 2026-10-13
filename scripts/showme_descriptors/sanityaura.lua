@@ -17,7 +17,7 @@ local Describe = function(self, context)
         return nil
     end
     return {
-        priority = 0,
+        priority = 80,
         data_key = "sanityaura",
         params = { aura_val },
     }

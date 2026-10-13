@@ -179,6 +179,8 @@ server_config.is_DisplayFoodValues = server_mods_data.is_DisplayFoodValues -- Di
 Import(MODROOT .. "main/hint_system.lua", env) -- 信息显示
 Import(MODROOT .. "main/chest_highlight.lua", env) -- 箱子高亮
 
+-------------------------------------------------- CLIENT --------------------------------------------------
+
 if CLIENT_SIDE then
     AddPlayersAfterInit(function(inst)
         if inst ~= _G.ThePlayer then
@@ -192,7 +194,7 @@ if CLIENT_SIDE then
     end)
 end
 
--------------------------------------------------- HOST -----------------------------------------------------------------
+-------------------------------------------------- HOST --------------------------------------------------
 
 --只在主机上工作
 if SERVER_SIDE then
@@ -418,7 +420,7 @@ end    -- 函数GetTestString END
 -- 服务器处理end
 end
 
-------------------------------------------- HOST & CLIENT AGAIN ---------------------------------------------
+-------------------------------------------------- HOST & CLIENT AGAIN --------------------------------------------------
 
 PrefabFiles = { "showme_range" } --加载prefab文件
 if GetModConfigData("Show_range") and SERVER_SIDE then --范围显示功能
