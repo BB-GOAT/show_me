@@ -3181,9 +3181,9 @@ end
 
 PrefabFiles = { "showme_range" } --加载prefab文件
 if GetModConfigData("Show_range") and TheNet:GetIsServer() then --范围显示功能
-    modimport("scripts/showme_range_indicators.lua")
+    modimport("main/showme_range_indicators.lua")
 end
 
 if show_naughtiness then --显示淘气值加载的文件
-    modimport("scripts/showme_naughtiness.lua")
+    modimport("main/showme_naughtiness.lua")
 end

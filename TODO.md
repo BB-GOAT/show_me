@@ -1,6 +1,3 @@
-- 清理历史遗留无用代码（如果有）
-- 函数使用LuaCATS注释法
-
 - 游戏内实时修改模组设置，使用聊天命令 /show_me 打开模组设置面板（需要导入模组运行库中的MOD_util:AddUserCommand函数）。 面板UI参考...画成啥样好呢..（想好再说）
 实时修改模组设置需要再次修改GetModconfig逻辑
 修改设置这个动作需要使用 MOD_util:ChangeModConfig 函数
