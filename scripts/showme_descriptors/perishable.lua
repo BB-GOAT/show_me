@@ -28,7 +28,14 @@ local Describe = function(self, context)
         }
     end
 
-    -- 物品分支：腐烂时间（鱼，死亡到腐烂：x 天；含生长体）
+    -- 物品分支：腐烂时间（鱼，死亡到腐烂：x 天）
+    local food_estimation = context.config.client.food_estimation -- food_estimation：客户端显式设置优先，客户端为默认档(-1)时跟随服务器设置；"否"时不预测腐烂时间（宠物饥饿倒计时除外）
+    if food_estimation == -1 then
+        food_estimation = context.config.server.food_estimation
+    end
+    if food_estimation == 0 and not entity:HasTag("critter") then
+        return nil
+    end
     local time, fresh, perish_modifier = utils.GetPerishTime(entity, c)
     if time == nil then
         return nil

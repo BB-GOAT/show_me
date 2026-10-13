@@ -693,12 +693,6 @@ AddModRPCHandler("ShowMe","AOS",function(inst)
     inst.has_AlwaysOnStatus = true
 end)
 
---是否考虑特定用户的伤害状态。
-AddModRPCHandler("ShowMe","Estimate",function(inst)
-    --调用此函数将禁用此玩家的提示。
-    inst.should_Estimate_Stale = true
-end)
-
 --local AOS_Temperature_fn --客户端转换游戏温度的功能。 
 
 --We climb into the client interface in order to reduce the displayed temperature
@@ -791,12 +785,6 @@ if CLIENT_SIDE then
     local function FixClient(inst)
         if inst ~= _G.ThePlayer then
             return
-        end
-
-        --以一种 hacky 的方式添加发送食物显示偏好设置
-        if food_estimation == 1 then
-            --print("SendRPC")
-            SendModRPCToServer(MOD_RPC.ShowMe.Estimate)
         end
 
         local status = inst.HUD and inst.HUD.controls and inst.HUD.controls.status
@@ -1874,22 +1862,10 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
             end
             if can_eat then
                 local ed = c.edible
-                local should_Estimate_Stale = viewer.should_Estimate_Stale --client priority
-                if not should_Estimate_Stale then
-                    should_Estimate_Stale = food_estimation ~= 0
-                end
-                local hp,hg,sn
-                if should_Estimate_Stale and ed.GetSanity then
-                    --print("Estimate")
-                    hp=round2(ed:GetHealth(viewer),1)
-                    hg=round2(ed:GetHunger(viewer),1)
-                    sn=round2(ed:GetSanity(viewer),1)
-                else
-                    --print("Not Estimate")
-                    hp=round2(ed.healthvalue,1)
-                    hg=round2(ed.hungervalue,1)
-                    sn=round2(ed.sanityvalue,1)
-                end
+                -- 始终按食物当前新鲜度折算实际收益（原生 GetHealth/GetHunger/GetSanity 对 stale/spoiled 状态自动打折）
+                local hp = round2(ed:GetHealth(viewer),1)
+                local hg = round2(ed:GetHunger(viewer),1)
+                local sn = round2(ed:GetSanity(viewer),1)
                 if viewer.FoodValuesChanger ~= nil then --一种特殊功能，其目的是在食用时改变食物。
                     --print("+")
                     --确实，在这里我们可以在吃之前稍微看看它的结果。
@@ -2015,7 +1991,7 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
                 end
             end
         end
-        if item_info_mod == 0 and c.perishable ~= nil and c.perishable.updatetask ~= nil then    --鱼，死亡到腐烂：x 天
+        if item_info_mod == 0 and c.perishable ~= nil and c.perishable.updatetask ~= nil and (food_estimation ~= 0 or item:HasTag("critter")) then    --鱼，死亡到腐烂：x 天；"预计腐烂"关闭时不显示（宠物饥饿倒计时除外）
             local time, fresh, perish_modifier = GetPerishTime(item, c)
             if time ~= nil then
                 if time < 0 then

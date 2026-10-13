@@ -31,23 +31,10 @@ local Describe = function(self, context)
         return nil
     end
 
-    -- food_estimation：客户端显式设置优先，客户端为默认档(-1)时跟随服务器设置
-    local food_estimation = context.config.client.food_estimation
-    if food_estimation == -1 then
-        food_estimation = context.config.server.food_estimation
-    end
-    local should_Estimate_Stale = food_estimation ~= 0
-
-    local hp, hg, sn
-    if should_Estimate_Stale and self.GetSanity then
-        hp = round2(self:GetHealth(viewer), 1)
-        hg = round2(self:GetHunger(viewer), 1)
-        sn = round2(self:GetSanity(viewer), 1)
-    else
-        hp = round2(self.healthvalue, 1)
-        hg = round2(self.hungervalue, 1)
-        sn = round2(self.sanityvalue, 1)
-    end
+    -- 始终按食物当前新鲜度折算实际收益
+    local hp = round2(self:GetHealth(viewer), 1)
+    local hg = round2(self:GetHunger(viewer), 1)
+    local sn = round2(self:GetSanity(viewer), 1)
 
     if viewer.FoodValuesChanger ~= nil then -- 一种特殊功能，其目的是在食用时改变食物。
         local hp2, hg2, sn2 = viewer:FoodValuesChanger(entity)
