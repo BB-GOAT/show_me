@@ -1,4 +1,4 @@
--- equippable/dapperness/walkspeedmult 组件：装备的精神回复与移速加成
+-- equippable 组件：装备的精神回复与移速加成（dapperness 为 DS 遗产组件，存在时必伴随 equippable，Describe 内按组件形态分流）
 local Describe = function(self, context)
     local c = context.entity.components
     local entries = {}

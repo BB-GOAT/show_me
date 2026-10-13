@@ -1,5 +1,5 @@
 -- weapon 组件：武器伤害（含增益与位面抵抗换算）、位面伤害与特殊伤害类型
--- 注册 weapon 与 zupalexsrangedweapons（远程武器 mod）两个键，逻辑内部按优先级互斥
+-- zupalexsrangedweapons（远程武器 mod）经薄壳文件 zupalexsrangedweapons.lua 互引至本文件
 local Describe = function(self, context)
     -- item_info_mod：客户端显式开启优先，客户端为默认档(0)时跟随服务器设置
     local item_info_mod = context.config.client.item_info_mod

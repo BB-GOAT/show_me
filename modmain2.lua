@@ -1,33 +1,5 @@
---源码来自Star版本，本人只略懂代码，边学边更新，如果你有对此模组兴趣欢迎继承更新。--在此非常感谢对此模组提供协助的所有人
-
---[[
---致模组开发者: 你的模组容器可使用以下代码，实现与ShowMe联动容器高亮。    --源开发者 Star 留
-    TUNING.MONITOR_CHESTS = TUNING.MONITOR_CHESTS or {}
-    TUNING.MONITOR_CHESTS.chestprefab = true    -- chestprefab 即你的容器代码名称
-
---多容器模式, 优先级高低判断可同时加上
---优先级高于 ShowMe
-    TUNING.MONITOR_CHESTS = TUNING.MONITOR_CHESTS or {}
-    for _, v in ipairs(容器列表) do
-        TUNING.MONITOR_CHESTS[v] = true
-    end
-
---优先级低于 ShowMe        --来自 风铃草 —— 穹妹
-    for k, m in pairs(ModManager.mods) do
-        if m and _G.rawget(m, "SHOWME_STRINGS") then
-            if m.postinitfns and m.postinitfns.PrefabPostInit and m.postinitfns.PrefabPostInit.treasurechest then
-                for _,v in ipairs(容器列表) do
-                    m.postinitfns.PrefabPostInit[v] = m.postinitfns.PrefabPostInit.treasurechest
-                end
-            end
-            break
-        end
-    end
---]]
-
 local _G = GLOBAL
 
--- 给漏写GLOBAL和_G的上保险
 _G.setmetatable(env, {
     __index = function(t, k)
         if not modname:find("workshop%-") then
@@ -62,6 +34,48 @@ local function Import(modulename)
 end
 Upvaluehelper = Import(MODROOT .. "bbgoat_upvaluehelper.lua")
 
+-- 组件描述文件表
+local showme_descriptors = setmetatable({}, {
+    __index = function(self, comp_name)
+        local path = MODROOT .. "scripts/showme_descriptors/" .. comp_name .. ".lua"
+        if not _G.kleifileexists(path) then
+            rawset(self, comp_name, false)
+            return false
+        end
+        local descriptor = require("showme_descriptors/" .. comp_name)
+        rawset(self, comp_name, descriptor)
+        return descriptor
+    end,
+})
+
+local prefab_routes, tag_routes, field_routes, weapon_routes = {}, {}, {}, {} -- Prefab、Tag、字段、手持特定武器
+
+-- 第三方模组适配接口：注册额外的组件识别（在 AddSimPostInit 等游戏启动后的时机调用，确保本模组已加载）
+-- descriptor 形如 { Describe = function(component, context) ... end }，context 结构见 MakeContext
+_G.ShowMe = {
+    env = env, -- 本模组环境
+    AddComponentDescriptor = function(comp_name, descriptor) -- 注册组件描述
+        if type(comp_name) ~= "string" or type(descriptor) ~= "table" or type(descriptor.Describe) ~= "function" then
+            print("[Show Me] AddComponentDescriptor 无效注册：需要 (string 组件名, 含 Describe 函数的 table)", comp_name)
+            return
+        end
+        if showme_descriptors[comp_name] then
+            print("[Show Me] 覆盖注册组件描述：", comp_name)
+        end
+        rawset(showme_descriptors, comp_name, descriptor)
+    end,
+    AddPrefabDescriptor = function(prefab_name, descriptor) -- 注册单 prefab 描述
+        if type(prefab_name) ~= "string" or type(descriptor) ~= "table" or type(descriptor.Describe) ~= "function" then
+            print("[Show Me] AddPrefabDescriptor 无效注册：需要 (string prefab 名, 含 Describe 函数的 table)", prefab_name)
+            return
+        end
+        if prefab_routes[prefab_name] then
+            print("[Show Me] 覆盖注册 prefab 描述：", prefab_name)
+        end
+        prefab_routes[prefab_name] = descriptor
+    end,
+}
+
 local GetGlobal=function(gname,default)
     local res=_G.rawget(_G,gname)
     if res == nil and default ~= nil then
@@ -77,7 +91,7 @@ local round2=function(num, idp)    -- num处理的目标数字, idp保留的小�
 end
 
 -- 增加其他模组的兼容性
-local mods = GetGlobal("mods",{})
+local mods = GetGlobal("mods",{}) -- 冰冰羊：什么屎山代码..不敢删..
 
 local GetTime = _G.GetTime    --计时器
 local TheNet = _G.TheNet
@@ -102,23 +116,20 @@ local function Switch(optionname, default)
     return value
 end
 
-local food_order = Switch("food_order", 0) -- 食物属性格式
-local food_style = Switch("food_style", 0) -- 食物属性样式
--- local display_hp = Switch("display_hp", -1) -- 显示血量
-local show_food_units = Switch("show_food_units", -1) -- 显示食物单位
+-- 部分功能配置
+local food_order = GetModConfigData("food_order", true) -- 食物属性格式
+local food_style = GetModConfigData("food_style", true) -- 食物属性样式
+local show_food_units = GetModConfigData("show_food_units", true) -- 显示食物单位
+local perish_style = GetModConfigData("perish_style", true) -- 食物腐烂样式
+local show_naughtiness = GetModConfigData("Show_naughtiness") -- 显示淘气值
 
+-- 箱子颜色
 local chestR = Switch("chestR", -1) -- 红色值
 chestR = chestR == -1 and 0.3 or chestR
 local chestG = Switch("chestG", -1) -- 绿色值
 chestG = chestG == -1 and 1 or chestG
 local chestB = Switch("chestB", -1) -- 蓝色值
 chestB = chestB == -1 and 1 or chestB
-
-local item_info_mod = Switch("item_info_mod", 0) -- 兼容item info模组
-local perish_style = Switch("perish_style", 0) -- 食物腐烂样式
--- local show_fueled = Switch("show_fueled", 3) -- 穿戴装备天数
--- local show_planar_resist = Switch("show_planar_resist", true) -- 显示位面抵抗
-local show_naughtiness = GetModConfigData("Show_naughtiness") -- 显示淘气值
 
 -- 服务器端模组配置
 local server_config = {
@@ -227,7 +238,7 @@ do
 
     -- 链接字符串表
     local function LinkTables(tbl, fallback)
-        GLOBAL.setmetatable(tbl, {
+        _G.setmetatable(tbl, {
             __index = fallback,  -- 查找 tbl 中不存在的键时回退到 fallback
         })
 
@@ -702,9 +713,6 @@ end)
 
 --We climb into the client interface in order to reduce the displayed temperature
 if CLIENT_SIDE then
-    --We make the most correct function in the world "AddPlayersPostInit"
-    --GetGlobal("mods",{})
-    --if not _G.rawget(_G,"mods") then _G.rawset(_G,"mods",{}) end
     if not mods.player_preinit_fns then
         mods.player_preinit_fns={}
         --Dirty hack
@@ -1139,61 +1147,6 @@ local function GetTileMoistureAtPoint(x, y, z)
     return data and data.soilmoisture or 0
 end
 
--- 支持识别的组件
-local showme_descriptors = {
-    compostingbin = require("showme_descriptors/compostingbin"), -- 堆肥桶
-    fueled = require("showme_descriptors/fueled"), -- 建筑燃料与服饰耐久
-    fuel = require("showme_descriptors/fuel"), -- 燃料燃烧时长
-    health = require("showme_descriptors/health"), -- 血量与防御
-    hunger = require("showme_descriptors/hunger"), -- 饥饿
-    perishable = require("showme_descriptors/perishable"), -- 生物剩余寿命
-    sanity = require("showme_descriptors/sanity"), -- 精神
-    follower = require("showme_descriptors/follower"), -- 主人与忠诚
-    combat = require("showme_descriptors/combat"), -- 攻击力与位面
-    domesticatable = require("showme_descriptors/domesticatable"), -- 驯服度
-    growable = require("showme_descriptors/growable"), -- 生长阶段
-    sanityaura = require("showme_descriptors/sanityaura"), -- 精神光环
-    minionspawner = require("showme_descriptors/minionspawner"), -- 食人花
-    stewer = require("showme_descriptors/stewer"), -- 烹饪锅
-    cooldown = require("showme_descriptors/cooldown"), -- 充能冷却
-    tool = require("showme_descriptors/tool"), -- 工具效率增益
-    oar = require("showme_descriptors/oar"), -- 船桨
-    temperature = require("showme_descriptors/temperature"), -- 实体温度
-    instrument = require("showme_descriptors/instrument"), -- 乐器范围
-    occupiable = require("showme_descriptors/occupiable"), -- 笼中生物
-    dryer = require("showme_descriptors/dryer"), -- 晾肉架
-    saddler = require("showme_descriptors/saddler"), -- 鞍具
-    tradable = require("showme_descriptors/tradable"), -- 交易价值
-    repairer = require("showme_descriptors/repairer"), -- 船修理
-    harvestable = require("showme_descriptors/harvestable"), -- 可收获
-    armor = require("showme_descriptors/armor"), -- 护甲防御与耐久
-    weapon = require("showme_descriptors/weapon"), -- 武器伤害
-    zupalexsrangedweapons = require("showme_descriptors/weapon"), -- 远程武器 mod（与 weapon 同文件）
-    projectile = require("showme_descriptors/range"), -- 投射物与纯 combat 物品的攻击范围（生物与武器场景排除）
-    healer = require("showme_descriptors/healer"), -- 治疗量
-    finiteuses = require("showme_descriptors/finiteuses"), -- 使用次数
-    insulator = require("showme_descriptors/insulator"), -- 保暖/隔热
-    equippable = require("showme_descriptors/equippable"), -- 装备回san与移速
-    dapperness = require("showme_descriptors/equippable"), -- 精神回复（与 equippable 同文件）
-    waterproofer = require("showme_descriptors/waterproofer"), -- 防水
-    edible = require("showme_descriptors/edible"), -- 食物属性
-    fertilizer = require("showme_descriptors/fertilizer"), -- 肥料值
-    pickable = require("showme_descriptors/pickable"), -- 采摘倒计时与次数
-    crop = require("showme_descriptors/crop"), -- 旧农场作物生长进度
-    unwrappable = require("showme_descriptors/unwrappable"), -- 捆绑包内容
-    friendlevels = require("showme_descriptors/friendlevels"), -- 好感度
-    stackable = require("showme_descriptors/stackable"), -- 超大堆叠实际数量
-    pearldecorationscore = require("showme_descriptors/pearldecorationscore"), -- 寄居蟹装饰度
-    farmplantstress = require("showme_descriptors/farmplantstress"), -- 农作物压力
-    beerpower = require("showme_descriptors/beerpower"), -- 不灵电力
-    waterpower = require("showme_descriptors/waterpower"), -- 不灵水量
-    gaspower = require("showme_descriptors/gaspower"), -- 不灵气体
-    childspawner = require("showme_descriptors/childspawner"), -- 生物巢居民数
-    timer = require("showme_descriptors/timer"), -- 实体计时器
-    worldsettingstimer = require("showme_descriptors/worldsettingstimer"), -- 世界设置计时器
-    dryingrack = require("showme_descriptors/dryingrack"), -- 新晾肉架
-}
-
 -- prefab/feature 描述路由：单 prefab 文件按文件名注册，feature 文件自声明负责的 prefabs/tags
 local PREFAB_DESCRIPTOR_FILES = {
     "showme_prefab_descriptors/nightmare_timepiece",
@@ -1224,7 +1177,6 @@ local FEATURE_DESCRIPTOR_FILES = {
     "showme_feature_descriptors/season_rocks",
     "showme_feature_descriptors/weapon_resist",
 }
-local prefab_routes, tag_routes, field_routes, weapon_routes = {}, {}, {}, {} -- Prefab、Tag、字段、手持特定武器
 for _, path in ipairs(PREFAB_DESCRIPTOR_FILES) do
     prefab_routes[string.match(path, "([^/]+)$")] = require(path)
 end
@@ -1281,11 +1233,8 @@ end
 
 --获取物品信息
 function GetTestString(item, viewer)
-    --line_cnt = 0
     desc_table = {} --旧的 desc 将被取消
     local prefab = item.prefab
-    local c=item.components
-
     local item_descriptors = {}
     local function MakeContext() -- 组件循环与 prefab/feature 段共用的描述上下文
         return {

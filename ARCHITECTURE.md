@@ -22,7 +22,7 @@
 | `modmain.lua` | 3197 | 稳定版入口：头部有 Beta 转发段（见二·一），其余为原版逻辑，**冻结不轻易改** |
 | `modmain2.lua` | ~3220 | **Beta 版（重构工作区）**：modmain 的完整副本，所有重构在此进行 |
 | `TODO.md` | - | 重构任务清单 |
-| `scripts/showme_descriptors/` | 49 个 | **组件锚点描述文件**：文件名 = 组件名，调度器遍历 `pairs(item.components)` 触发（健康/护甲/食物/腐烂/计时器…） |
+| `scripts/showme_descriptors/` | 50 个 | **组件锚点描述文件**：文件名 = 组件名，懒加载注册表（kleifileexists 探测 + 首次命中加载写回），调度器遍历 `pairs(item.components)` 触发（健康/护甲/食物/腐烂/计时器…） |
 | `scripts/showme_prefab_descriptors/` | - | **单 prefab 描述文件**：文件名 = prefab 名，无组件锚点可依赖的专属逻辑（铥矿奖章、水族箱、避雷针充能…） |
 | `scripts/showme_feature_descriptors/` | - | **功能组描述文件**：文件名 = 功能名（让人一眼看出获取什么信息），一个文件服务多个 prefab/标签（池塘鱼数、世界仪表、香料 BUFF…），文件内自声明负责范围 |
 | `bbgoat_upvaluehelper.lua` | 215 | 通用工具库（冰冰羊维护，同步自 bbgoat_utils）：递归查找/替换函数上值、查找事件回调 |
@@ -156,7 +156,7 @@ GetTestString 已全部拆入描述文件：函数本体只剩调度管线（组
 
 | 目录 | 锚点 | 文件命名 |
 |---|---|---|
-| `showme_descriptors/`（49 个） | 组件（调度器遍历 `pairs(item.components)`） | 文件名 = 组件名（health.lua、edible.lua…） |
+| `showme_descriptors/`（50 个） | 组件（调度器遍历 `pairs(item.components)`） | 文件名 = 组件名（health.lua、edible.lua…），懒加载注册表按名加载（kleifileexists 探测，无文件缓存 false 短路），无注册表维护；特例：`zupalexsrangedweapons.lua` 薄壳键名即文件名但组件非原版，`return require` 互引 `weapon.lua` 复用分流 |
 | `showme_prefab_descriptors/`（5 个） | prefab 名（查 `prefab_routes`） | 文件名 = prefab 名（nightmare_timepiece.lua…） |
 | `showme_feature_descriptors/`（20 个） | 多 prefab/标签/字段/查看者武器共用逻辑 | 文件名 = **具体功能名**（pond_fish.lua、world_gauge.lua…），自声明负责范围 |
 
@@ -190,7 +190,7 @@ modmain2 启动时遍历两个目录的文件清单，把 feature 文件自声�
 
 GetTestString 调度顺序（条目统一排序，`order` 字段保插入序，`priority` 可控重要锚点）：
 
-1. 组件循环：遍历 `pairs(item.components)` 查 `showme_descriptors`；
+1. 组件循环：遍历 `pairs(item.components)` 查懒加载注册表 `showme_descriptors`（首次命中才 require 对应文件，无描述文件的组件键缓存 false 永久短路，`descriptor and descriptor.Describe` 天然过滤）；
 2. `prefab_routes[prefab]` 精确命中；
 3. 遍历 `tag_routes` 键做 `HasTag`；
 4. 遍历 `field_routes` 键查 `item[field]`；
@@ -204,6 +204,16 @@ GetTestString 调度顺序（条目统一排序，`order` 字段保插入序，`
 - 唯一使用者的辅助数据/函数随块迁入文件；多处使用才进 descriptor_utils
 - viewer 侧信息（查看者组件、手持武器、世界状态）可经 `context.player` / `TheWorld` 直接取，不必留主流程
 - TUNING 键直接取值，不做静默降级（见四·safe_tuning 移除决策）
+
+### 5.5 第三方适配接口
+
+`_G.ShowMe.AddComponentDescriptor(comp_name, descriptor)`：第三方模组注册额外组件识别，与组件目录文件同一调度路径。
+
+- **注册时机**：`AddSimPostInit` 等游戏启动后的时机调用，确保本模组已加载（ShowMe 挂载在 modmain2 的懒加载注册表旁）。
+- **descriptor 协议**：与组件目录文件一致——`{ Describe = function(component, context) ... end }`，返回 `{data_key, params}` 或 `{description}` 条目（或条目数组），不显示则 `return nil`。
+- **去重**：与目录文件共享 `processed_descriptors`（按模块对象去重，同一 descriptor 注册多个组件键只执行一次）。
+- **覆盖**：已有描述时允许覆盖，但会 `print` 提示覆盖注册；无效参数（非 string 键名 / 非 table / 无 Describe 函数）同样 print 后忽略。
+- **`ShowMe.AddPrefabDescriptor(prefab_name, descriptor)`**：注册单 prefab 描述（写入 prefab_routes，路由键即 prefab 名），协议与 `showme_prefab_descriptors/` 文件一致（`{ Describe = function(context) ... end }`，无 self）；第三方文件可在自己模组内加载后传表。
 
 ## 六、scripts 三个文件
 
