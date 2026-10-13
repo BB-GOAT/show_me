@@ -19,17 +19,11 @@ end
 
 print(modinfo.name .. " : v" .. modinfo.version .. " Beta版模式")
 
-local function printinvalid(rpcname, player) -- 客户端发送无效RPC时的处理
-    print(string.format("Invalid %s RPC from (%s) %s", rpcname, player.userid or "", player.name or ""))
-
-    --This event is for MODs that want to handle players sending invalid rpcs
-    _G.TheWorld:PushEvent("invalidrpc", { player = player, rpcname = rpcname })
-end
-
 function Import(modulename, env)
     local f = _G.kleiloadlua(modulename)
     if f and type(f) == "function" then
         _G.setfenv(f, env or _G)
+        print("[Show Me] Import: " .. modulename)
         return f()
     else
         local info = debug.getinfo(2)
@@ -128,20 +122,6 @@ local client_config = {
 }
 local player_config = {}
 
-AddModRPCHandler("ShowMe","SendConfig",function(player, config)
-    if not _G.checkstring(config) then
-        printinvalid("ShowMe.SendConfig", player)
-        return
-    end
-    config = _G.DecodeAndUnzipString(config)
-    if not _G.type(config) == "table" then
-        printinvalid("ShowMe.SendConfig", player)
-        return
-    end
-
-    player_config[player] = config
-end)
-
 -- 定义语言表(定义在模组环境以便其它模组调用)
 MY_DATA = {}
 MY_STRINGS = {}              -- 主字符串表
@@ -154,15 +134,26 @@ OTHER_TAGS = {}              -- 其他标签描述
 OTHER_TITLES = {}            -- 其他标签描述2
 
 -- 加载语言
-for k,v in pairs(Import(MODROOT .. "showme_chs.lua")) do
-    env[k] = v
-end
-
-Import(MODROOT .. "main/language.lua", env)
+local language_data = Import(MODROOT .. "main/language.lua", env)
+language_data.SetupLanguage()
 
 local renderers_data = Import(MODROOT .. "main/renderers.lua", env)
+renderers_data.SetConfigTable(client_config)
 local DataTimerFn = renderers_data.DataTimerFn
 local GetPrefabFancyName = renderers_data.GetPrefabFancyName
+
+-- 箱子高亮
+local chest_data = Import(MODROOT .. "main/chest_highlight.lua", env)
+
+-- 游戏内实时修改配置
+local SetupChangeModSettings = Import(MODROOT .. "main/change_modsettings.lua", env)
+SetupChangeModSettings(client_config, player_config, {
+    SetupLanguage = language_data.SetupLanguage,
+    ApplyRenderConfig = renderers_data.ApplyRenderConfig,
+    ChestColor = chest_data.color,
+    RefreshChests = chest_data.Refresh,
+    ResolveChannel = chest_data.ResolveChannel,
+})
 
 Import(MODROOT .. "main/temperature_client.lua", env) -- 温度相关
 
@@ -187,12 +178,11 @@ if SERVER_SIDE then
 end
 
 Import(MODROOT .. "main/hint_system.lua", env) -- 信息显示
-Import(MODROOT .. "main/chest_highlight.lua", env) -- 箱子高亮
 
 -------------------------------------------------- CLIENT --------------------------------------------------
 
 if CLIENT_SIDE then
-    MOD_util:AddPlayerPostInit(function(world, inst) -- playeractivated 时 HUD 已就绪；data 即激活的玩家实体
+    MOD_util:AddPlayerPostInit(function(world, inst)
         if inst ~= _G.ThePlayer then
             return
         end

@@ -64,7 +64,7 @@ function MOD_util:AddUserCommand(command_string, params_table, client_command_fn
         prettyname = nil,
         desc = nil,
         emote = true,
-        permission = COMMAND_PERMISSION.USER,
+        permission = GLOBAL.COMMAND_PERMISSION.USER,
         slash = true,
         usermenu = false,
         servermenu = false,

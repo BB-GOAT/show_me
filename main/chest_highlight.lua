@@ -5,21 +5,46 @@ local TheNet = _G.TheNet
 local SERVER_SIDE = TheNet:GetIsServer()    --服务器
 local CLIENT_SIDE = TheNet:GetIsClient() or (SERVER_SIDE and not TheNet:IsDedicated())    --本地
 
-local chestR = tonumber(GetModConfigData('chestR',true)) or -1
-if chestR == -1 then
-    chestR = tonumber(GetModConfigData('chestR')) or 0.3
-    if (chestR == -1) then chestR = 0.3 end
+--- 解析单个颜色通道配置：客户端配置无效(-1/未设置)时依次回退到服务器配置、默认值
+---@param config_name string 配置项名
+---@param fallback number 默认通道值
+---@return number 0~1 的颜色通道值
+local function ResolveColorChannel(config_name, fallback)
+    local value = tonumber(GetModConfigData(config_name, true))
+    if value == nil or value < 0 then
+        value = tonumber(GetModConfigData(config_name))
+        if value == nil or value < 0 then
+            value = fallback
+        end
+    end
+    return value
 end
-local chestG = tonumber(GetModConfigData('chestG',true)) or -1
-if chestG == -1 then
-    chestG = tonumber(GetModConfigData('chestG')) or 1
-    if (chestG == -1) then chestG = 1 end
+
+--- 解析箱子高亮颜色通道：屏幕提交的新值无效(未提交/选了“默认”-1)时回退服务器配置，最后用默认值
+--- 与 ResolveColorChannel 的差异：新值优先于配置读取，供游戏内实时配置更新
+---@param new_value any 屏幕提交的新值
+---@param config_name string 配置项名（用于回退读取服务器配置）
+---@param default_value number 兜底默认值
+---@return number 0~1 的颜色通道值
+local function ResolveChestChannel(new_value, config_name, default_value)
+    new_value = tonumber(new_value)
+    if new_value == nil or new_value < 0 then
+        new_value = tonumber(GetModConfigData(config_name))
+        if new_value == nil or new_value < 0 then
+            new_value = default_value
+        end
+    end
+    return new_value
 end
-local chestB = tonumber(GetModConfigData('chestB',true)) or -1
-if chestB == -1 then
-    chestB = tonumber(GetModConfigData('chestB')) or 1
-    if (chestB == -1) then chestB = 1 end
-end
+
+local chest_color = {
+    r = ResolveColorChannel('chestR', 0.3),
+    g = ResolveColorChannel('chestG', 1),
+    b = ResolveColorChannel('chestB', 1),
+}
+
+-- 游戏内实时配置改色后的重绘入口；仅在 CLIENT_SIDE 分支内赋值，通过 return 的 Refresh 供 change_modsettings 调用
+local refresh_chests
 
 --处理箱子模块
 if not _G.KnownModIndex:IsModEnabledAny("workshop-3363111676") then -- 开启高亮查找模组时关掉Show Me的高亮显示，节省性能
@@ -133,7 +158,7 @@ if not _G.KnownModIndex:IsModEnabledAny("workshop-3363111676") then -- 开启高
                     inst.ShowMeColor(false)
                 else
                     if inst.AnimState ~= nil then
-                        inst.AnimState:SetMultColour(chestR,chestG,chestB,1)
+                        inst.AnimState:SetMultColour(chest_color.r, chest_color.g, chest_color.b, 1)
                         inst.AnimState:SetLightOverride(.5)        --给箱子添加光覆盖，让夜间也能看清，50%亮度可以在月圆或去色夜空中还能有显示
                     end
                     inst.b_ShowMe_changed_color = true
@@ -186,6 +211,7 @@ if not _G.KnownModIndex:IsModEnabledAny("workshop-3363111676") then -- 开启高
                 UpdateChestColor(k)
             end
         end
+        refresh_chests = UpdateAllChestsAround
         AddPrefabPostInit("inventory_classified",function(inst)
             inst:ListenForEvent("activedirty", function(inst)
                 --print("ACTIVE:",inst._active:value())
@@ -256,3 +282,13 @@ if not _G.KnownModIndex:IsModEnabledAny("workshop-3363111676") then -- 开启高
         end
     end
 end
+
+return {
+    color = chest_color,
+    ResolveChannel = ResolveChestChannel,
+    Refresh = function()
+        if refresh_chests then
+            refresh_chests()
+        end
+    end,
+}

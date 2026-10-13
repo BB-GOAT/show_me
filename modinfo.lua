@@ -12,7 +12,8 @@ description = "当前版本: "..version.."\n" ..
 农作物状态显示新增选项：带耕作先驱帽/使用沃姆伍德角色才显示详情信息
 
 新增Beta版代码，在模组设置中开启Beta版本来体验它！
-在Beta版中大部分(屎山)代码得到了修改/重构
+- 在Beta版中大部分(屎山)代码得到了修改/重构
+- Beta版支持在游戏内输入聊天命令 /showme 来实时修改客户端侧模组设置
 如果在Beta模式下遇到任何问题请及时反馈
 
 历史更新日志请前往创意工坊页面查看
@@ -49,6 +50,7 @@ local function SkipSpace(label, client_config)
     return { name = "",label = label, hover = "", options = { { description = "", data = false }, }, default = false, client = client_config}
 end
 
+
 local color_options = {
     {description = "默认", data = -1,},
     {description = "0%", data = 0,},
@@ -64,6 +66,7 @@ local color_options = {
     {description = "100%", data = 1,},
 }
 
+-- live_config = true：支持游戏内实时修改（/showme 面板只显示带此标记的配置项）
 configuration_options =
 {
     {
@@ -80,6 +83,7 @@ configuration_options =
     SkipSpace(""),
     {
         name = "lang",
+        live_config = true,
         label = "语言 Language",
         --hover = "",
         options =
@@ -93,6 +97,7 @@ configuration_options =
     },
     {
         name = "food_style",
+        live_config = true,
         label = "食物属性样式",
         options =
         {
@@ -104,6 +109,7 @@ configuration_options =
     },
     {
         name = "food_order",
+        live_config = true,
         label = "食物属性格式",
         options =
         {
@@ -115,6 +121,7 @@ configuration_options =
     },
     {
         name = "food_estimation",
+        live_config = true,
         label = "预计腐烂",
         hover = "预测食物腐烂时间！",
         options =
@@ -127,6 +134,7 @@ configuration_options =
     },
     {
         name = "perish_style",
+        live_config = true,
         label = "食物腐烂样式",
         hover = "不新鲜于: 0.1 天( 0.3 天)",
         options =
@@ -139,6 +147,7 @@ configuration_options =
     },
     {
         name = "show_food_units",
+        live_config = true,
         label = "显示食物单位",
         hover = "显示食物单位，比如肉类、蔬菜类、水果类！",
         options =
@@ -152,6 +161,7 @@ configuration_options =
     },
     {
         name = "show_uses",
+        live_config = true,
         label = "显示工具用途",
         hover = "",
         options =
@@ -165,6 +175,7 @@ configuration_options =
     },
     {
         name = "show_nutrients",
+        live_config = true,
         label = "显示肥料值",
         hover = "",
         options =
@@ -177,6 +188,7 @@ configuration_options =
     },
     {
         name = "display_hp",
+        live_config = true,
         label = "显示血量",
         --hover = "",
         options =
@@ -190,6 +202,7 @@ configuration_options =
     },
     {
         name = "show_fueled",
+        live_config = true,
         label = "穿戴装备天数",
         hover = "",
         options =
@@ -203,6 +216,7 @@ configuration_options =
     },
     {
         name = "show_fuel",
+        live_config = true,
         label = "物品燃料值",
         hover = "显示物品的燃料值，例如草、木材、腐烂食物等",
         options =
@@ -214,6 +228,7 @@ configuration_options =
     },
     {
         name = "show_planar_resist",
+        live_config = true,
         label = "显示位面抵抗",
         hover = "在显示工具、武器攻击附加显示位面抵抗造成的伤害",
         options =
@@ -225,6 +240,7 @@ configuration_options =
     },
     {
         name = "T_crop_mode",
+        live_config = true,
         label = "农作物状态显示",
         hover = "例如缺肥料、水分、家族、有杂草等，成长计时不受影响",
         options = {
@@ -236,6 +252,7 @@ configuration_options =
     },
     {
         name = "show_buddle_item",
+        live_config = true,
         label = "显示捆绑包内容",
         options =
         {
@@ -246,6 +263,7 @@ configuration_options =
     },
     {
         name = "item_info_mod",
+        live_config = true,
         label = "兼容item info模组",
         hover = "如果打开，Show me将不显示与item info相同的信息",
         options =
@@ -258,6 +276,7 @@ configuration_options =
     SkipSpace("箱子提示颜色"),
     {
         name = "chestR",
+        live_config = true,
         label = "红色值",
         hover = "默认绿色，如果红绿蓝都设置为0%或100%，箱子就没有颜色",
         options = color_options,
@@ -265,6 +284,7 @@ configuration_options =
     },
     {
         name = "chestG",
+        live_config = true,
         label = "绿色值",
         hover = "默认绿色，如果红绿蓝都设置为0%或100%，箱子就没有颜色",
         options = color_options,
@@ -272,6 +292,7 @@ configuration_options =
     },
     {
         name = "chestB",
+        live_config = true,
         label = "蓝色值",
         hover = "默认绿色，如果红绿蓝都设置为0%或100%，箱子就没有颜色",
         options = color_options,

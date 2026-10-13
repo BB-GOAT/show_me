@@ -6,11 +6,19 @@ local round2 = function(num, idp)    -- num处理的目标数字, idp保留的�
     return _G.tonumber(string.format("%." .. (idp or 0) .. "f", num)) -- 例如：idp传入数字为2，则连接字符串是 %.2f
 end
 
--- 渲染消费的配置自读（GetModConfigData 幂等，参数与原 modmain2 local 保持一致）
-local food_order = GetModConfigData("food_order", true) -- 食物属性格式
-local food_style = GetModConfigData("food_style", true) -- 食物属性样式
-local show_food_units = GetModConfigData("show_food_units", true) -- 显示食物单位
-local perish_style = GetModConfigData("perish_style", true) -- 食物腐烂样式
+-- 实时配置表
+local live_config
+
+local function SetConfigTable(config_table)
+    live_config = config_table
+end
+
+local function GetRenderConfig(config_name)
+    if live_config ~= nil then
+        return live_config[config_name]
+    end
+    return GetModConfigData(config_name, true)
+end
 
 local o_t = OTHER_TITLES
 
@@ -254,6 +262,8 @@ end
 --食物信息
 MY_DATA.food.fn = function(arr)
     local hg,sn,hp = arr.param[1],arr.param[2],arr.param[3]
+    local food_order = GetRenderConfig("food_order")
+    local food_style = GetRenderConfig("food_style")
     if food_order <= 1 then
         if food_style <= 1 then
             return MY_DATA.hunger.desc .. " "..hg.." / "..MY_DATA.sanity.desc.." "..sn.." / "..MY_DATA.health.desc.." "..hp
@@ -300,6 +310,7 @@ MY_DATA.perish.fn = function(arr)
         return desc .. t1 .. days
     end
 
+    local perish_style = GetRenderConfig("perish_style")
     if perish_style == 1 then	-- 阶段：距离不新鲜 / 变质 / 腐烂
         if stage == "stale" then
             desc = SHOWME_STRINGS.stale_in
@@ -409,12 +420,17 @@ MY_DATA.food_memory.fn = function(arr)
     return arr.data.desc .. '(' .. perc .. '): ' .. DataTimerFn(arr.param[2])
 end
 
-if show_food_units == 0 or show_food_units == 2 then
-    MY_DATA.units_of.hidden = true
+-- 依据实时配置更新渲染状态标志；由 main/change_modsettings.lua 在配置应用时通过 deps 调用
+local function ApplyRenderConfig()
+    local show_food_units = GetRenderConfig("show_food_units")
+    MY_DATA.units_of.hidden = (show_food_units == 0 or show_food_units == 2) or nil
 end
+ApplyRenderConfig() -- 加载时初始化
 
 return {
     DataTimerFn = DataTimerFn,
     GetPrefabFancyName = GetPrefabFancyName,
     DefaultDisplayFn = DefaultDisplayFn,
+    SetConfigTable = SetConfigTable,
+    ApplyRenderConfig = ApplyRenderConfig,
 }

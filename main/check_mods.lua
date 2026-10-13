@@ -3,7 +3,7 @@ local TheNet = _G.TheNet
 local active_mods_by_name = {}
 if TheNet and TheNet:GetIsServer() then
     for name,mod in pairs(_G.KnownModIndex.savedata.known_mods or {}) do
-        if KnownModIndex:IsModEnabledAny(name) then
+        if _G.KnownModIndex:IsModEnabledAny(name) then
             local real_name = mod.modinfo.name
             if real_name == nil then
                 print("[Show Me] ERROR: real_name of a mod is nil ",tostring(name))
