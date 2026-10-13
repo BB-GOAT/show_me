@@ -1060,16 +1060,6 @@ local function GetDebuffTime(viewer, buff_name)
     end
 end
 
---在船上显示木材、树枝修理度
-local function AddBoatStatus(viewer)
-    if viewer.boat_status_task then
-        viewer.boat_status_task:Cancel()
-    end
-    viewer.boat_status_task = viewer:DoTaskInTime(120,function(inst)
-        inst.boat_status_task = nil
-    end)
-end
-
 local USELESS_TIMERS = {	-- 生物巢定时器屏蔽
     --default for all prefabs
     toadstool = { channeltick = true },
@@ -1530,6 +1520,8 @@ local showme_descriptors = {
 local PREFAB_DESCRIPTOR_FILES = {
     "showme_prefab_descriptors/nightmare_timepiece",
     "showme_prefab_descriptors/moon_fissure",
+    "showme_prefab_descriptors/flower_evil",
+    "showme_prefab_descriptors/cannonball_rock_item",
 }
 local FEATURE_DESCRIPTOR_FILES = {
     "showme_feature_descriptors/pond_fish",
@@ -1537,6 +1529,9 @@ local FEATURE_DESCRIPTOR_FILES = {
     "showme_feature_descriptors/slingshot_ammo",
     "showme_feature_descriptors/world_gauge",
     "showme_feature_descriptors/spice",
+    "showme_feature_descriptors/hungerslow",
+    "showme_feature_descriptors/winter_tree",
+    "showme_feature_descriptors/boat_parts",
 }
 local prefab_routes, tag_routes = {}, {}
 for _, path in ipairs(PREFAB_DESCRIPTOR_FILES) do
@@ -1706,9 +1701,7 @@ function GetTestString(item, viewer)
         --护甲、武器伤害、攻击范围已迁至 showme_descriptors/armor.lua、weapon.lua、range.lua（combat 键触发范围，见 range.lua）
         --工具工作效率增益已迁至 showme_descriptors/tool.lua
         --保暖/隔热已迁至 showme_descriptors/insulator.lua
-        if prefab == "flower_evil" then -- 恶魔花无组件锚点，回 san 显示保留在主流程
-            cn("sanity",-_G.TUNING.SANITY_TINY,1)
-        end
+        --恶魔花回san已迁至 showme_prefab_descriptors/flower_evil.lua
         --装备移速加成已迁至 showme_descriptors/equippable.lua
         --防水已迁至 showme_descriptors/waterproofer.lua
         --船桨力度已迁至 showme_descriptors/oar.lua
@@ -1728,14 +1721,7 @@ function GetTestString(item, viewer)
         --温度
         --当前温度、乐器范围已迁至 showme_descriptors/temperature.lua、instrument.lua
 
-        --装备饥饿减免
-        if prefab=="beargervest" then
-            table.insert(desc_table, "@"..string.format(o_t.hungerslow, (1-TUNING.ARMORBEARGER_SLOW_HUNGER)*100).."%")
-        elseif prefab=="armorslurper" or prefab=="hat_albicans_mushroom" then
-            table.insert(desc_table, "@"..string.format(o_t.hungerslow, (1-TUNING.ARMORSLURPER_SLOW_HUNGER)*100).."%")
-        elseif prefab == "red_mushroomhat" or prefab == "green_mushroomhat" or prefab == "blue_mushroomhat" then
-            table.insert(desc_table, "@"..string.format(o_t.hungerslow, (1-TUNING.MUSHROOMHAT_SLOW_HUNGER)*100).."%")
-        end
+        --装备饥饿减免已迁至 showme_feature_descriptors/hungerslow.lua
         --主人识别三级链已收敛至 GetOwnerEntries；follower 组件的主人与忠诚度由 follower.lua 处理
         local owner_entries = GetOwnerEntries(item)
         if owner_entries then
@@ -1749,35 +1735,14 @@ function GetTestString(item, viewer)
         --船修理值、收获已迁至 showme_descriptors/repairer.lua、harvestable.lua
         --弹弓弹药已迁至 showme_feature_descriptors/slingshot_ammo.lua
 
-        -- 冬季盛宴树
-        if item:HasTag("winter_tree") then
-            local giftable = viewer.components.wintertreegiftable
-            if giftable and giftable.GetDaysSinceLastGift then
-                local days = giftable:GetDaysSinceLastGift()
-                if type(days) == "number" then
-                    if days >= 4 then
-                        table.insert(desc_table, "@" .. MY_STRINGS.winter_gift_ready)
-                    else
-                        local remaining_days = math.ceil(4 - days)
-                        table.insert(desc_table, "@" .. string.format(
-                            MY_STRINGS.winter_gift_wait,
-                            remaining_days
-                        ))
-                    end
-                end
-            end
-        end
+        --冬季盛宴树礼物冷却已迁至 showme_feature_descriptors/winter_tree.lua
         ------------------Check prefabs?----------------------
         --池塘鱼数已迁至 showme_feature_descriptors/pond_fish.lua
         --雨量计/温度计已迁至 showme_feature_descriptors/world_gauge.lua
         --三香料BUFF已迁至 showme_feature_descriptors/spice.lua
         --天体裂隙已迁至 showme_prefab_descriptors/moon_fissure.lua
-        if prefab=='boat' or prefab=='anchor' or prefab=='mast' or prefab=='boat_leak' or prefab=='mast_malbatross' or prefab=='steeringwheel' then --船工具
-            --没有信息，只有船的状态
-            AddBoatStatus(viewer)
-        elseif prefab=="cannonball_rock_item" then
-            cn("dmg", TUNING.CANNONBALL_DAMAGE)
-        end
+        --船部件查看标记已迁至 showme_feature_descriptors/boat_parts.lua
+        --石炮弹伤害已迁至 showme_prefab_descriptors/cannonball_rock_item.lua
 
         --其他物品添加标签    VOIDCLOTH
         local o_t_list = {
