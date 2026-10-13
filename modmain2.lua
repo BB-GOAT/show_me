@@ -52,7 +52,7 @@ local showme_descriptors = _G.setmetatable({}, {
 local prefab_routes, tag_routes, field_routes, weapon_routes = {}, {}, {}, {} -- Prefab、Tag、字段、手持特定武器
 
 -- 第三方模组适配接口：注册额外的组件识别，请在 AddSimPostInit 等游戏启动后的时机调用，确保本模组已加载
--- descriptor 形如 { Describe = function(component, context) ... end }，context 结构见 MakeContext
+-- descriptor 形如 { Describe = function(component, context) ... end }，context 结构见 GetTestString 内的 context
 _G.ShowMe = {
     env = env, -- 本模组环境
     AddComponentDescriptor = function(comp_name, descriptor) -- 注册组件描述
@@ -286,8 +286,9 @@ end
 ---@return table|nil entries 协议条目数组：owner 词条；无主人时为 nil
 local function GetOwnerEntries(item)
     local entries = {}
-    if item.components.mine and item.components.mine.nick then
-        table.insert(entries, { data_key = "owner", params = { item.components.mine.nick } })
+    local mine = item.components.mine
+    if mine and mine.nick then
+        table.insert(entries, { data_key = "owner", params = { mine.nick } })
         return entries
     end
     if item.stealable and item.stealable.owner and item.stealable.owner ~= "_?\1" then
@@ -305,8 +306,7 @@ function GetTestString(item, viewer)
     desc_table = {} --旧的 desc 将被取消
     local prefab = item.prefab
     local item_descriptors = {}
-    local function MakeContext() -- 组件循环与 prefab/feature 段共用的描述上下文
-        return {
+    local context = {
             player = viewer, -- 获取此信息的玩家
             entity = item, -- 对应实体
             utils = descriptor_utils, -- 共享工具函数
@@ -318,59 +318,47 @@ function GetTestString(item, viewer)
 
             -- 语言数据（相关代码待重构）
             -- str = { TODO },
-        }
-    end
-    -- 按组件获取信息
-    for components_name, component in pairs(item.components or {}) do
-        local descriptor = showme_descriptors[components_name]
-        if descriptor and descriptor.Describe then
-            local context = MakeContext()
-
-            local result = descriptor.Describe(component, context)
-            if result then
-                -- 单条目对象靠 data_key/description 识别，数组则直接展开
-                if result[1] == nil and (result.data_key or result.description) then
-                    result = { result }
-                end
-                for _, entry in ipairs(result) do
-                    entry.order = #item_descriptors -- 插入序号，供同优先级排序保持组件内代码顺序
-                    table.insert(item_descriptors, entry)
-                end
-            end
-        end
-    end
-
-    local prefab_context = MakeContext()
+    }
     local function CollectEntries(result)
         if not result then
             return
         end
+        -- 单条目对象靠 data_key/description 识别，数组则直接展开
         if result[1] == nil and (result.data_key or result.description) then
             result = { result }
         end
         for _, entry in ipairs(result) do
-            entry.order = #item_descriptors
+            entry.order = #item_descriptors -- 插入序号，供同优先级排序保持来源代码顺序
             table.insert(item_descriptors, entry)
+        end
+    end
+
+    -- 按组件获取信息
+    for components_name, component in pairs(item.components or {}) do
+        local descriptor = showme_descriptors[components_name]
+        if descriptor and descriptor.Describe then
+            CollectEntries(descriptor.Describe(component, context))
         end
     end
 
     -- 按Prefab名获取信息
     local pdesc = prefab_routes[prefab]
     if pdesc and pdesc.Describe then
-        CollectEntries(pdesc.Describe(prefab_context))
+        CollectEntries(pdesc.Describe(context))
     end
 
-    -- 按Tag获取信息
-    for tag_name, tdesc in pairs(tag_routes) do
-        if item.HasTag and item:HasTag(tag_name) and tdesc.Describe then
-            CollectEntries(tdesc.Describe(prefab_context))
+    -- 按Tag获取信息：反向遍历实体自身 tags 查路由表，避免全表逐键 HasTag（引擎内线性扫描物品标签）
+    for _, tag_name in ipairs(item.tags or {}) do
+        local tdesc = tag_routes[tag_name]
+        if tdesc and tdesc.Describe then
+            CollectEntries(tdesc.Describe(context))
         end
     end
 
     -- 按字段获取信息
     for field_name, fdesc in pairs(field_routes) do
         if item[field_name] and fdesc.Describe then
-            CollectEntries(fdesc.Describe(prefab_context))
+            CollectEntries(fdesc.Describe(context))
         end
     end
 
@@ -380,7 +368,7 @@ function GetTestString(item, viewer)
     if viewer_weapon then
         local wdesc = weapon_routes[viewer_weapon.prefab]
         if wdesc and wdesc.Describe then
-            CollectEntries(wdesc.Describe(prefab_context))
+            CollectEntries(wdesc.Describe(context))
         end
     end
 
