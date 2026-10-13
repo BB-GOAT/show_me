@@ -156,7 +156,7 @@ GetTestString 已全部拆入描述文件：函数本体只剩调度管线（组
 
 | 目录 | 锚点 | 文件命名 |
 |---|---|---|
-| `showme_descriptors/`（50 个） | 组件（调度器遍历 `pairs(item.components)`） | 文件名 = 组件名（health.lua、edible.lua…），懒加载注册表按名加载（kleifileexists 探测，无文件缓存 false 短路），无注册表维护；特例：`zupalexsrangedweapons.lua` 薄壳键名即文件名但组件非原版，`return require` 互引 `weapon.lua` 复用分流 |
+| `showme_descriptors/`（49 个） | 组件（调度器遍历 `pairs(item.components)`） | 文件名 = 组件名（health.lua、edible.lua…），懒加载注册表按名加载（kleifileexists 探测，无文件缓存 false 短路），无注册表维护 |
 | `showme_prefab_descriptors/`（5 个） | prefab 名（查 `prefab_routes`） | 文件名 = prefab 名（nightmare_timepiece.lua…） |
 | `showme_feature_descriptors/`（20 个） | 多 prefab/标签/字段/查看者武器共用逻辑 | 文件名 = **具体功能名**（pond_fish.lua、world_gauge.lua…），自声明负责范围 |
 
