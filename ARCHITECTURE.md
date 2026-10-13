@@ -128,7 +128,7 @@ modmain.lua 头部临时代码：
   - **物品分支**：烹饪锅、冷却、growable、护甲（含防御 BUFF + 位面防御 + 第三方 phys 吸收 + 耐久）、武器伤害（位面抵抗公式 `(√(4d+64)-8)×4` + 攻击 BUFF + 第三方 phys_dmg 类型）、zupalexsrangedweapons 箭伤、攻击/施法范围、工具效率 BUFF、保温（SetInsulationEx / GetInsulation 两条路径）、回精神（dapperness×54）、防水、船桨动力、**食物**（GetHealth/Hunger/Sanity × eater 吸收倍率 × 食物记忆倍率 + 食物温度 + Warly BUFF 遍历 `cooking.recipes` + 香料死代码）、肥料、腐烂时间（含 stale/spoiled 分界倒计时、宠物饥饿、critter 特判）、填充单位、治疗、工具耐久（C_FINITEUSES_PREFAB 特殊倍率）、温度、建筑燃料、堆肥桶、乐器范围、 crystallizable、装备饥饿减免（beargervest 等写死）、主人识别（mine/stealable/owner 三级）、occupiable（笼中鸟饥饿）、干燥架、鞍具、服饰耐久（按 FUELTYPE 分类决定是否显示）、贸易价值、冰箱倍率、修理值、收获、**弹弓弹药**（⚠️ 每次查看遍历 `_G.Prefabs` + `debug.getinfo` 提取 data，无缓存——性能热点）、冬季盛宴树、池塘鱼数、水族箱、雨量计（inSine 插值）、温度计、香料BUFF、月亮裂隙、船部件、`o_t_list` 特定 prefab 标签（⚠️ 用列表下标 i 判断分支，插入一项全错）、重生护符、避雷针 charge、燃料值、**`item:GetShowItemInfo(viewer)` 第三方接口**（返回 3 条自定义文本）、可采摘（草/树苗倒计时、移植次数）、旧农场作物、捆绑包内容、Pickler、Thirst 模组（cwater）、好感度、堆叠>999 实际数量、寄居蟹装饰度、铥矿奖章噩梦阶段倒计时、woby 饥饿、**作物压力**（T_crop，stressors_testfns 逐项调用）、beerpower/waterpower/gaspower 模组、childspawner（鱼人屋"屋内+屋外"特殊逻辑）、武器对目标的抗性（冰杖/吹箭/排箫）、inlove、timer/worldsettingstimer 遍历（黑名单过滤）、新晾肉架快照。
   - 返回 `table.concat(desc_table, "\2")`。
   - **拆分已完成**：全部显示块已迁入三目录描述文件（见五），函数本体约 90 行（调度管线 + 主人识别 + GetShowItemInfo 透传）。生物/物品分支壳已消亡，显示顺序由条目 `priority`/`order` 统一决定。
-- `SERVER_SIDE` 独立块：暗影收割者 `GetShowItemInfo`（等级/击杀进度/吸血/饥饿）。
+- ~~`SERVER_SIDE` 独立块~~：暗影槌（shadow_battleaxe）已迁至 `showme_prefab_descriptors/shadow_battleaxe.lua`，不再占用 GetShowItemInfo 接口位（该接口现完全留给第三方；显示改走 prefab 路由排序管线，位置可能较原先提前）。
 
 ### ⑤ 客户端 UI hook + 网络变量（约 2870–3130 行）
 - `CheckUserHint(inst)`：从本地 `ThePlayer.player_classified.showme_hint2` 取串，按 `;` 拆 GUID 校验。
@@ -157,7 +157,7 @@ GetTestString 已全部拆入描述文件：函数本体只剩调度管线（组
 | 目录 | 锚点 | 文件命名 |
 |---|---|---|
 | `showme_descriptors/`（49 个） | 组件（调度器遍历 `pairs(item.components)`） | 文件名 = 组件名（health.lua、edible.lua…），懒加载注册表按名加载（kleifileexists 探测，无文件缓存 false 短路），无注册表维护 |
-| `showme_prefab_descriptors/`（5 个） | prefab 名（查 `prefab_routes`） | 文件名 = prefab 名（nightmare_timepiece.lua…） |
+| `showme_prefab_descriptors/`（6 个） | prefab 名（查 `prefab_routes`） | 文件名 = prefab 名（nightmare_timepiece.lua…） |
 | `showme_feature_descriptors/`（20 个） | 多 prefab/标签/字段/查看者武器共用逻辑 | 文件名 = **具体功能名**（pond_fish.lua、world_gauge.lua…），自声明负责范围 |
 
 归属判断：同逻辑多个 prefab → feature 文件；唯一 prefab 专属 → prefab 文件；纯组件逻辑 → 组件体系，**不进** prefab/feature。特例：`food_units.lua` 的 prefabs 集合构建期取自 `require("cooking").ingredients` 键集（动态生成）；`weapon_resist.lua` 的排箫识别已实测移除（排箫无手持槽位，识别无效）。
@@ -251,7 +251,7 @@ GetTestString 调度顺序（条目统一排序，`order` 字段保插入序，`
 ## 八、对外兼容与扩展接口
 
 1. **容器高亮接入**：`TUNING.MONITOR_CHESTS[prefab] = true`（文件头与容器块内注释有两份接入说明）。
-2. **物品自定义信息**：给实体挂 `inst.GetShowItemInfo = function(viewer) return str1, str2, str3 end`（暗影收割者即官方风格用例）。
+2. **物品自定义信息**：给实体挂 `inst.GetShowItemInfo = function(viewer) return str1, str2, str3 end`（或经 `ShowMe.AddPrefabDescriptor` 注册描述文件）。
 3. **容器染色接管**：`inst.ShowMeColor = function(changed_to_default) end`。
 4. **检测的模组**：Insight（冲突拒载）、简易血条/Health Bar（血量显示让位）、Display food values（食物三属性让位）、高亮查找 3363111676（容器高亮让位）、综合状态显示 376333686（温度单位/淘气值 UI 联动）。
 5. RPC 通道：`ShowMe.AOS`、`ShowMe.SendConfig`（客→服声明，客户端 FixClient 时用 ZipAndEncodeString 上报自己的 13 项显示配置，服务器存 `player_config[player]`）；`ShowMeSHint.Hint`（客→服悬停请求）。~~`ShowMe.Estimate`~~ 已退役。netvar：`showme_hintbua.`（hint 串）、`showme_kramped_actions/threshold`、`ShowMe_chestlq_.`（每箱内容名单）。`context.config.client` 未上报时由调度器用 `server_config` 兜底，描述文件可直接读取无需判空。
