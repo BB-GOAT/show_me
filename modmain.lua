@@ -53,7 +53,7 @@ local function Import(modulename)
         return f()
     end
 end
-Upvaluehelper = Import(MODROOT .. "bbgoat_upvaluehelper.lua")
+Upvaluehelper = Import(MODROOT .. "utils/bbgoat_upvaluehelper.lua")
 
 local GetGlobal=function(gname,default)
     local res=_G.rawget(_G,gname)

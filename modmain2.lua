@@ -31,9 +31,14 @@ function Import(modulename, env)
     if f and type(f) == "function" then
         _G.setfenv(f, env or _G)
         return f()
+    else
+        local info = debug.getinfo(2)
+        local filename, line = info.source or "???", info.currentline or "???"
+        print("[警告] Import文件失败，文件名: " .. modulename .. "\n本函数调用于 " .. tostring(filename) .. ":" .. tostring(line))
     end
 end
-Upvaluehelper = Import(MODROOT .. "bbgoat_upvaluehelper.lua")
+Upvaluehelper = Import(MODROOT .. "utils/bbgoat_upvaluehelper.lua")
+MOD_util = Import(MODROOT .. "utils/MOD_util.lua", env)
 
 -- 组件描述文件表
 local showme_descriptors = _G.setmetatable({}, {
@@ -184,7 +189,7 @@ Import(MODROOT .. "main/chest_highlight.lua", env) -- 箱子高亮
 -------------------------------------------------- CLIENT --------------------------------------------------
 
 if CLIENT_SIDE then
-    AddPlayersAfterInit(function(inst)
+    MOD_util:AddPlayerPostInit(function(world, inst) -- playeractivated 时 HUD 已就绪；data 即激活的玩家实体
         if inst ~= _G.ThePlayer then
             return
         end
