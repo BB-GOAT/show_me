@@ -121,7 +121,7 @@ modmain.lua 头部临时代码：
 - `AddBoatStatus(viewer)`：查看船部件后 120 秒内，物品会显示"修理: X"（`boat_status_task` 标记）。
 - `USELESS_TIMERS / IsUselessTimer`：计时器显示黑名单（`all` 通配 + 按 prefab）。
 - 农作物数据：`AddComponentPostInit("farming_manager")` 用 **Upvaluehelper** 抽 `OnSave/GetDebugString` 的上值 grid（`_nutrientgrid/_moisturegrid/_drinkersgrid/_overlaygrid`），`GetTileNutrientsAtPoint/GetTileMoistureAtPoint` 供作物压力显示用。优先走 `OldGetTileDataAtPoint`（原版函数，若拿到）。
-- `safe_tuning(path, default)`：安全读取 `TUNING.A.B.C` 嵌套值——**desc_handlers 全靠它保证游戏更新后不炸**。
+- ~~`safe_tuning(path, default)`~~：已移除。作者决策：TUNING 键直接取值，游戏更新删键时显式崩溃、便于发现修复，不做静默降级（描述文件与主流程一致）。
 - **`desc_handlers` 注册表**（按 prefab 分发，`add_entity_description` 调度）：蝙蝠棒、遗迹蝙蝠、废墟帽、盐、弹弓全系弹药/枪管、WX-78 全部模块。handler 可返回 string / string数组 / nil（用 cn 旁路自行写入）。**这是模组里已经"半重构"过的样板，重构中正并入 showme_feature_descriptors 体系（见五）。**
 - `song_handlers`：女武神战歌（按 `item.songdata` 分发）；`process_potion`：阿比盖尔药水（按 `potion_tunings` 的字段特征分发）。**正并入 showme_feature_descriptors。**
 - **`GetTestString(item, viewer)`**（全局函数，约 1600 行——最大的屎山）：
