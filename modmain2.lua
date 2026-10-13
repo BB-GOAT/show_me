@@ -5,14 +5,14 @@ _G.setmetatable(env, {
         if not modname:find("workshop%-") then
             local info = _G.debug.getinfo(2)
             if not string.find(info.source, modname) then return end
-            print("[Show Me 中文] 当前正在尝试从全局环境获取值", k, "调用于", info.source, info.currentline)
+            print("[Show Me] 当前正在尝试从全局环境获取值", k, "调用于", info.source, info.currentline)
         end
         return _G.rawget(_G, k)
     end
 })
 
 if _G.KnownModIndex:IsModEnabledAny("workshop-2189004162") then
-    print("Show Me (中文) 检测到有笨蛋同时开启了Show Me和Insight模组，已停止加载Show Me！")
+    print("[Show Me] 检测到有笨蛋同时开启了Show Me和Insight模组，已停止加载Show Me！")
     return
 end
 
@@ -1119,10 +1119,10 @@ local function GetTileDataAtPoint(x, y, z)
     end
 
     if not _nutrientgrid or not _moisturegrid or not _drinkersgrid or not _overlaygrid then
-        if not _nutrientgrid then print("Show Me (中文) 警告：未找到上值 _nutrientgrid") end
-        if not _moisturegrid then print("Show Me (中文) 警告：未找到上值 _moisturegrid") end
-        if not _drinkersgrid then print("Show Me (中文) 警告：未找到上值 _drinkersgrid") end
-        if not _overlaygrid then print("Show Me (中文) 警告：未找到上值 _overlaygrid") end
+        if not _nutrientgrid then print("[Show Me] 警告：未找到上值 _nutrientgrid") end
+        if not _moisturegrid then print("[Show Me] 警告：未找到上值 _moisturegrid") end
+        if not _drinkersgrid then print("[Show Me] 警告：未找到上值 _drinkersgrid") end
+        if not _overlaygrid then print("[Show Me] 警告：未找到上值 _overlaygrid") end
         return
     end
 
