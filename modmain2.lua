@@ -1526,6 +1526,23 @@ local showme_descriptors = {
     dryingrack = require("showme_descriptors/dryingrack"), -- 新晾肉架
 }
 
+-- prefab/feature 描述路由：单 prefab 文件按文件名注册，feature 文件自声明负责的 prefabs/tags
+local PREFAB_DESCRIPTOR_FILES = {
+    "showme_prefab_descriptors/nightmare_timepiece",
+}
+local FEATURE_DESCRIPTOR_FILES = {
+    "showme_feature_descriptors/pond_fish",
+}
+local prefab_routes, tag_routes = {}, {}
+for _, path in ipairs(PREFAB_DESCRIPTOR_FILES) do
+    prefab_routes[string.match(path, "([^/]+)$")] = require(path)
+end
+for _, path in ipairs(FEATURE_DESCRIPTOR_FILES) do
+    local mod = require(path)
+    for name in pairs(mod.prefabs or {}) do prefab_routes[name] = mod end
+    for name in pairs(mod.tags or {}) do tag_routes[name] = mod end
+end
+
 -- 描述文件运行在全局环境，modmain2 的 local 工具需经 context.utils 传入；搬移新组件时按需补充
 local descriptor_utils = {
     round2 = round2,
@@ -1568,7 +1585,7 @@ local function GetSeasonEntries()
     return entries
 end
 
---- 主人识别三级链：mine 组件昵称 → stealable.owner → item.owner（跟随者/宠物实体的主人显示；字段非组件无法走描述文件锚点）
+--- 主人识别
 ---@param item table 被查看的实体
 ---@return table|nil entries 协议条目数组：owner 词条；无主人时为 nil
 local function GetOwnerEntries(item)
@@ -1612,24 +1629,27 @@ function GetTestString(item, viewer)
     local c=item.components
 
     local item_descriptors = {}
+    local function MakeContext() -- 组件循环与 prefab/feature 段共用的描述上下文
+        return {
+            player = viewer, -- 获取此信息的玩家
+            entity = item, -- 对应实体
+            utils = descriptor_utils, -- 共享工具函数
+            modenv = env, -- 模组环境
+            config = {
+                server = server_config, -- 服务器端配置
+                client = player_config[viewer] or server_config, -- 客户端配置
+            },
+
+            -- 语言数据（相关代码待重构）
+            -- str = { TODO },
+        }
+    end
     local processed_descriptors = {} -- 同一描述文件注册多个组件键时只执行一次
     for components_name, component in pairs(item.components or {}) do
         local descriptor = showme_descriptors[components_name]
         if descriptor and descriptor.Describe and not processed_descriptors[descriptor] then
             processed_descriptors[descriptor] = true
-            local context = {
-                player = viewer, -- 获取此信息的玩家
-                entity = item, -- 对应实体
-                utils = descriptor_utils, -- 共享工具函数
-                modenv = env, -- 模组环境
-                config = {
-                    server = server_config, -- 服务器端配置
-                    client = player_config[viewer] or server_config, -- 客户端配置
-                },
-
-                -- 语言数据（相关代码待重构）
-                -- str = { TODO },
-            }
+            local context = MakeContext()
 
             local result = descriptor.Describe(component, context)
             if result then
@@ -1644,6 +1664,33 @@ function GetTestString(item, viewer)
             end
         end
     end
+
+    -- prefab/feature 描述段：单 prefab 按文件名路由，功能文件按自声明 prefabs/tags 路由
+    --（两段式保序：条目在组件条目之后收集，order 序保证输出在后）
+    local prefab_context = MakeContext()
+    local function CollectEntries(result)
+        if not result then
+            return
+        end
+        if result[1] == nil and (result.data_key or result.description) then
+            result = { result }
+        end
+        for _, entry in ipairs(result) do
+            entry.order = #item_descriptors
+            table.insert(item_descriptors, entry)
+        end
+    end
+
+    local pdesc = prefab_routes[prefab]
+    if pdesc and pdesc.Describe then
+        CollectEntries(pdesc.Describe(prefab_context))
+    end
+    for tag_name, tdesc in pairs(tag_routes) do
+        if item.HasTag and item:HasTag(tag_name) and tdesc.Describe then
+            CollectEntries(tdesc.Describe(prefab_context))
+        end
+    end
+
     table.sort(item_descriptors, function(a, b)
         local pa, pb = a.priority or 0, b.priority or 0
         if pa ~= pb then
@@ -1747,11 +1794,8 @@ function GetTestString(item, viewer)
             end
         end
         ------------------Check prefabs?----------------------
-        if prefab=="pond" or prefab=="pond_mos" or prefab=="pond_cave" or prefab=="oasislake" then --池塘
-            if c.fishable and c.fishable.fishleft then
-                cn(c.fishable.fishleft==1 and "fish" or "fishes",c.fishable.fishleft)
-            end
-        elseif prefab=="aqvarium" and item.data then
+        --池塘鱼数已迁至 showme_feature_descriptors/pond_fish.lua
+        if prefab=="aqvarium" and item.data then
             if item.data.seeds and item.data.seeds>0 then --种子
                 table.insert(desc_table, "@Seeds: "..tostring(item.data.seeds))
             end
@@ -1866,35 +1910,7 @@ function GetTestString(item, viewer)
         --好感度已迁至 showme_descriptors/friendlevels.lua
 		--堆叠上限已迁至 showme_descriptors/stackable.lua
 		--寄居蟹装饰度已迁至 showme_descriptors/pearldecorationscore.lua
-		-- 铥矿奖章, 仅在地洞世界显示当前噩梦阶段剩余时间, 读秒有点不准但能用就行
-		if prefab == "nightmare_timepiece" and _G.TheWorld:HasTag("cave") then
-			-- print("[ShowMe-DBG] === dumping world.components ===")
-			-- for k, v in pairs(_G.TheWorld.components) do
-				-- print(string.format("[ShowMe-DBG]   %s : %s", tostring(k), type(v)))
-			-- end
-			local phase = _G.TheWorld.state.nightmarephase
-			local progress = _G.TheWorld.state.nightmaretimeinphase
-
-			if phase and phase ~= "none" and progress then
-				local SEG_TIME  = _G.TUNING.SEG_TIME or 30
-				local PHASE_SEGS = {
-					calm = _G.TUNING.NIGHTMARE_SEGS and _G.TUNING.NIGHTMARE_SEGS.CALM,
-					warn = _G.TUNING.NIGHTMARE_SEGS and _G.TUNING.NIGHTMARE_SEGS.WARN,
-					wild = _G.TUNING.NIGHTMARE_SEGS and _G.TUNING.NIGHTMARE_SEGS.WILD,
-					dawn = _G.TUNING.NIGHTMARE_SEGS and _G.TUNING.NIGHTMARE_SEGS.DAWN,
-				}
-				local segs = PHASE_SEGS[phase]
-
-				if segs and segs > 0 then
-					-- 基础时长 = seg 数 × SEG_TIME；忽略 0~NIGHTMARE_SEG_VARIATION 的随机加成
-					local remaining = segs * SEG_TIME * (1 - progress)
-					if remaining > 0 then
-						local name = o_t["nightmare_" .. phase] or phase
-						table.insert(desc_table, "@" .. name .. ": " .. DataTimerFn(remaining))
-					end
-				end
-			end
-		end
+        --铥矿奖章已迁至 showme_prefab_descriptors/nightmare_timepiece.lua
         --农作物压力已迁至 showme_descriptors/farmplantstress.lua
     end
     --不灵电力/水量/气体已迁至 showme_descriptors/beerpower.lua、waterpower.lua、gaspower.lua

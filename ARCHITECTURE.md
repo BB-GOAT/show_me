@@ -1,6 +1,6 @@
 # Show Me (中文) 代码结构说明
 
-> 基于 v0.61.2（git 8bd0865）整理。行号为该版本快照，代码更新后会漂移，以"区块 + 函数名"定位为准。
+> 基于 v0.61.2（git c914f22594131a430bb5fbc4225beccba379f23c）整理。行号为该版本快照，代码更新后会漂移，以"区块 + 函数名"定位为准。
 > 用途：后续重构/修 BUG 时先查此文档，确认要改的部分在整体架构中的位置与牵连面。
 > 重构任务清单见 `TODO.md`。
 
@@ -22,7 +22,9 @@
 | `modmain.lua` | 3197 | 稳定版入口：头部有 Beta 转发段（见二·一），其余为原版逻辑，**冻结不轻易改** |
 | `modmain2.lua` | ~3220 | **Beta 版（重构工作区）**：modmain 的完整副本，所有重构在此进行 |
 | `TODO.md` | - | 重构任务清单 |
-| `scripts/showme_descriptors/` | - | 预留：按组件/prefab 拆分的描述处理器目录（参考 Insight 模组结构） |
+| `scripts/showme_descriptors/` | - | **组件锚点描述文件**：文件名 = 组件名，调度器遍历 `pairs(item.components)` 触发（健康/护甲/食物/腐烂…约 30 个，重构持续进行中） |
+| `scripts/showme_prefab_descriptors/` | - | **单 prefab 描述文件**：文件名 = prefab 名，无组件锚点可依赖的专属逻辑（铥矿奖章、水族箱、避雷针充能…） |
+| `scripts/showme_feature_descriptors/` | - | **功能组描述文件**：文件名 = 功能名（让人一眼看出获取什么信息），一个文件服务多个 prefab/标签（池塘鱼数、世界仪表、香料 BUFF…），文件内自声明负责范围 |
 | `bbgoat_upvaluehelper.lua` | 215 | 通用工具库（冰冰羊维护，同步自 bbgoat_utils）：递归查找/替换函数上值、查找事件回调 |
 | `scripts/showme_naughtiness.lua` | 103 | 淘气值：服务端 hook kramped 组件同步 netvar；客户端两种显示路径 |
 | `scripts/showme_range_indicators.lua` | 58 | 范围圈挂载逻辑（服务端，监听拾取/装备/丢弃/移除事件） |
@@ -120,8 +122,8 @@ modmain.lua 头部临时代码：
 - `USELESS_TIMERS / IsUselessTimer`：计时器显示黑名单（`all` 通配 + 按 prefab）。
 - 农作物数据：`AddComponentPostInit("farming_manager")` 用 **Upvaluehelper** 抽 `OnSave/GetDebugString` 的上值 grid（`_nutrientgrid/_moisturegrid/_drinkersgrid/_overlaygrid`），`GetTileNutrientsAtPoint/GetTileMoistureAtPoint` 供作物压力显示用。优先走 `OldGetTileDataAtPoint`（原版函数，若拿到）。
 - `safe_tuning(path, default)`：安全读取 `TUNING.A.B.C` 嵌套值——**desc_handlers 全靠它保证游戏更新后不炸**。
-- **`desc_handlers` 注册表**（按 prefab 分发，`add_entity_description` 调度）：蝙蝠棒、遗迹蝙蝠、废墟帽、盐、弹弓全系弹药/枪管、WX-78 全部模块。handler 可返回 string / string数组 / nil（用 cn 旁路自行写入）。**这是模组里已经"半重构"过的样板，后续主流程重构应延续此模式。**
-- `song_handlers`：女武神战歌（按 `item.songdata` 分发）；`process_potion`：阿比盖尔药水（按 `potion_tunings` 的字段特征分发）。
+- **`desc_handlers` 注册表**（按 prefab 分发，`add_entity_description` 调度）：蝙蝠棒、遗迹蝙蝠、废墟帽、盐、弹弓全系弹药/枪管、WX-78 全部模块。handler 可返回 string / string数组 / nil（用 cn 旁路自行写入）。**这是模组里已经"半重构"过的样板，重构中正并入 showme_feature_descriptors 体系（见五）。**
+- `song_handlers`：女武神战歌（按 `item.songdata` 分发）；`process_potion`：阿比盖尔药水（按 `potion_tunings` 的字段特征分发）。**正并入 showme_feature_descriptors。**
 - **`GetTestString(item, viewer)`**（全局函数，约 1600 行——最大的屎山）：
   - **生物分支**（`c.health and not item.grow_stage`）：血量（minhealth 修正）、饥饿（beefalo 特判）、精神、随从主人/忠诚、击杀数、伤害（PVP 修正 + 位面伤害/抵抗 + AoE）、防御（absorb×playerabsorb）、驯服度、growable 阶段、精神光环（falloff 换算）、食人花眼球草/叶肉倒计时估算、asuna 模组特判。
   - **物品分支**：烹饪锅、冷却、growable、护甲（含防御 BUFF + 位面防御 + 第三方 phys 吸收 + 耐久）、武器伤害（位面抵抗公式 `(√(4d+64)-8)×4` + 攻击 BUFF + 第三方 phys_dmg 类型）、zupalexsrangedweapons 箭伤、攻击/施法范围、工具效率 BUFF、保温（SetInsulationEx / GetInsulation 两条路径）、回精神（dapperness×54）、防水、船桨动力、**食物**（GetHealth/Hunger/Sanity × eater 吸收倍率 × 食物记忆倍率 + 食物温度 + Warly BUFF 遍历 `cooking.recipes` + 香料死代码）、肥料、腐烂时间（含 stale/spoiled 分界倒计时、宠物饥饿、critter 特判）、填充单位、治疗、工具耐久（C_FINITEUSES_PREFAB 特殊倍率）、温度、建筑燃料、堆肥桶、乐器范围、 crystallizable、装备饥饿减免（beargervest 等写死）、主人识别（mine/stealable/owner 三级）、occupiable（笼中鸟饥饿）、干燥架、鞍具、服饰耐久（按 FUELTYPE 分类决定是否显示）、贸易价值、冰箱倍率、修理值、收获、**弹弓弹药**（⚠️ 每次查看遍历 `_G.Prefabs` + `debug.getinfo` 提取 data，无缓存——性能热点）、冬季盛宴树、池塘鱼数、水族箱、雨量计（inSine 插值）、温度计、香料BUFF、月亮裂隙、船部件、`o_t_list` 特定 prefab 标签（⚠️ 用列表下标 i 判断分支，插入一项全错）、重生护符、避雷针 charge、燃料值、**`item:GetShowItemInfo(viewer)` 第三方接口**（返回 3 条自定义文本）、可采摘（草/树苗倒计时、移植次数）、旧农场作物、捆绑包内容、Pickler、Thirst 模组（cwater）、好感度、堆叠>999 实际数量、寄居蟹装饰度、铥矿奖章噩梦阶段倒计时、woby 饥饿、**作物压力**（T_crop，stressors_testfns 逐项调用）、beerpower/waterpower/gaspower 模组、childspawner（鱼人屋"屋内+屋外"特殊逻辑）、武器对目标的抗性（冰杖/吹箭/排箫）、inlove、timer/worldsettingstimer 遍历（黑名单过滤）、新晾肉架快照。
@@ -146,7 +148,57 @@ modmain.lua 头部临时代码：
 
 ---
 
-## 五、scripts 三个文件
+## 五、描述文件体系（组件 + prefab/feature 双注册表，重构中）
+
+GetTestString 按两类锚点拆分到描述文件：**有专属组件的用组件锚点，没有的按 prefab/标签/功能路由**。
+
+### 5.1 三目录与锚点规则
+
+| 目录 | 锚点 | 文件命名 |
+|---|---|---|
+| `showme_descriptors/` | 组件（调度器遍历 `pairs(item.components)`） | 文件名 = 组件名（health.lua、edible.lua…） |
+| `showme_prefab_descriptors/` | prefab 名（查 `prefab_routes`） | 文件名 = prefab 名（nightmare_timepiece.lua…） |
+| `showme_feature_descriptors/` | 多 prefab/标签共用逻辑 | 文件名 = **具体功能名**（pond_fish.lua、worldgauge.lua…），自声明负责范围 |
+
+归属判断：同逻辑多个 prefab → feature 文件；唯一 prefab 专属 → prefab 文件；纯组件逻辑（如 fuel）→ 组件体系，**不进** prefab/feature。
+
+### 5.2 文件接口（feature 文件示例）
+
+```lua
+-- Describe 无 self（没有组件实例）；运行在游戏全局环境，TUNING/math 等直接用
+local Describe = function(context)
+    -- context.player/viewer、context.entity、context.utils、context.modenv、context.config{server,client}
+    return { data_key = "fish", params = { n } }        -- MY_DATA 协议条目
+    -- 或 { description = "..." }                        -- "@" 旁路（调度器自动加 @）
+    -- 或条目数组；不显示则 return nil
+end
+
+return {
+    prefabs = { pond = true, pond_mos = true },  -- 自声明负责的 prefab 键
+    -- tags = { fridge = true },                 -- 标签键（HasTag 触发），可与 prefabs 共存
+    Describe = Describe,
+}
+```
+
+单 prefab 文件（prefab_descriptors/）同样返回 `Describe`，但**无需** prefabs/tags 声明（路由键即文件名）。
+
+### 5.3 路由构建与调度顺序
+
+modmain2 启动时遍历两个目录的文件清单，把 feature 文件自声明的 prefabs/tags 展开、prefab 文件按文件名注册，构建 `prefab_routes` / `tag_routes` 两张路由表（一次写好，加文件只改清单+建文件）。
+
+GetTestString 输出为两段式（保持与旧代码一致的显示顺序）：
+
+1. 组件循环（现状）：遍历组件查 `showme_descriptors`，条目入 `item_descriptors` 统一排序后编码；
+2. prefab/feature 段：先 `prefab_routes[prefab]`，再遍历 `tag_routes` 键做 `HasTag`——条目续入同一排序，`order` 字段保证组件条目在前。
+
+### 5.4 移植约定
+
+- 原主流程删除处留一行中文迁移注释（`--xx已迁至 showme_prefab_descriptors/xx.lua`）
+- 配置门控沿用统一对比模式（client 显式档优先，默认档跟随 server；布尔/含 false 档严禁 and/or 链）
+- 唯一使用者的辅助数据/函数随块迁入文件；多处使用才进 descriptor_utils
+- viewer 侧信息（查看者组件、手持武器、世界状态）可经 `context.player` / `TheWorld` 直接取，不必留主流程
+
+## 六、scripts 三个文件
 
 ### showme_naughtiness.lua
 - 服务端 `AddComponentPostInit("kramped")`：遍历 world 事件监听找到 kramped 来源的回调 → Upvaluehelper 抽 `OnKilledOther` 及其上值 `OnNaughtyAction` → 包装后者，每次淘气行为后把 actions/threshold 写进 `player_classified.net_showme_kramped`；再包装 `_activeplayers` 表的 `__newindex`，新玩家加入时"模拟击杀格罗姆（stackmult=0）"触发一次初始化同步。
@@ -162,7 +214,7 @@ modmain.lua 头部临时代码：
 
 ---
 
-## 六、语言文件结构（chs/cht/en 三份一致）
+## 七、语言文件结构（chs/cht/en 三份一致）
 
 | 表 | 用途 | 渲染位置 |
 |---|---|---|
@@ -179,7 +231,7 @@ modmain.lua 头部临时代码：
 
 ---
 
-## 七、对外兼容与扩展接口
+## 八、对外兼容与扩展接口
 
 1. **容器高亮接入**：`TUNING.MONITOR_CHESTS[prefab] = true`（文件头与容器块内注释有两份接入说明）。
 2. **物品自定义信息**：给实体挂 `inst.GetShowItemInfo = function(viewer) return str1, str2, str3 end`（暗影收割者即官方风格用例）。
@@ -189,21 +241,21 @@ modmain.lua 头部临时代码：
 
 ---
 
-## 八、已知问题与优化候选清单
+## 九、已知问题与优化候选清单
 
 按"低风险 → 高收益"排序，重构时逐项立项，每项改完在模组设置里过一遍相关功能再提交。
 
 1. **弹弓弹药 Prefabs 遍历无缓存**（GetTestString 内 `HasTag("slingshotammo")` 块）：每次悬停遍历全 `_G.Prefabs` + `debug.getinfo`。应在服务器启动时提取一次缓存到局部表。零行为变化。
 2. **配置读取样板收敛**：约 10 处 `tonumber(GetModConfigData(x,true)) or -1 → fallback` 重复，抽 helper。
 3. **`o_t_list` 下标分支**：用列表序号 i 决定显示逻辑（i==1 / i>1 and i<=3…），极脆弱。改为每项自带处理方式的注册表。
-4. **`GetTestString` 拆分**：1600 行单函数。延续 `desc_handlers` 注册表模式，按功能域拆：生物属性 / 食物 / 装备耐久 / 容器与建筑 / 计时器 / 特定 prefab。注意 `cn` 依赖闭包变量 `desc_table`，拆分时保持传入或改为参数。
+4. **`GetTestString` 拆分**（进行中）：组件锚点块已迁入 `showme_descriptors/`（调度器遍历组件 + 条目统一排序），prefab/标签锚点块正迁入 `showme_prefab_descriptors/` 与 `showme_feature_descriptors/`（见五），desc_handlers/song_handlers 将并入。
 5. **死代码清理**：`ed.spice and false` 香料块、注释掉的 desc 拼接、`SPICIAL_STRUCTURES` 拼写、`MY_DATA.fuel.percent` 重复注释行。
 6. **拼音键名**（SHOWME_STRINGS.xiaolv/chixu/jieduan 等）：改名需三份语言文件 + modmain 同步，放最后做。
 7. **协议脆弱性**（暂不动，只记录）：`?id:` 编码依赖 MY_STRINGS 遍历顺序，服务端/客户端模组版本不一致时显示错乱。重构编码为直接传 key 字符串可根治，但增加流量，需权衡。
 8. **全局函数 `GetTestString`**：故意全局（历史兼容？），重构时确认无其它模组依赖后再 local 化。
 9. `showme_range_indicators.lua` 闭包 `showme_range` 变量复用与 `k` 魔法序号，可读性差。
 
-## 九、修改注意事项
+## 十、修改注意事项
 
 - **Lua 陷阱：`and`/`or` 表达式会截断函数的多返回值**。`f(x and unpack(t) or nil)` 只会拿到第一个返回值，导致 `unpack` 展开多参数失败（曾造成 hp 条目丢参崩溃）。需要完整展开时把调用单独成句或作为函数末参直接传入：`cn(key, unpack(t or {}))`。
 
