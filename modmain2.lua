@@ -50,7 +50,7 @@ local showme_descriptors = setmetatable({}, {
 
 local prefab_routes, tag_routes, field_routes, weapon_routes = {}, {}, {}, {} -- Prefab、Tag、字段、手持特定武器
 
--- 第三方模组适配接口：注册额外的组件识别（在 AddSimPostInit 等游戏启动后的时机调用，确保本模组已加载）
+-- 第三方模组适配接口：注册额外的组件识别，请在 AddSimPostInit 等游戏启动后的时机调用，确保本模组已加载
 -- descriptor 形如 { Describe = function(component, context) ... end }，context 结构见 MakeContext
 _G.ShowMe = {
     env = env, -- 本模组环境
@@ -100,22 +100,6 @@ local CLIENT_SIDE = TheNet:GetIsClient() or (SERVER_SIDE and not TheNet:IsDedica
 
 local tonumber = _G.tonumber
 
---- 读取模组配置
---- 优先级：客户端设置 > 服务器设置；任一端取"默认"选项即表示跟随另一端。
----@param optionname string 配置项名称
----@param default any "默认"值，用于判断是否跟随另一端
----@return any value 实际生效的配置值
-local function Switch(optionname, default)
-    local value = GetModConfigData(optionname, true) -- 客户端设置
-    if value == default then
-        local server = GetModConfigData(optionname) -- 服务器设置
-        if server ~= default then
-            value = server
-        end
-    end
-    return value
-end
-
 -- 部分功能配置
 local food_order = GetModConfigData("food_order", true) -- 食物属性格式
 local food_style = GetModConfigData("food_style", true) -- 食物属性样式
@@ -124,12 +108,21 @@ local perish_style = GetModConfigData("perish_style", true) -- 食物腐烂样�
 local show_naughtiness = GetModConfigData("Show_naughtiness") -- 显示淘气值
 
 -- 箱子颜色
-local chestR = Switch("chestR", -1) -- 红色值
-chestR = chestR == -1 and 0.3 or chestR
-local chestG = Switch("chestG", -1) -- 绿色值
-chestG = chestG == -1 and 1 or chestG
-local chestB = Switch("chestB", -1) -- 蓝色值
-chestB = chestB == -1 and 1 or chestB
+local chestR = tonumber(GetModConfigData('chestR',true)) or -1
+if chestR == -1 then
+    chestR = tonumber(GetModConfigData('chestR')) or 0.3
+    if (chestR == -1) then chestR = 0.3 end
+end
+local chestG = tonumber(GetModConfigData('chestG',true)) or -1
+if chestG == -1 then
+    chestG = tonumber(GetModConfigData('chestG')) or 1
+    if (chestG == -1) then chestG = 1 end
+end
+local chestB = tonumber(GetModConfigData('chestB',true)) or -1
+if chestB == -1 then
+    chestB = tonumber(GetModConfigData('chestB')) or 1
+    if (chestB == -1) then chestB = 1 end
+end
 
 -- 服务器端模组配置
 local server_config = {
@@ -250,7 +243,10 @@ do
         end
     end
 
-    local lang = Switch("lang", "auto")
+    local lang = GetModConfigData("lang", true)
+    if lang == "auto" then
+        lang = GetModConfigData("lang")
+    end
     print("Detected language for ShowMe: ", lang, lang == "auto" and _G.LanguageTranslator.defaultlang or "")
 
     if lang == "auto" then
@@ -1877,7 +1873,7 @@ end
 ----------------------------------------
 
 PrefabFiles = { "showme_range" } --加载prefab文件
-if Switch("Show_range", true) and TheNet:GetIsServer() then --范围显示功能
+if GetModConfigData("Show_range") and TheNet:GetIsServer() then --范围显示功能
     modimport("scripts/showme_range_indicators.lua")
 end
 
