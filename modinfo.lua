@@ -20,8 +20,8 @@ description = "当前版本: "..version.."\n" ..
 如果不显示血量，是因为与简易血条MOD一起开启了，要显示请在模组设置 → 显示血量 → 是
 ]]
 
-icon_atlas = "preview.xml"
-icon = "preview.tex"
+icon_atlas = "images/modicon.xml"
+icon = "modicon.tex"
 
 dst_compatible = true -- 兼容联机版
 forge_compatible = true -- 兼容熔炉
