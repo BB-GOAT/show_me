@@ -1,50 +1,29 @@
---源码来自Star版本，本人只略懂代码，边学边更新，如果你有对此模组兴趣欢迎继承更新。--在此非常感谢对此模组提供协助的所有人
-
---[[
---致模组开发者: 你的模组容器可使用以下代码，实现与ShowMe联动容器高亮。    --源开发者 Star 留
-    TUNING.MONITOR_CHESTS = TUNING.MONITOR_CHESTS or {}
-    TUNING.MONITOR_CHESTS.chestprefab = true    -- chestprefab 即你的容器代码名称
-
---多容器模式, 优先级高低判断可同时加上
---优先级高于 ShowMe
-    TUNING.MONITOR_CHESTS = TUNING.MONITOR_CHESTS or {}
-    for _, v in ipairs(容器列表) do
-        TUNING.MONITOR_CHESTS[v] = true
-    end
-
---优先级低于 ShowMe        --来自 风铃草 —— 穹妹
-    for k, m in pairs(ModManager.mods) do
-        if m and _G.rawget(m, "SHOWME_STRINGS") then
-            if m.postinitfns and m.postinitfns.PrefabPostInit and m.postinitfns.PrefabPostInit.treasurechest then
-                for _,v in ipairs(容器列表) do
-                    m.postinitfns.PrefabPostInit[v] = m.postinitfns.PrefabPostInit.treasurechest
-                end
-            end
-            break
-        end
-    end
---]]
-
 local _G = GLOBAL
 
--- 给漏写GLOBAL和_G的上保险
 _G.setmetatable(env, {
     __index = function(t, k)
         if not modname:find("workshop%-") then
             local info = _G.debug.getinfo(2)
             if not string.find(info.source, modname) then return end
-            print("[Show Me 中文] 当前正在尝试从全局环境获取值", k, "调用于", info.source, info.currentline)
+            print("[Show Me] 当前正在尝试从全局环境获取值", k, "调用于", info.source, info.currentline)
         end
         return _G.rawget(_G, k)
     end
 })
 
 if _G.KnownModIndex:IsModEnabledAny("workshop-2189004162") then
-    print("Show Me (中文) 检测到有笨蛋同时开启了Show Me和Insight模组，已停止加载Show Me！")
+    print("[Show Me] 检测到有笨蛋同时开启了Show Me和Insight模组，已停止加载Show Me！")
     return
 end
 
-print(modinfo.name .. " : v" .. modinfo.version)
+print(modinfo.name .. " : v" .. modinfo.version .. " Beta版模式")
+
+local function printinvalid(rpcname, player) -- 客户端发送无效RPC时的处理
+    print(string.format("Invalid %s RPC from (%s) %s", rpcname, player.userid or "", player.name or ""))
+
+    --This event is for MODs that want to handle players sending invalid rpcs
+    _G.TheWorld:PushEvent("invalidrpc", { player = player, rpcname = rpcname })
+end
 
 local function Import(modulename)
     local f = _G.kleiloadlua(modulename)
@@ -54,6 +33,48 @@ local function Import(modulename)
     end
 end
 Upvaluehelper = Import(MODROOT .. "bbgoat_upvaluehelper.lua")
+
+-- 组件描述文件表
+local showme_descriptors = setmetatable({}, {
+    __index = function(self, comp_name)
+        local path = MODROOT .. "scripts/showme_descriptors/" .. comp_name .. ".lua"
+        if not _G.kleifileexists(path) then
+            rawset(self, comp_name, false)
+            return false
+        end
+        local descriptor = require("showme_descriptors/" .. comp_name)
+        rawset(self, comp_name, descriptor)
+        return descriptor
+    end,
+})
+
+local prefab_routes, tag_routes, field_routes, weapon_routes = {}, {}, {}, {} -- Prefab、Tag、字段、手持特定武器
+
+-- 第三方模组适配接口：注册额外的组件识别，请在 AddSimPostInit 等游戏启动后的时机调用，确保本模组已加载
+-- descriptor 形如 { Describe = function(component, context) ... end }，context 结构见 MakeContext
+_G.ShowMe = {
+    env = env, -- 本模组环境
+    AddComponentDescriptor = function(comp_name, descriptor) -- 注册组件描述
+        if type(comp_name) ~= "string" or type(descriptor) ~= "table" or type(descriptor.Describe) ~= "function" then
+            print("[Show Me] AddComponentDescriptor 无效注册：需要 (string 组件名, 含 Describe 函数的 table)", comp_name)
+            return
+        end
+        if showme_descriptors[comp_name] then
+            print("[Show Me] 覆盖注册组件描述：", comp_name)
+        end
+        rawset(showme_descriptors, comp_name, descriptor)
+    end,
+    AddPrefabDescriptor = function(prefab_name, descriptor) -- 注册单 prefab 描述
+        if type(prefab_name) ~= "string" or type(descriptor) ~= "table" or type(descriptor.Describe) ~= "function" then
+            print("[Show Me] AddPrefabDescriptor 无效注册：需要 (string prefab 名, 含 Describe 函数的 table)", prefab_name)
+            return
+        end
+        if prefab_routes[prefab_name] then
+            print("[Show Me] 覆盖注册 prefab 描述：", prefab_name)
+        end
+        prefab_routes[prefab_name] = descriptor
+    end,
+}
 
 local GetGlobal=function(gname,default)
     local res=_G.rawget(_G,gname)
@@ -70,54 +91,86 @@ local round2=function(num, idp)    -- num处理的目标数字, idp保留的小�
 end
 
 -- 增加其他模组的兼容性
-local mods = GetGlobal("mods",{})
+local mods = GetGlobal("mods",{}) -- 冰冰羊：什么屎山代码..不敢删..
 
 local GetTime = _G.GetTime    --计时器
 local TheNet = _G.TheNet
-local is_PvP = TheNet:GetDefaultPvpSetting()    --PVP
 local SERVER_SIDE = TheNet:GetIsServer()    --服务器
-local CLIENT_SIDE =     TheNet:GetIsClient() or (SERVER_SIDE and not TheNet:IsDedicated())    --本地
+local CLIENT_SIDE = TheNet:GetIsClient() or (SERVER_SIDE and not TheNet:IsDedicated())    --本地
 
 local tonumber = _G.tonumber
 
---- 读取模组配置
---- 优先级：客户端设置 > 服务器设置；任一端取"默认"选项即表示跟随另一端。
----@param optionname string 配置项名称
----@param default any "默认"值，用于判断是否跟随另一端
----@return any value 实际生效的配置值
-local function Switch(optionname, default)
-    local value = GetModConfigData(optionname, true) -- 客户端设置
-    if value == default then
-        local server = GetModConfigData(optionname) -- 服务器设置
-        if server ~= default then
-            value = server
-        end
-    end
-    return value
+-- 部分功能配置
+local food_order = GetModConfigData("food_order", true) -- 食物属性格式
+local food_style = GetModConfigData("food_style", true) -- 食物属性样式
+local show_food_units = GetModConfigData("show_food_units", true) -- 显示食物单位
+local perish_style = GetModConfigData("perish_style", true) -- 食物腐烂样式
+local show_naughtiness = GetModConfigData("Show_naughtiness") -- 显示淘气值
+
+-- 箱子颜色
+local chestR = tonumber(GetModConfigData('chestR',true)) or -1
+if chestR == -1 then
+    chestR = tonumber(GetModConfigData('chestR')) or 0.3
+    if (chestR == -1) then chestR = 0.3 end
+end
+local chestG = tonumber(GetModConfigData('chestG',true)) or -1
+if chestG == -1 then
+    chestG = tonumber(GetModConfigData('chestG')) or 1
+    if (chestG == -1) then chestG = 1 end
+end
+local chestB = tonumber(GetModConfigData('chestB',true)) or -1
+if chestB == -1 then
+    chestB = tonumber(GetModConfigData('chestB')) or 1
+    if (chestB == -1) then chestB = 1 end
 end
 
-local food_order = Switch("food_order", 0) -- 食物属性格式
-local food_style = Switch("food_style", 0) -- 食物属性样式
-local display_hp = Switch("display_hp", -1) -- 显示血量
-local food_estimation = Switch("food_estimation", -1) -- 预计腐烂
-local show_food_units = Switch("show_food_units", -1) -- 显示食物单位
-local show_uses = Switch("show_uses", -1) -- 显示工具用途
+-- 服务器端模组配置
+local server_config = {
+    food_order = GetModConfigData("food_order"), -- 食物属性格式
+    food_style = GetModConfigData("food_style"), -- 食物属性样式
+    display_hp = GetModConfigData("display_hp"), -- 显示血量
+    food_estimation = GetModConfigData("food_estimation"), -- 预计腐烂
+    show_food_units = GetModConfigData("show_food_units"), -- 显示食物单位
+    show_uses = GetModConfigData("show_uses"), -- 显示工具用途
+    show_buddle_item = GetModConfigData("show_buddle_item"), -- 显示捆绑包内容
+    item_info_mod = GetModConfigData("item_info_mod"), -- 兼容item info模组
+    perish_style = GetModConfigData("perish_style"), -- 食物腐烂样式
+    show_nutrients = GetModConfigData("show_nutrients"), -- 显示肥料值
+    show_fuel = GetModConfigData("show_fuel"), -- 物品燃料值
+    show_fueled = GetModConfigData("show_fueled"), -- 穿戴装备天数
+    show_planar_resist = GetModConfigData("show_planar_resist"), -- 显示位面抵抗
+}
 
-local chestR = Switch("chestR", -1) -- 红色值
-chestR = chestR == -1 and 0.3 or chestR
-local chestG = Switch("chestG", -1) -- 绿色值
-chestG = chestG == -1 and 1 or chestG
-local chestB = Switch("chestB", -1) -- 蓝色值
-chestB = chestB == -1 and 1 or chestB
+local client_config = {
+    food_order = GetModConfigData("food_order", true), -- 食物属性格式
+    food_style = GetModConfigData("food_style", true), -- 食物属性样式
+    display_hp = GetModConfigData("display_hp", true), -- 显示血量
+    food_estimation = GetModConfigData("food_estimation", true), -- 预计腐烂
+    show_food_units = GetModConfigData("show_food_units", true), -- 显示食物单位
+    show_uses = GetModConfigData("show_uses", true), -- 显示工具用途
+    show_buddle_item = GetModConfigData("show_buddle_item", true), -- 显示捆绑包内容
+    item_info_mod = GetModConfigData("item_info_mod", true), -- 兼容item info模组
+    perish_style = GetModConfigData("perish_style", true), -- 食物腐烂样式
+    show_nutrients = GetModConfigData("show_nutrients", true), -- 显示肥料值
+    show_fuel = GetModConfigData("show_fuel", true), -- 物品燃料值
+    show_fueled = GetModConfigData("show_fueled", true), -- 穿戴装备天数
+    show_planar_resist = GetModConfigData("show_planar_resist", true), -- 显示位面抵抗
+}
+local player_config = {}
 
-local show_buddle_item = Switch("show_buddle_item", 1) -- 显示捆绑包内容
-local item_info_mod = Switch("item_info_mod", 0) -- 兼容item info模组
-local perish_style = Switch("perish_style", 0) -- 食物腐烂样式
-local show_nutrients = Switch("show_nutrients", 1) -- 显示肥料值
-local show_fuel = Switch("show_fuel", true) -- 物品燃料值
-local show_fueled = Switch("show_fueled", 3) -- 穿戴装备天数
-local show_planar_resist = Switch("show_planar_resist", true) -- 显示位面抵抗
-local show_naughtiness = Switch("Show_naughtiness", true) -- 显示淘气值
+AddModRPCHandler("ShowMe","SendConfig",function(player, config)
+    if not _G.checkstring(config) then
+        printinvalid("ShowMe.SendConfig", player)
+        return
+    end
+    config = _G.DecodeAndUnzipString(config)
+    if not _G.type(config) == "table" then
+        printinvalid("ShowMe.SendConfig", player)
+        return
+    end
+
+    player_config[player] = config
+end)
 
 -- 定义语言表(定义在模组环境以便其它模组调用)
 MY_DATA = {}
@@ -178,7 +231,7 @@ do
 
     -- 链接字符串表
     local function LinkTables(tbl, fallback)
-        GLOBAL.setmetatable(tbl, {
+        _G.setmetatable(tbl, {
             __index = fallback,  -- 查找 tbl 中不存在的键时回退到 fallback
         })
 
@@ -190,7 +243,10 @@ do
         end
     end
 
-    local lang = Switch("lang", "auto")
+    local lang = GetModConfigData("lang", true)
+    if lang == "auto" then
+        lang = GetModConfigData("lang")
+    end
     print("Detected language for ShowMe: ", lang, lang == "auto" and _G.LanguageTranslator.defaultlang or "")
 
     if lang == "auto" then
@@ -288,7 +344,7 @@ MY_DATA.buff.fn = function(arr)
     arr.param[3] = bonus
     if bonus then
         return name .. ' ' .. tostring(bonus) .. '%'
-            .. (days ~= '0' and SHOWME_STRINGS.chixu .. tostring(days) .. ' ' .. SHOWME_STRINGS.days or '')
+            .. (days ~= '0' and SHOWME_STRINGS.chixu .. tostring(days) .. SHOWME_STRINGS.days or '')
     end
     return name .. SHOWME_STRINGS.chixu .. tostring(days) .. ' ' .. SHOWME_STRINGS.days
 end
@@ -643,41 +699,16 @@ if show_food_units == 0 or show_food_units == 2 then
     MY_DATA.units_of.hidden = true
 end
 
-if show_uses == 0 or show_uses == 2 then
-    MY_DATA.uses_of.hidden = true
-end
-
-local need_show_hp = display_hp == -1 or display_hp == 1
-if not need_show_hp then
-    MY_DATA.hp.hidden = true
-end
-
-local function printinvalid(rpcname, player)
-    print(string.format("Invalid %s RPC from (%s) %s", rpcname, player.userid or "", player.name or ""))
-
-    --This event is for MODs that want to handle players sending invalid rpcs
-    _G.TheWorld:PushEvent("invalidrpc", { player = player, rpcname = rpcname })
-end
-
 --尝试检测客户端模组并通过 RPC 发送它们
 AddModRPCHandler("ShowMe","AOS",function(inst)
     --调用此函数将禁用此玩家的提示。
     inst.has_AlwaysOnStatus = true
 end)
 
---是否考虑特定用户的伤害状态。
-AddModRPCHandler("ShowMe","Estimate",function(inst)
-    --调用此函数将禁用此玩家的提示。
-    inst.should_Estimate_Stale = true
-end)
-
 --local AOS_Temperature_fn --客户端转换游戏温度的功能。 
 
 --We climb into the client interface in order to reduce the displayed temperature
 if CLIENT_SIDE then
-    --We make the most correct function in the world "AddPlayersPostInit"
-    --GetGlobal("mods",{})
-    --if not _G.rawget(_G,"mods") then _G.rawset(_G,"mods",{}) end
     if not mods.player_preinit_fns then
         mods.player_preinit_fns={}
         --Dirty hack
@@ -765,12 +796,6 @@ if CLIENT_SIDE then
             return
         end
 
-        --以一种 hacky 的方式添加发送食物显示偏好设置
-        if food_estimation == 1 then
-            --print("SendRPC")
-            SendModRPCToServer(MOD_RPC.ShowMe.Estimate)
-        end
-
         local status = inst.HUD and inst.HUD.controls and inst.HUD.controls.status
         if not status then
             print("ERROR SHOW_ME: Can't fix client side status!")
@@ -805,6 +830,8 @@ if CLIENT_SIDE then
         if show_naughtiness and _G.KnownModIndex:IsModEnabledAny("workshop-376333686") then
             OnShowMeNaughtyAction() -- 初始化 综合状态显示 模组显示的淘气值默认信息
         end
+
+        SendModRPCToServer(MOD_RPC.ShowMe.SendConfig, _G.ZipAndEncodeString(client_config))
     end
     AddPlayersAfterInit(FixClient)
 end
@@ -849,9 +876,6 @@ mods.mod_names = mod_names
 mods.mod_names_nover = mod_names_nover
 
 local function SearchForModsByName()
-    if mods.active_mods_by_name then
-        return --Уже проинициализировано. Либо полная несовместимость.
-    end
     mods.active_mods_by_name = {}
     if not (_G.KnownModIndex and _G.KnownModIndex.savedata and _G.KnownModIndex.savedata.known_mods) then
         print("ERROR COMMON LIB: Can't find KnownModIndex!")
@@ -880,14 +904,10 @@ for name in pairs(mods.active_mods_by_name) do
         break
     end
 end
-
-local need_send_hp = display_hp == -1 and not is_HealthInfo or display_hp == 0 or display_hp == 1
+server_config.is_HealthInfo = is_HealthInfo
 
 local is_DisplayFoodValues = mods.active_mods_by_name["Display food values"]
-
-local cooking = require("cooking")
-
-local ing = cooking.ingredients
+server_config.is_DisplayFoodValues = is_DisplayFoodValues -- 服务器检测结果：供 edible 描述文件判断是否隐藏食物属性
 
 local world_state
 AddPrefabPostInit("world",function(inst)
@@ -962,6 +982,7 @@ local function GetPerishTime(inst, c)
     end
 end
 
+local select = _G.select
 local desc_table
 local function cn(key, ...)
     local data = MY_DATA[key]
@@ -977,10 +998,6 @@ local function cn(key, ...)
     end
     table.insert(desc_table, data.sym .. table.concat(parts, ","))
 end
-
-local SPICIAL_STRUCTURES = {
-    campfire = true, coldfire = true,
-}
 
 --食物BUFF 信息显示
 --local test_buff_seen = {buff_playerabsorption=1, buff_workeffectiveness=1, buff_attack=1}
@@ -1042,22 +1059,6 @@ local function GetDebuffTime(viewer, buff_name)
     end
 end
 
---在船上显示木材、树枝修理度
-local function AddBoatStatus(viewer)
-    if viewer.boat_status_task then
-        viewer.boat_status_task:Cancel()
-    end
-    viewer.boat_status_task = viewer:DoTaskInTime(120,function(inst)
-        inst.boat_status_task = nil
-    end)
-end
-
-local C_FINITEUSES_PREFAB = { -- mult to num "uses" for each prefab
-    spiderden_bedazzler = 0.05,
-    spider_repellent = 0.1,
-    spider_whistle = 0.5,
-}
-
 local USELESS_TIMERS = {	-- 生物巢定时器屏蔽
     --default for all prefabs
     toadstool = { channeltick = true },
@@ -1118,10 +1119,10 @@ local function GetTileDataAtPoint(x, y, z)
     end
 
     if not _nutrientgrid or not _moisturegrid or not _drinkersgrid or not _overlaygrid then
-        if not _nutrientgrid then print("Show Me (中文) 警告：未找到上值 _nutrientgrid") end
-        if not _moisturegrid then print("Show Me (中文) 警告：未找到上值 _moisturegrid") end
-        if not _drinkersgrid then print("Show Me (中文) 警告：未找到上值 _drinkersgrid") end
-        if not _overlaygrid then print("Show Me (中文) 警告：未找到上值 _overlaygrid") end
+        if not _nutrientgrid then print("[Show Me] 警告：未找到上值 _nutrientgrid") end
+        if not _moisturegrid then print("[Show Me] 警告：未找到上值 _moisturegrid") end
+        if not _drinkersgrid then print("[Show Me] 警告：未找到上值 _drinkersgrid") end
+        if not _overlaygrid then print("[Show Me] 警告：未找到上值 _overlaygrid") end
         return
     end
 
@@ -1142,1586 +1143,213 @@ local function GetTileMoistureAtPoint(x, y, z)
     return data and data.soilmoisture or 0
 end
 
---安全取值TUNING
-local function safe_tuning(path, default)    -- path传入的值，default手动设置的默认值，当传入的值为nil时使用手动设置的默认值
-    local t = TUNING
-    for part in string.gmatch(path, "[^.]+") do
-        if t[part] == nil then
-            return default
-        end
-        t = t[part]
-    end
-    return t
+-- prefab/feature 描述路由：单 prefab 文件按文件名注册，feature 文件自声明负责的 prefabs/tags
+local PREFAB_DESCRIPTOR_FILES = {
+    "showme_prefab_descriptors/nightmare_timepiece",
+    "showme_prefab_descriptors/moon_fissure",
+    "showme_prefab_descriptors/flower_evil",
+    "showme_prefab_descriptors/cannonball_rock_item",
+    "showme_prefab_descriptors/orchitwigs",
+    "showme_prefab_descriptors/shadow_battleaxe",
+}
+local FEATURE_DESCRIPTOR_FILES = {
+    "showme_feature_descriptors/pond_fish",
+    "showme_feature_descriptors/fridge",
+    "showme_feature_descriptors/slingshot_ammo",
+    "showme_feature_descriptors/world_gauge",
+    "showme_feature_descriptors/spice",
+    "showme_feature_descriptors/hungerslow",
+    "showme_feature_descriptors/winter_tree",
+    "showme_feature_descriptors/boat_parts",
+    "showme_feature_descriptors/halloween_potion",
+    "showme_feature_descriptors/special_item_notes",
+    "showme_feature_descriptors/rebirth_amulet",
+    "showme_feature_descriptors/charged_days",
+    "showme_feature_descriptors/special_weapon_notes",
+    "showme_feature_descriptors/slingshot_upgrades",
+    "showme_feature_descriptors/wx78_modules",
+    "showme_feature_descriptors/battlesong_notes",
+    "showme_feature_descriptors/abigail_elixir",
+    "showme_feature_descriptors/food_units",
+    "showme_feature_descriptors/season_rocks",
+    "showme_feature_descriptors/weapon_resist",
+}
+for _, path in ipairs(PREFAB_DESCRIPTOR_FILES) do
+    prefab_routes[string.match(path, "([^/]+)$")] = require(path)
+end
+for _, path in ipairs(FEATURE_DESCRIPTOR_FILES) do
+    local mod = require(path)
+    for name in pairs(mod.prefabs or {}) do prefab_routes[name] = mod end
+    for name in pairs(mod.tags or {}) do tag_routes[name] = mod end
+    for name in pairs(mod.fields or {}) do field_routes[name] = mod end
+    for name in pairs(mod.viewer_holding or {}) do weapon_routes[name] = mod end
 end
 
--- 辅助函数：将结果（字符串或字符串数组）插入 desc_table，自动添加 "@" 前缀
-local function insert_description(result, desc_table)
-    if type(result) == "table" then
-        for _, str in ipairs(result) do
-            if str then
-                table.insert(desc_table, "@" .. str)
-            end
-        end
-    elseif type(result) == "string" then
-        table.insert(desc_table, "@" .. result)
-    end
-    -- 其他类型忽略（如 nil）
-end
+-- 描述文件运行在全局环境，modmain2 的 local 工具需经 context.utils 传入；搬移新组件时按需补充
+local descriptor_utils = {
+    round2 = round2,
+    KNOWN_BUFFS = KNOWN_BUFFS, -- 食物增益注册表（TUNING 键名与显示名）
+    DataTimerFn = DataTimerFn,
+    GetPerishTime = GetPerishTime,
+    GetPrefabFancyName = GetPrefabFancyName,
+    GetDebuffTime = GetDebuffTime,
+    IsUselessTimer = IsUselessTimer,
+    Upvaluehelper = Upvaluehelper,
+    GetTileNutrientsAtPoint = GetTileNutrientsAtPoint,
+    GetTileMoistureAtPoint = GetTileMoistureAtPoint,
+}
 
--- 注册表1：按 prefab 分发的处理器
-local desc_handlers = {}
-desc_handlers.batbat = function()
-    local drain = safe_tuning("BATBAT_DRAIN", 0)
-    return string.format(o_t.batbat, drain, -0.5 * drain)
-end
-
-desc_handlers.ruins_bat = function()
-    local level = safe_tuning("RUINS_BAT_SHADOW_LEVEL", 0)
-    return string.format(o_t.ruins_bat, level * 10) .. "%"
-end
-
-desc_handlers.ruinshat = function()
-    local level = safe_tuning("RUINSHAT_SHADOW_LEVEL", -1.3)  -- 保证 (level+1.3) 非负
-    return string.format(o_t.ruinshat, (level + 1.3) * 10) .. "%"
-end
-
-desc_handlers.spice_salt = function()
-    local health = safe_tuning("SPICE_MULTIPLIERS.SPICE_SALT.HEALTH", 0)
-    return string.format(o_t.spice_salt, health * 100) .. "%"
-end
-
-desc_handlers.slingshotammo_slow = function()
-    local mult = safe_tuning("SLINGSHOT_AMMO_MOVESPEED_MULT", 1)
-    local dur  = safe_tuning("SLINGSHOT_AMMO_MOVESPEED_DURATION", 0)
-    local percent = math.ceil((mult - 1) * 100)
-    return string.format(o_t.sammo_slow, percent .. "%", dur)
-end
-
-desc_handlers.slingshotammo_honey = function()
-    local penalty = safe_tuning("BEEQUEEN_HONEYTRAIL_SPEED_PENALTY", 1)
-    return string.format(o_t.sammo_honey, math.ceil((penalty - 1) * 100) .. "%")
-end
-
-desc_handlers.slingshotammo_purebrilliance = function()
-    local planar = safe_tuning("SLINGSHOT_BRILLIANCE_MARK_PLANAR_DAMAGE", 0)
-    local timeout = safe_tuning("SLINGSHOT_BRILLIANCE_MARK_TIMEOUT", 0)
-    return string.format(o_t.mpl_hit, planar, timeout)
-end
-
-desc_handlers.slingshotammo_horrorfuel = function()
-    local planar = safe_tuning("SLINGSHOT_HORROR_PLANAR_DAMAGE", 0)
-    local ticks  = safe_tuning("SLINGSHOT_HORROR_TICKS", 0)
-    return string.format(o_t.shf_hit, planar, ticks)
-end
-
--- 这两个分支调用了 cn("aoe", ...) ，通过一个自定义插入方式处理
-desc_handlers.slingshotammo_stinger = function(item, desc_table)
-    local aoe = safe_tuning("SLINGSHOT_AMMO_DAMAGE_STINGER_AOE", 0)
-    cn("aoe", aoe)   -- 假设 cn 是全局函数，直接调用
-    -- 不返回任何描述（因为 cn 内部已插入）
-    return nil
-end
-
-desc_handlers.slingshotammo_moonglass = function(item, desc_table)
-    local aoe = safe_tuning("SLINGSHOT_AMMO_DAMAGE_MOONGLASS_AOE", 0)
-    cn("aoe", aoe)
-    return nil
-end
-
-desc_handlers.slingshot_band_pigskin = function()
-    local range = safe_tuning("SLINGSHOT_MOD_BONUS_RANGE_1", 0)
-    local speed = safe_tuning("SLINGSHOT_MOD_SPEED_MULT_1", 0)
-    return {
-        string.format(o_t.slingshot_range, range),
-        string.format(o_t.ammo_speed, speed)
-    }
-end
-
-desc_handlers.slingshot_band_tentacle = function()
-    local range = safe_tuning("SLINGSHOT_MOD_BONUS_RANGE_2", 0)
-    local speed = safe_tuning("SLINGSHOT_MOD_SPEED_MULT_2", 0)
-    return {
-        string.format(o_t.slingshot_range, range),
-        string.format(o_t.ammo_speed, speed)
-    }
-end
-
-desc_handlers.slingshot_band_mimic = function()
-    local range = safe_tuning("SLINGSHOT_MOD_BONUS_RANGE_2", 0)
-    local speed = safe_tuning("SLINGSHOT_MOD_SPEED_MULT_2", 0)
-    local chance = safe_tuning("SLINGSHOT_MOD_FREE_AMMO_CHANCE", 0)
-    local result = {
-        string.format(o_t.slingshot_range, range),
-        string.format(o_t.ammo_speed, speed),
-        string.format(o_t.slingshot_speed, chance * 100 .. "%")  -- 只返回第三个，由主函数插入
-    }
-    return result
-end
-
--- -------------------- WX78 模块分支 --------------------
-desc_handlers.wx78module_maxhealth = function()
-    local boost = safe_tuning("WX78_MAXHEALTH_BOOST", 0)
-    local mult = 1   -- 默认
-    return string.format(o_t.maxhealth, boost * mult)
-end
-
-desc_handlers.wx78module_maxhealth2 = function()
-    local boost = safe_tuning("WX78_MAXHEALTH_BOOST", 0)
-    local mult = safe_tuning("WX78_MAXHEALTH2_MULT", 1)
-    return string.format(o_t.maxhealth, boost * mult)
-end
-
-desc_handlers.wx78module_maxsanity = function()
-    local boost = safe_tuning("WX78_MAXSANITY_BOOST", 0)
-    -- 额外插入 sanity 描述（通过 cn）
-    local dapper = safe_tuning("WX78_MAXSANITY_DAPPERNESS", 0)
-    cn("sanity", round2(dapper * 60))
-    return string.format(o_t.maxsanity, boost)
-end
-
-desc_handlers.wx78module_maxsanity1 = function()
-    local boost = safe_tuning("WX78_MAXSANITY1_BOOST", 0)
-    return string.format(o_t.maxsanity, boost)
-end
-
-desc_handlers.wx78module_maxhunger = function()
-    local boost = safe_tuning("WX78_MAXHUNGER_BOOST", 0)
-    local slow = safe_tuning("WX78_MAXHUNGER_SLOWPERCENT", 0)
-    local result = {
-        string.format(o_t.maxhunger, boost),
-        string.format(o_t.hungerslow, (1 - slow) * 100 .. "%")
-    }
-    return result
-end
-
-desc_handlers.wx78module_maxhunger1 = function()
-    local boost = safe_tuning("WX78_MAXHUNGER1_BOOST", 0)
-    return string.format(o_t.maxhunger, boost)
-end
-
-desc_handlers.wx78module_movespeed = function()
-    local added = math.floor(safe_tuning("WILSON_RUN_SPEED", 1) * 4 + 1)
-    cn("speed", added)
-    return nil
-end
-
-desc_handlers.wx78module_movespeed2 = function()
-    local added = math.floor(safe_tuning("WILSON_RUN_SPEED", 1) * 4 + 1)
-    cn("speed", added)
-    cn("other_tag", "wx78_movespeed2")
-    return nil
-end
-
-desc_handlers.wx78module_bee = function()
-    local dapper = safe_tuning("WX78_MAXSANITY_DAPPERNESS", 0)
-    cn("sanity", round2(dapper * 60))
-    local health_pertick = safe_tuning("WX78_BEE_HEALTHPERTICK", 0)
-    local tick_period = safe_tuning("WX78_BEE_TICKPERIOD", 0)
-    local sanity_boost = safe_tuning("WX78_MAXSANITY_BOOST", 0)
-    return {
-        string.format(o_t.healthpertick, health_pertick) .. " / " .. tick_period .. o_t.second,
-        string.format(o_t.maxsanity, sanity_boost)
-    }
-end
-
-desc_handlers.wx78module_music = function()
-    local aura = safe_tuning("WX78_MUSIC_SANITYAURA", 0)
-    cn("sanity", round2(aura * 60, 1))
-    cn("other_tag", "wx78_music")
-    return nil
-end
-
-desc_handlers.wx78module_heat = function()
-    local hot_rate = safe_tuning("WX78_PERISH_HOTRATE", 1)
-    local result = string.format(o_t.wx78_hot_cold, "+" .. (hot_rate - 1) * 100 .. "%")
-    cn("other_tag", "wx78_moisture")
-    cn("other_tag", "wx78_heat")
-    return result
-end
-
-desc_handlers.wx78module_cold = function()
-    local cold_rate = safe_tuning("WX78_PERISH_COLDRATE", 1)
-    local ice_moist = safe_tuning("WX78_COLD_ICEMOISTURE", 0)
-    local result = {
-        string.format(o_t.wx78_hot_cold, (cold_rate - 1) * 100 .. "%"),
-        string.format(o_t.wx78_cold3, ice_moist .. "%")
-    }
-    cn("other_tag", "wx78_cold")
-    return result
-end
-
--- -------------------- 女武神书 --------------------
-local song_handlers = {}
-local song_tunings = require("prefabs/battlesongdefs").song_defs
-
-song_handlers[song_tunings.battlesong_durability] = function()
-    local mod = safe_tuning("BATTLESONG_DURABILITY_MOD", 0)
-    return string.format(o_t.bs_dy, (1 - mod) * 100) .. "%"
-end
-
-song_handlers[song_tunings.battlesong_healthgain] = function()
-    local delta = safe_tuning("BATTLESONG_HEALTHGAIN_DELTA", 0)
-    local singer = safe_tuning("BATTLESONG_HEALTHGAIN_DELTA_SINGER", 0)
-    return string.format(o_t.bs_hp, delta, singer)
-end
-
-song_handlers[song_tunings.battlesong_sanitygain] = function()
-    local delta = safe_tuning("BATTLESONG_SANITYGAIN_DELTA", 0)
-    return string.format(o_t.bs_san, delta)
-end
-
-song_handlers[song_tunings.battlesong_sanityaura] = function()
-    local mod = safe_tuning("BATTLESONG_NEG_SANITY_AURA_MOD", 0)
-    return string.format(o_t.bs_desan, (1 - mod) * 100) .. "%"
-end
-
-song_handlers[song_tunings.battlesong_fireresistance] = function()
-    local mod = safe_tuning("BATTLESONG_FIRE_RESIST_MOD", 0)
-    return string.format(o_t.bs_fire, (1 - mod) * 100) .. "%"
-end
-
-song_handlers[song_tunings.battlesong_instant_taunt] = function()
-    return o_t.bs_it
-end
-
-song_handlers[song_tunings.battlesong_instant_panic] = function()
-    local panic = safe_tuning("BATTLESONG_PANIC_TIME", 0)
-    return string.format(o_t.bs_ip, panic)
-end
-
-song_handlers[song_tunings.battlesong_shadowaligned] = function()
-    local bonus = safe_tuning("BATTLESONG_SHADOWALIGNED_VS_LUNAR_BONUS", 1)
-    local resist = safe_tuning("BATTLESONG_SHADOWALIGNED_SHADOW_RESIST", 1)
-    return {
-        string.format(o_t.bs_shadow, (bonus - 1) * 100) .. "%",
-        string.format(o_t.bs_shadow2, (resist - 1) * 100) .. "%"
-    }
-end
-
-song_handlers[song_tunings.battlesong_lunaraligned] = function()
-    local bonus = safe_tuning("BATTLESONG_LUNARALIGNED_VS_SHADOW_BONUS", 1)
-    local resist = safe_tuning("BATTLESONG_LUNARALIGNED_LUNAR_RESIST", 1)
-    return {
-        string.format(o_t.bs_lunar, (bonus - 1) * 100) .. "%",
-        string.format(o_t.bs_lunar2, (resist - 1) * 100) .. "%"
-    }
-end
-
-
--- 主入口：根据 prefab 分发处理（包括 battlesong 子分发）
-local function add_entity_description(item, desc_table)
-    local handler = desc_handlers[item.prefab]
-    if handler then
-        local result = handler(item, desc_table)  -- 传入 desc_table 以便 cn 等操作
-        if result then
-            insert_description(result, desc_table)
-        end
+--- 把条目编码进 desc_table：data_key 走 MY_DATA 协议（客户端渲染，跟随客户端语言），description 走 "@" 旁路（服务器文本）
+---@param entry table 条目 { priority, data_key, params } 或 { priority, description }
+local function EncodeEntry(entry)
+    if entry.data_key then
+        cn(entry.data_key, _G.unpack(entry.params or {})) -- cn 内部容错无效 key
+    elseif entry.description then
+        table.insert(desc_table, "@" .. entry.description)
     end
 end
 
--- 女武神书
-local function process_songdata(item, desc_table)
-    local handler = song_handlers[item.songdata]
-    if handler then
-        local result = handler(item)
-        if result then
-            insert_description(result, desc_table)
-        end
+--- 主人识别
+---@param item table 被查看的实体
+---@return table|nil entries 协议条目数组：owner 词条；无主人时为 nil
+local function GetOwnerEntries(item)
+    local entries = {}
+    if item.components.mine and item.components.mine.nick then
+        table.insert(entries, { data_key = "owner", params = { item.components.mine.nick } })
+        return entries
+    end
+    if item.stealable and item.stealable.owner and item.stealable.owner ~= "_?\1" then
+        table.insert(entries, { data_key = "owner", params = { item.stealable.owner } })
+        return entries
+    elseif item.owner and type(item.owner) == "string" and string.sub(item.owner, 1, 3) ~= "KU_" then
+        --不知道名字是什么，但这就是“主人”，所以需要取出来，而且这绝对不是user_id。
+        table.insert(entries, { data_key = "owner", params = { item.owner } })
+        return entries
     end
 end
 
--- 阿比盖尔药水
-local function process_potion(item, desc_table)
-    local g_pt = item.potion_tunings
-    if not g_pt then return end
-
-    local day_time = TUNING.TOTAL_DAY_TIME or 480  -- 默认值
-    local f_duration = TUNING.GHOSTLYELIXIR_FASTREGEN_DURATION or 0
-
-    if g_pt.TICK_FN then
-        if g_pt.DURATION == f_duration then
-            local heal = safe_tuning("GHOSTLYELIXIR_FASTREGEN_HEALING", 0)
-            table.insert(desc_table, "@" .. string.format(o_t.healthpertick, heal) .. " /" .. o_t.second .. "," .. SHOWME_STRINGS.chixu .. g_pt.DURATION .. o_t.second)
-        else
-            local heal = safe_tuning("GHOSTLYELIXIR_SLOWREGEN_HEALING", 0)
-            table.insert(desc_table, "@" .. string.format(o_t.healthpertick, heal) .. " /" .. o_t.second .. "," .. SHOWME_STRINGS.chixu .. g_pt.DURATION / day_time .. SHOWME_STRINGS.days)
-        end
-    elseif g_pt.ONDETACH then
-        table.insert(desc_table, "@" .. string.format(o_t.ghost_atk, g_pt.DURATION / day_time))
-    elseif g_pt.speed_hauntable == true then
-        local speed_mult = safe_tuning("GHOSTLYELIXIR_SPEED_LOCO_MULT", 1)
-        table.insert(desc_table, "@" .. string.format(o_t.ghost_sd, (speed_mult - 1) * 100 .. "%", g_pt.DURATION / day_time))
-    elseif g_pt.shield_prefab then
-        if g_pt.shield_prefab == "abigailforcefieldretaliation" then
-            local retaliation = safe_tuning("GHOSTLYELIXIR_RETALIATION_DAMAGE", 0)
-            table.insert(desc_table, "@" .. string.format(o_t.ghost_atkf, retaliation))
-        end
-        table.insert(desc_table, "@" .. string.format(o_t.ghost_shd, g_pt.DURATION / day_time))
-    end
-end
-
---Основная функция получения описания.
-function GetTestString(item,viewer) --从这里开始，与Tell Me区分
-    --line_cnt = 0
+--获取物品信息
+function GetTestString(item, viewer)
     desc_table = {} --旧的 desc 将被取消
     local prefab = item.prefab
-    local c=item.components
-    local has_owner = false --仅向所有者发送一次信息
-    -- local ftime =  function (seconds)    --时间格式化
-        -- local minutes = math.floor(seconds / 60)
-        -- seconds = seconds % 60
-        -- return string.format("%02d:%02d", minutes, seconds)
-    -- end
-    if (prefab=="rock1" or prefab=="rock2") and not viewer.has_AlwaysOnStatus then    --没有开季节时钟则在石头上显示季节与剩余天数
-        local w=_G.TheWorld.state
-        local tt=round2(w.temperature,1)
-        if w.iswinter then cn("S1")
-        elseif w.issummer then cn("S2")
-        elseif w.isspring then cn("S3")
-        elseif w.isautumn then cn("S4")
-        end
-        cn("remaining_days",w.remainingdaysinseason)
-        cn("temperature",tt)
-    elseif c.health and not item.grow_stage then --Health, Hunger, Sanity Bar
-        local h=c.health
-        --生物血量
-        if need_send_hp then --c.health
-            local mx;
-            local cur;
-            if (h.minhealth ~= nil and h ~= nil) then
-                mx=math.ceil(h.maxhealth-h.minhealth)
-                cur=math.ceil(h.currenthealth-h.minhealth)
+    local item_descriptors = {}
+    local function MakeContext() -- 组件循环与 prefab/feature 段共用的描述上下文
+        return {
+            player = viewer, -- 获取此信息的玩家
+            entity = item, -- 对应实体
+            utils = descriptor_utils, -- 共享工具函数
+            modenv = env, -- 模组环境
+            config = {
+                server = server_config, -- 服务器端配置
+                client = player_config[viewer] or server_config, -- 客户端配置
+            },
 
-                if cur>mx then cur=mx end
-                cn("hp",cur,mx)
-            end
-        end
-        --生物饥饿
-        if c.hunger then
-            local val = c.hunger:GetPercent()
-            --要么没饥饿值的，要么这根本就不是一个玩家。
-            if c.grogginess or (not c.grogginess and (val > 0 or prefab ~= "beefalo")) then
-                cn("hunger",round2(c.hunger.current,0))
-            end
-        elseif item_info_mod == 0 and c.perishable ~= nil and c.perishable.updatetask ~= nil then --Here "Perishable" means "Hunger".
-            local time = GetPerishTime(item, c)
-            if time ~= nil then
-                cn("will_die",round2(time/TUNING.TOTAL_DAY_TIME,1))
-            end
-        end
-        if c.sanity then
-            local sanity = round2(math.floor(c.sanity:GetPercent()*100+0.5),1)
-            cn("sanity_character",sanity)
-        end
-        --随从
-        if c.follower then
-            if c.follower.leader and c.follower.leader:IsValid() and c.follower.leader:HasTag("player")
-                and c.follower.leader.name and c.follower.leader.name ~= ""
-            then
-                cn("owner",c.follower.leader.name)
-                has_owner = true
-            end
-            if c.follower.maxfollowtime then    --最大跟随时间
-                local mx = c.follower.maxfollowtime
-                local cur = math.floor(c.follower:GetLoyaltyPercent()*mx+0.5)
-                if cur>0 then
-                    cn("loyal",cur,mx)
-                end
-            end
-        end
-        if item.kills and type(item.kills) == "number" and item.kills>0 then
-            cn(item.kills==1 and "kill" or "kills",item.kills)
-        end
-        if item.aggro and type(item.aggro) == "number" and item.aggro>0 then
-            cn("aggro",item.aggro)
-        end
-        --伤害增加百分比。 例如，女武神 +25%
-        if c.combat and c.combat.damagemultiplier and c.combat.damagemultiplier ~= 1 then
-            local perc = c.combat.damagemultiplier - 1
-            cn("dmg_character",round2(perc*100,0))
-        end
-        --伤害
-        if c.combat and c.combat.defaultdamage and c.combat.defaultdamage > 0 then
-            local com = c.combat
-            local dmg = com.defaultdamage
-            local pvp_perc = tonumber(com.playerdamagepercent) --玩家 NPC 伤害修正，仅适用于无武器
-            if pvp_perc then
-                if pvp_perc == 1 or not is_PvP and prefab == "abigail" then
-                    pvp_perc = nil
-                else
-                    pvp_perc = round2((pvp_perc - 1)*100);
-                    --pvp_perc = tostring(round2(pvp_perc,2))
-                end
-            end
-            cn("strength", tostring(round2(dmg,1)), pvp_perc)
-
-            if c.planardamage and c.planardamage.basedamage and c.planardamage.basedamage > 0 then        --生物位面伤害
-                cn("basedmg", math.floor(c.planardamage.basedamage))    --位面伤害不计算小数？向下整取试试, 不知有没pvp
-            end
-
-            if show_planar_resist and c.planarentity then    --生物位面抵抗
-                table.insert(desc_table, "@"..o_t.dmgresist)
-            end
-
-            if com.areahitdamagepercent then --AoE
-                cn("aoe", math.floor( dmg * com.areahitdamagepercent + 0.5))
-            end
-        end
-
-        --防御
-        if h.absorb~=0 or h.playerabsorb~=0 then
-            local perc = 1-(1-h.absorb)*(1-h.playerabsorb)
-            cn("armor_character",round2(perc*100,0))
-        end
-        if item.asunaheal_score and prefab == "asuna" and TUNING.ASUNA_HEAL_SCORE_SWORD
-            and item.asunaheal_score < TUNING.ASUNA_HEAL_SCORE_SWORD
-        then
-            local asuna_proof = round2(math.floor((item.asunaheal_score/TUNING.ASUNA_HEAL_SCORE_SWORD)*100+0.5),0)
-            if asuna_proof > 99 then
-                asuna_proof = 99
-            end
-            table.insert(desc_table, "@Asuna Proof: "..asuna_proof.."%")
-        end
-        if c.domesticatable ~= nil then
-            if c.domesticatable.GetObedience ~= nil then
-                local obedience = c.domesticatable:GetObedience()
-                if obedience ~= 0 then
-                    cn("obedience",round2(obedience*100,0))
-                end
-            end
-            if c.domesticatable.GetDomestication ~= nil then
-                local domest = c.domesticatable:GetDomestication()
-                if domest ~= 0 then
-                    cn("domest",round2(domest*100,0))
-                end
-            end
-        end
-        if c.growable and c.growable.GetStage then
-            local g = c.growable
-            local t = (g.pausedremaining ~= nil and math.max(0, math.floor(g.pausedremaining)))
-                or (g.targettime ~= nil and math.floor(g.targettime - _G.GetTime()))
-                or nil
-            if t then
-                local stage = g.stage ~= 1 and tonumber(g.stage) or 1;
-                local data = g.stages and g.stages[stage];
-                cn("growable",data and data.name or stage,round2(t),g.pausedremaining ~= nil and 1 or 0);
-            end
-        end
-        if c.sanityaura then
-            local s = c.sanityaura;
-            local aura_val = s.aurafn and s.aurafn(item, viewer) or s.aura
-            if aura_val then
-                if s.fallofffn then -- fallofffn but not distance
-                    local fall = s.fallofffn(item, viewer, 99)
-                    if fall and fall ~= 0 and (fall < 0.98 or fall > 1.02) then
-                        aura_val = aura_val / fall;
-                    end
-                end
-                aura_val = round2(aura_val * TUNING.TOTAL_DAY_TIME * 0.125,1) --240 hardcoded. I'm not sure what it is
-                if aura_val ~= 0 then
-                    cn("sanityaura",aura_val)
-                end
-            end
-        end
-		--食人花
-		if prefab == "lureplant" then
-			local ms = c.minionspawner
-			if ms then
-				local meat_needed = math.ceil(ms.maxminions / 2)
-				local pm = o_t.lureplant_eyes .. tostring(ms.numminions) .. " / " .. tostring(ms.maxminions)
-
-				if item.hibernatetask then
-					-- 休眠, 多久长根
-					local t = _G.GetTaskRemaining(item.hibernatetask)
-					if t and t > 0 then
-						if ms.maxminions == 0 then	-- 若最大眼球草为0, 倒计时结束就长叶肉
-							pm = o_t.lureplant_meat_soon .. DataTimerFn(t)
-						else
-							pm = pm .. " | " .. o_t.lureplant_wake .. DataTimerFn(t)
-						end
-					end
-				elseif item.lure == nil and not (c.shelf and c.shelf.itemonshelf) then
-					-- 长根了且没有诱饵
-					if ms.numminions >= meat_needed then
-						-- 眼球草够了：下一次 TryRevealBait 就会 SpawnPrefab("plantmeat")
-						local wait = 1
-						if item.task then
-							local t = _G.GetTaskRemaining(item.task)
-							if t and t > 0 then wait = t end
-						end
-						pm = pm .. " | " .. o_t.lureplant_meat_soon .. DataTimerFn(wait)	-- 叶肉长出时间
-					elseif ms.spawninprogress and ms.nextspawninfo then
-						-- 眼球草不够：估算直到凑够 meat_needed 的时间
-						local elapsed = GetTime() - ms.nextspawninfo.start
-						local remaining = math.max(0, ms.nextspawninfo.time - elapsed)
-						local need = meat_needed - ms.numminions
-						local avg = (ms.minionspawntime.min + ms.minionspawntime.max) / 2
-						-- 第一只眼球草等 remaining，之后每只平均 avg
-						local estimate = remaining + math.max(0, need - 1) * avg
-						pm = pm .. " | " .. o_t.lureplant_meat_est .. DataTimerFn(estimate)	-- 无法精准，只能大约长肉时间
-					end
-				end
-
-				table.insert(desc_table, "@" .. pm)
-			end
-		end
-    else --elseif prefab~="rocks" and prefab~="flint" then --No rocks and flint
-        --Part 1: primary info
-        --烹饪锅
-        if c.stewer and c.stewer.product and c.stewer.IsCooking and c.stewer:IsCooking() then
-            local tm=round2(c.stewer.targettime-_G.GetTime(),0)
-            if tm<0 then tm=0 end
-            cn("cookpot", c.stewer.product)
-            cn("sec",tm)
-        end
-        --冷却
-        if c.cooldown and c.cooldown.GetTimeToCharged and not c.cooldown.charged then
-            local timer = round2(c.cooldown:GetTimeToCharged(),0)
-            cn("cooldown", timer)
-        end
-        --成长
-        if c.growable and c.growable.GetStage then
-            local g = c.growable
-            local t = (g.pausedremaining ~= nil and math.max(0, math.floor(g.pausedremaining)))
-                or (g.targettime ~= nil and math.floor(g.targettime - _G.GetTime()))
-                or nil
-            if t then
-                local stage = g.stage ~= 1 and tonumber(g.stage) or 1;
-                local data = g.stages and g.stages[stage];
-                cn("growable",data and data.name or stage,round2(t),g.pausedremaining ~= nil and 1 or 0);
-            end
-        end
-        --Part 2: secondary info
-        if item_info_mod == 0 then
-            if c.armor and c.armor.absorb_percent and type(c.armor.absorb_percent)=="number" then
-                local r=c.armor.absorb_percent --0.8
-                local tm_buff = GetDebuffTime(viewer, 'buff_playerabsorption')
-                if tm_buff then
-                    local power = TUNING[KNOWN_BUFFS.buff_playerabsorption.power]
-                    if power then
-                        r = r + (1 - r) * power
-                    end
-                end
-                cn("armor",round2(r*100,0),tm_buff and round2(tm_buff))
-                if c.planardefense and c.planardefense.basedefense and type(c.planardefense.basedefense)=="number" then
-                    cn("basearmor",round2(c.planardefense.basedefense,0)..o_t.point)    --新增的防具位面防御，不吃BUFF
-                end
-                --Support of absorption mod.
-                if item.phys and (item.phys.blunt or item.phys.pierc or item.phys.slash) then
-                    local p = item.phys
-                    cn("absorb",(p.blunt or 0).." / "..(p.pierc or 0).." / "..(p.slash or 0))
-                end
-                if c.armor.condition and c.armor.condition > 0 and c.armor.maxcondition  and not item:HasTag("hide_percentage") then    --耐久度
-                    cn("durability", math.floor(c.armor.condition + 0.5), math.floor(c.armor.maxcondition + 0.5))
-                end
-            end
-        end
-        if item_info_mod == 0 then
-            if item.damage and type(item.damage)=="number" and item.damage>0 then    --item的伤害与位面伤害
-                cn("dmg",round2(item.damage,1))
-                if item.basedamage and type(item.basedamage)=="number" and item.basedamage>0 then
-                    cn("basedmg",round2(item.basedamage,1))
-                end
-            elseif c.weapon ~= nil and c.weapon.damage and type(c.weapon.damage)=="number" and c.weapon.damage>0 then
-                local r = c.weapon.damage
-                local tm_buff = GetDebuffTime(viewer, 'buff_attack')
-                if tm_buff then
-                    local power = TUNING[KNOWN_BUFFS.buff_attack.power]
-                    if power then
-                        r = r * power
-                    end
-                end
-                --local prval = string.gsub(string.format("%.1f", (math.sqrt(r * 4 + 64) - 8) * 4),".0","")
-                local prval = tostring(round2((math.sqrt(r * 4 + 64) - 8) * 4,1))
-                local pr_val = ""
-                if show_planar_resist then pr_val = " ( "..o_t.resist..prval.." )" end
-                cn("dmg",round2(r,1)..pr_val, tm_buff and round2(tm_buff))
-
-                if c.planardamage ~= nil and c.planardamage.basedamage and type(c.planardamage.basedamage)=="number" and c.planardamage.basedamage>0 then
-                    cn("basedmg",round2(math.floor(c.planardamage.basedamage)))    --武器/工具的位面伤害，不吃BUFF
-                end
-                --Support of absobtion mod.
-                if item.phys_dmg then
-                    local p = item.phys_dmg == "blunt" and "Blunt" or (
-                        item.phys_dmg == "pierc" and "Piercing" or (
-                            item.phys_dmg == "slash" and "Slashing" or nil
-                        )
-                    )
-                    if p ~= nil then
-                        table.insert(desc_table, "@Type: "..p)
-                    end
-                end
-            elseif c.zupalexsrangedweapons ~= nil
-                and c.zupalexsrangedweapons.GetArrowBaseDamage ~= nil
-                and type(c.zupalexsrangedweapons.GetArrowBaseDamage) == "function"
-            then
-                local dmg = c.zupalexsrangedweapons:GetArrowBaseDamage()
-                if dmg ~= nil and type(dmg) == "number" and dmg > 0 then
-                    cn("dmg",round2(dmg,1))
-                end
-            end
-        end
-        if item_info_mod == 0 then    --物品显示的范围
-            if c.weapon and c.weapon.damage and type(c.weapon.attackrange)=="number" and c.weapon.attackrange>0.3 then
-                cn("range",round2(c.weapon.attackrange,1))
-            elseif c.projectile and c.projectile.damage and type(c.projectile.range)=="number" and c.projectile.range>0.3 then
-                cn("range",round2(c.projectile.range,1))
-            elseif c.combat and c.combat.damage and type(c.combat.attackrange)=="number" and c.combat.attackrange>2.5 then
-                cn("range",round2(c.combat.attackrange,1))
-            end
-        end
-        if c.tool then
-            local found = nil
-            for k,v in pairs(c.tool.actions) do
-                if k == _G.ACTIONS.HAMMER or k == _G.ACTIONS.CHOP or k == _G.ACTIONS.MINE then
-                    found = true
-                    break
-                end
-            end
-            if found then
-                local tm_buff = GetDebuffTime(viewer, 'buff_workeffectiveness')
-                if tm_buff then
-                    local power = TUNING[KNOWN_BUFFS.buff_workeffectiveness.power]
-                    if power then
-                        cn("effectiveness", round2(power*100), round2(tm_buff))
-                    end
-                end
-            end
-        end
-        if item_info_mod == 0 and c.insulator and c.insulator.insulation and type(c.insulator.insulation)=="number" and c.insulator.insulation~=0 then
-            if c.insulator.SetInsulationEx then --ServerMod
-                local winter,summer = c.insulator:GetInsulationEx()
-                if winter~=0 then
-                    cn("warm",round2(winter,0))
-                end
-                if summer~=0 then
-                    cn("summer",round2(summer,0))
-                end
-            elseif c.insulator.GetInsulation then
-                local insul,typ = c.insulator:GetInsulation()
-                if insul ~= 0 then
-                    if typ == _G.SEASONS.WINTER then
-                        cn("warm",round2(insul,0))
-                    elseif typ == _G.SEASONS.SUMMER then
-                        cn("summer",round2(insul,0))
-                    end
-                end
-            end
-        end
-        if item_info_mod == 0 then
-            if c.dapperness and c.dapperness.dapperness and type(c.dapperness.dapperness)=="number" and c.dapperness.dapperness~=0 then
-                local sanity = round2(c.dapperness.dapperness*54,1)
-                cn("sanity",sanity)
-            elseif c.equippable and c.equippable.dapperness and type(c.equippable.dapperness)=="number" and c.equippable.dapperness~=0 then
-                local sanity = round2(c.equippable.dapperness*54,1)
-                cn("sanity",sanity)
-            elseif prefab == "flower_evil" then
-                cn("sanity",-_G.TUNING.SANITY_TINY,1)
-            end
-        end
-        if c.sanityaura then
-            local s = c.sanityaura;
-            local aura_val = s.aurafn and s.aurafn(item, viewer) or s.aura
-            if aura_val then
-                if s.fallofffn then -- fallofffn but not distance
-                    local fall = s.fallofffn(item, viewer, 99)
-                    if fall and fall ~= 0 and (fall < 0.98 or fall > 1.02) then
-                        aura_val = aura_val / fall;
-                    end
-                end
-                aura_val = round2(aura_val * TUNING.TOTAL_DAY_TIME * 0.125,1)
-                if aura_val ~= 0 then
-                    cn("sanityaura",aura_val)
-                end
-            end
-        end
-        if c.equippable and c.equippable.walkspeedmult and c.equippable.walkspeedmult ~= 1 then
-            local added_speed = math.floor((c.equippable.walkspeedmult - 1)*100+0.5)
-            cn("speed",added_speed)
-        end
-        if item_info_mod == 0 then
-            if c.dapperness and c.dapperness.mitigates_rain and prefab ~= "umbrella" then
-                cn("waterproof","90")
-            elseif item.protect_from_rain then
-                cn("waterproof",round2((item.protect_from_rain)*100,0))
-            elseif c.waterproofer then
-                local effectiveness = _G.tonumber(c.waterproofer.effectiveness) or 0
-                if effectiveness ~= 0 then
-                    cn("waterproof",round2((effectiveness)*100,0))
-                else
-                    --desc = (desc=="" and "" or (desc.."\n")).."Waterproofer"
-                end
-            end
-        end
-        if c.oar and c.oar.force and tonumber(c.oar.force) then
-            cn('force',round2(c.oar.force*100))
-        end
-        if item_info_mod == 0 and c.edible and not is_DisplayFoodValues then
-            local can_eat = false
-            if viewer.components.eater then
-                can_eat = viewer.components.eater:CanEat(item)
-            end
-            if can_eat then
-                local ed = c.edible
-                local should_Estimate_Stale = viewer.should_Estimate_Stale --client priority
-                if not should_Estimate_Stale then
-                    should_Estimate_Stale = food_estimation ~= 0
-                end
-                local hp,hg,sn
-                if should_Estimate_Stale and ed.GetSanity then
-                    --print("Estimate")
-                    hp=round2(ed:GetHealth(viewer),1)
-                    hg=round2(ed:GetHunger(viewer),1)
-                    sn=round2(ed:GetSanity(viewer),1)
-                else
-                    --print("Not Estimate")
-                    hp=round2(ed.healthvalue,1)
-                    hg=round2(ed.hungervalue,1)
-                    sn=round2(ed.sanityvalue,1)
-                end
-                if viewer.FoodValuesChanger ~= nil then --一种特殊功能，其目的是在食用时改变食物。
-                    --print("+")
-                    --确实，在这里我们可以在吃之前稍微看看它的结果。
-                    local hp2, hg2, sn2 = viewer:FoodValuesChanger(item)
-                    if sn2 ~= nil then
-                        --print("++")
-                        hp=round2(hp2,1)
-                        hg=round2(hg2,1)
-                        sn=round2(sn2,1)
-                    end
-                end
-                local base_mult = viewer.components.foodmemory ~= nil and viewer.components.foodmemory:GetFoodMultiplier(prefab) or 1
-                do	-- 进食者的吸收倍率, 增加eater组件检查
-					local eater = viewer.components.eater
-					local hp_mult = (ed.healthabsorption or 1) * base_mult * (eater and eater.healthabsorption or 1)
-					local hg_mult = (ed.hungerabsorption or 1) * base_mult * (eater and eater.hungerabsorption or 1)
-					local sn_mult = (ed.sanityabsorption or 1) * base_mult * (eater and eater.sanityabsorption or 1)
-					hp = hp * hp_mult
-					hg = hg * hg_mult
-					sn = sn * sn_mult
-				end
-                if prefab == "petals_evil" then
-                    sn = round2(sn - _G.TUNING.SANITY_TINY,1)
-                end
-                if hp > 0 then
-                    hp = "+" .. tostring(hp)
-                end
-                if hg > 0 then
-                    hg = "+" .. tostring(hg)
-                end
-                if sn > 0 then
-                    sn = "+" .. tostring(sn)
-                end
-                cn("food",hg,sn,hp)
-
-                if ed.temperaturedelta ~= 0 then -- 食物有温度
-                    if ed.temperatureduration ~= 0 and ed.chill < 1 and viewer.components.temperature ~= nil then
-                        local delta_multiplier = 1
-                        local duration_multiplier = 1
-                        if ed.spice and _G.TUNING.SPICE_MULTIPLIERS[ed.spice] then
-                            if _G.TUNING.SPICE_MULTIPLIERS[ed.spice].TEMPERATUREDELTA then
-                                delta_multiplier = delta_multiplier + _G.TUNING.SPICE_MULTIPLIERS[ed.spice].TEMPERATUREDELTA
-                            end
-                            if _G.TUNING.SPICE_MULTIPLIERS[ed.spice].TEMPERATUREDURATION then
-                                duration_multiplier = duration_multiplier + _G.TUNING.SPICE_MULTIPLIERS[ed.spice].TEMPERATUREDURATION
-                            end
-                        end
-                        local delta, duration = ed.temperaturedelta * (1 - ed.chill) * delta_multiplier, ed.temperatureduration * duration_multiplier
-                        cn('food_temperature',round2(delta), round2(duration))
-                    end
-                end
-                if base_mult ~= 1 then --食物储存，例如厨子
-                    local fm = viewer.components.foodmemory
-                    if fm.GetBaseFood and fm.foods then
-                        local rec = fm.foods[fm:GetBaseFood(prefab)]
-                        if rec then
-                            local t = _G.GetTaskRemaining(rec.task)
-                            cn('food_memory',round2(base_mult,2),round2(t))
-                        end
-                    end
-                end
-                --香料效果
-                if ed.spice and false then
-                    if ed.spice == 'SPICE_SUGAR' then --spice_sugar
-                        cn("buff","Work",round2(TUNING.BUFF_WORKEFFECTIVENESS_MODIFIER,1),round2(TUNING.BUFF_WORKEFFECTIVENESS_DURATION/TUNING.TOTAL_DAY_TIME))
-                    elseif ed.spice == 'SPICE_GARLIC' then --spice_garlic
-                        cn("buff","Absorb",round2(TUNING.BUFF_PLAYERABSORPTION_MODIFIER + 1,1),round2(TUNING.BUFF_PLAYERABSORPTION_DURATION/TUNING.TOTAL_DAY_TIME))
-                    elseif ed.spice == 'SPICE_CHILI' then --spice_chili
-                        cn("buff","Attack",round2(TUNING.BUFF_ATTACK_MULTIPLIER,1),round2(TUNING.BUFF_ATTACK_DURATION/TUNING.TOTAL_DAY_TIME))
-                    end
-                end
-                --Warly BUFF
-				local _shown_buffs = {}		-- 给食物BUFF加去重表, 没错就是为了防止N条 生命恢复 持续 x 天
-                for _,struct in pairs(cooking.recipes) do
-					for food,v in pairs(struct) do
-						if food == prefab and v.prefabs then
-							for i,buff_name in ipairs(v.prefabs) do
-								local duration = nil
-								local power = nil
-								local data = KNOWN_BUFFS[buff_name]
-								if data then
-									if type(data.duration) == 'function' then
-										duration = data.duration()
-									else
-										duration = TUNING[data.duration]
-									end
-									if data.power then
-										power = TUNING[data.power]
-									end
-									if data.shift and data.power then
-										power = power + 1
-									end
-									buff_name = data.name
-								else
-									local up = buff_name:upper()
-									duration = TUNING[up .. '_DURATION']
-									power = TUNING[up .. '_MULTIPLIER'] or TUNING[up .. '_MODIFIER']
-									if buff_name:find("buff_",1,true) == 1 then
-										buff_name = buff_name:sub(6)
-									end
-									if buff_name:find("buff",#buff_name-3,true) then
-										buff_name = buff_name:sub(1,#buff_name-4)
-									end
-								end
-								if duration and not _shown_buffs[buff_name] then
-									_shown_buffs[buff_name] = true
-									duration = round2(duration / TUNING.TOTAL_DAY_TIME,1)
-									cn("buff",buff_name,duration,power)
-								end
-							end
-						end
-					end
-				end
-            end
-        end
-        if show_nutrients ~= false then --肥料信息
-            if c.fertilizer then
-                local _nt = c.fertilizer
-                if show_nutrients == 1 then
-                    table.insert(desc_table, "@"..o_t.nutrients_1.._nt.nutrients[1].." / "..o_t.nutrients_2.._nt.nutrients[2].." / "..o_t.nutrients_3.._nt.nutrients[3])
-                elseif show_nutrients == 2 then
-                    table.insert(desc_table, "@"..o_t.nutrients.._nt.nutrients[1].." / ".._nt.nutrients[2].." / ".._nt.nutrients[3])
-                end
-            end
-        end
-        if item_info_mod == 0 and c.perishable ~= nil and c.perishable.updatetask ~= nil then    --鱼，死亡到腐烂：x 天
-            local time, fresh, perish_modifier = GetPerishTime(item, c)
-            if time ~= nil then
-                if time < 0 then
-                    if fresh then
-                        -- if fresh < 0 then
-                            --fresh = 0
-                        -- end
-                        cn("fresh",round2(fresh/TUNING.TOTAL_DAY_TIME,1))
-                    end
-                elseif time ~= math.huge and time ~= -math.huge then
-                    if item:HasTag("critter") then
-                        table.insert(desc_table, "@"..o_t.critterhunger..tostring(round2(time/TUNING.TOTAL_DAY_TIME,1))..SHOWME_STRINGS.days)
-                    else
-                        local countdown_stage
-                        local countdown_time = time
-                        if c.edible ~= nil and perish_modifier > 0 then
-                            local remaining = c.perishable.perishremainingtime
-                            local total = c.perishable.perishtime
-                            if total ~= nil and total > 0 then
-                                if remaining >= total * TUNING.PERISH_FRESH then
-                                    countdown_stage = "stale"
-                                    countdown_time = (remaining - total * TUNING.PERISH_FRESH) / perish_modifier
-                                elseif remaining > total * TUNING.PERISH_STALE then
-                                    countdown_stage = "spoiled"
-                                    countdown_time = (remaining - total * TUNING.PERISH_STALE) / perish_modifier
-                                end
-                            end
-                        end
-                        cn("perish", round2(countdown_time/TUNING.TOTAL_DAY_TIME,1), countdown_stage or "", round2(time/TUNING.TOTAL_DAY_TIME,1))
-                    end
-                end
-            end
-        end
-        --显示食物填充单位
-        if ing[prefab] and show_food_units ~= 2 then -- ==2 means that food info is forbidden on the server.
-            for k,v in pairs(ing[prefab].tags) do
-                if k~="precook" and k~="dried" then
-                    cn("units_of",v,k)
-                end
-            end
-        end
-        if item_info_mod == 0 and c.healer then
-            local heal = round2(c.healer.health,1)
-            if heal == 0 then
-                if prefab == 'spider_healer_item' then
-                    heal = TUNING.HEALING_MEDSMALL
-                end
-            end
-            if heal and heal ~= 0 then
-                cn("heal",heal)
-            end
-        end
-        --工具、武器耐久
-        if item_info_mod == 0 and c.finiteuses and not item:HasTag("hide_percentage") then
-            local mult = C_FINITEUSES_PREFAB[prefab]
-            if c.finiteuses.consumption then
-                for k,v in pairs(c.finiteuses.consumption) do
-                    local new_mult = 1/v
-                    if mult == nil or new_mult > mult then
-                        mult = new_mult
-                    end
-                end
-            end
-            if mult == nil then
-                mult = 1
-            end
-            local cur = math.floor(c.finiteuses.current * mult + 0.5)
-            if c.finiteuses.current*mult > cur then
-                cur = cur + 1
-            end
-            cn("uses_of",cur,math.floor(c.finiteuses.total * mult + 0.5))
-        end
-        --温度
-        if c.temperature and c.temperature.current and type(c.temperature.current) == "number" then
-            cn("temperature",round2(c.temperature.current,1))
-        end
-        --建筑燃料
-        if c.fueled and c.fueled:GetPercent()>0 and (SPICIAL_STRUCTURES[prefab] or item:HasTag("structure")) then
-            if c.fueled.currentfuel ~= nil then
-                table.insert(desc_table, "@"..o_t.ot_fuel..DataTimerFn(c.fueled.currentfuel).." ( "..math.floor(c.fueled:GetPercent()*100).."% )")
-            end
-            if show_fuel ~= false and c.fueled.bonusmult ~= nil and c.fueled.bonusmult > 1 then
-                table.insert(desc_table, "@"..o_t.ot_fuelval..c.fueled.bonusmult.."x")
-            end
-        end
-        --堆肥桶容量
-        if c.compostingbin and c.compostingbin ~= nil then
-            table.insert(desc_table, "@"..o_t.capacity..c.compostingbin:GetMaterialTotal().." / "..c.compostingbin.max_materials)
-        end
-
-        if c.instrument and type(c.instrument.range)=="number" and c.instrument.range>0.4 then
-            cn("range",round2(c.instrument.range,0))
-        end
-        if c.crystallizable and c.crystallizable.formation --support of Krizor's mod
-            and c.crystallizable.formation.thickness
-            and type(c.crystallizable.formation.thickness)=="table"
-            and c.crystallizable.formation.thickness.current
-            and c.crystallizable.formation.thickness.current>0
-        then
-            cn("thickness",round2(c.crystallizable.formation.thickness.current,1))
-        end
-        --装备饥饿减免
-        if prefab=="beargervest" then
-            table.insert(desc_table, "@"..string.format(o_t.hungerslow, (1-TUNING.ARMORBEARGER_SLOW_HUNGER)*100).."%")
-        elseif prefab=="armorslurper" or prefab=="hat_albicans_mushroom" then
-            table.insert(desc_table, "@"..string.format(o_t.hungerslow, (1-TUNING.ARMORSLURPER_SLOW_HUNGER)*100).."%")
-        elseif prefab == "red_mushroomhat" or prefab == "green_mushroomhat" or prefab == "blue_mushroomhat" then
-            table.insert(desc_table, "@"..string.format(o_t.hungerslow, (1-TUNING.MUSHROOMHAT_SLOW_HUNGER)*100).."%")
-        end
-        --跟随者
-        if c.mine then
-            if c.mine.nick then
-                cn("owner",c.mine.nick)
-                has_owner = true
-            end
-        end
-        if not has_owner then
-            if item.stealable and item.stealable.owner and item.stealable.owner ~= "_?\1" then
-                cn("owner",item.stealable.owner)
-                has_owner = true
-            elseif item.owner and type(item.owner)=="string" and string.sub(item.owner,1,3) ~= "KU_" then
-                --不知道名字是什么，但这就是“主人”，所以需要取出来，而且这绝对不是user_id。
-                cn("owner",item.owner)
-                has_owner = true
-            end
-        end
-        if c.occupiable then
-            local item = c.occupiable:GetOccupant()
-            if item then
-                local c = item.components
-                if c.perishable ~= nil and c.perishable.updatetask ~= nil then --这里“易腐烂”的意思是“饥饿”。
-                    local time = GetPerishTime(item, c)
-                    if time ~= nil then
-                        cn("will_die",round2(time/TUNING.TOTAL_DAY_TIME,1))
-                    end
-                end
-            end
-        end
-        if c.dryer and c.dryer.IsDrying then
-            if c.dryer:IsDrying() and c.dryer.GetTimeToDry then
-                cn("will_dry",round2(c.dryer:GetTimeToDry()/TUNING.TOTAL_DAY_TIME,1)) --距离死亡
-                --if c.dryer:IsPaused() then
-                --end
-            elseif c.dryer.IsDone and c.dryer:IsDone() and c.dryer.GetTimeToSpoil then --距离腐烂
-                cn("perish",round2(c.dryer:GetTimeToSpoil()/TUNING.TOTAL_DAY_TIME,1))
-            end
-        end
-        --鞍具
-        if c.saddler then
-            if c.saddler.speedmult and c.saddler.speedmult ~= 0 then
-                local added_speed = math.floor((c.saddler.speedmult - 1)*100 + 0.5) -- (1.4 - 1) == 0.4
-                cn("speed",added_speed)
-            end
-            if c.saddler.bonusdamage and c.saddler.bonusdamage ~= 0 then
-                cn("dmg_bonus",round2(c.saddler.bonusdamage,1))
-            end
-        end
-        --服饰耐久
-        if show_fueled ~= false then --if c.fueled.rate --效率
-            if c.fueled ~= nil and not item:HasTag("hide_percentage") then
-                local FueledTime = DataTimerFn(c.fueled.currentfuel)
-                local FueledDay = tostring(round2(c.fueled.currentfuel / TUNING.TOTAL_DAY_TIME,1))
-                local FDays = SHOWME_STRINGS.days
-                local s_fval
-                if show_fueled == 1 then    --根据配置，显示不同的样式
-                    s_fval = o_t.fueled..FueledTime
-                elseif show_fueled == 2 then
-                    s_fval = o_t.fueled..FueledDay..FDays
-                else
-                    s_fval = o_t.fueled..FueledTime.." ( "..FueledDay..FDays.." )"
-                end
-                --CAVE, NIGHTMARE, MAGIC, CHEMICAL, WORMLIGHT
-                if (c.fueled.fueltype == _G.FUELTYPE.USAGE or c.fueled.secondaryfueltype == _G.FUELTYPE.USAGE) and not (c.fueled.no_sewing or item:HasTag("heatrock")) then
-                    table.insert(desc_table, "@"..s_fval)
-                elseif c.fueled.fueltype == _G.FUELTYPE.CAVE or c.fueled.secondaryfueltype == _G.FUELTYPE.CAVE or c.fueled.fueltype == _G.FUELTYPE.WORMLIGHT or c.fueled.secondaryfueltype == _G.FUELTYPE.WORMLIGHT then
-                    table.insert(desc_table, "@"..s_fval)
-                elseif (c.fueled.fueltype == _G.FUELTYPE.NIGHTMARE or c.fueled.secondaryfueltype == _G.FUELTYPE.NIGHTMARE) and c.fueled.accepting and not (item:HasTag("pocketwatch") or item:HasTag("fossil") or item:HasTag("structure") or item:HasTag("book")) then
-                    table.insert(desc_table, "@"..s_fval)
-                elseif (c.fueled.fueltype == _G.FUELTYPE.MAGIC or c.fueled.secondaryfueltype == _G.FUELTYPE.MAGIC) and not (item:HasTag("structure") or prefab == "miniboatlantern") then
-                    table.insert(desc_table, "@"..s_fval)
-                elseif prefab == "torch" or prefab == "lighter" or prefab == "nightstick" or prefab == "minifan" or prefab == "walking_stick" then
-                    table.insert(desc_table, "@"..s_fval)
-                end
-            end
-        end
-        --物品价值金块、石头
-        if c.tradable then
-            if c.tradable.goldvalue and c.tradable.goldvalue > 1 then
-                cn("trade_gold", c.tradable.goldvalue)
-            end
-            if c.tradable.rocktribute and c.tradable.rocktribute > 0 and _G.TheWorld.state.issummer then
-                cn("trade_rock", c.tradable.rocktribute)
-            end
-        end
-        --冰箱 etc
-        if TUNING.PERISH_FRIDGE_MULT ~= 0.5 and item:HasTag("fridge") then
-            local fridge = tonumber(TUNING.PERISH_FRIDGE_MULT);
-            if fridge then
-                cn("frigde",round2(fridge,1))
-            end
-        end
-        --物品对船的修理值
-        if viewer.boat_status_task and c.repairer and c.repairer.healthrepairvalue and c.repairer.healthrepairvalue ~= 0 then
-            cn("repairer",round2(c.repairer.healthrepairvalue,2))
-        end
-        --收获
-        if c.harvestable then
-            local h = c.harvestable
-            if h.product and h.produce and h.maxproduce and type(h.produce)=='number' and type(h.maxproduce)=='number' then
-                local tt = tonumber(h.targettime)
-                local pt = tonumber(h.pausetime)
-                local paused = not (h.enabled and tt)
-                if tt then
-                    local tm = round2(tt - GetTime(),0)
-                    if tm >= 0 then
-                        cn("harvest",h.product,h.produce,h.maxproduce,tm,paused and 0 or nil)
-                    end
-                elseif pt then
-                    cn("harvest",h.product,h.produce,h.maxproduce,round2(pt,0),0)
-                else
-                    cn("harvest",h.product,h.produce,h.maxproduce)
-                end
-            end
-        end
-        --弹弓弹药
-        if item:HasTag("slingshotammo") then
-            local SLINGSHOT_AMMO_DATA = {}    --创建表
-            for i,v in pairs(_G.Prefabs) do        --获取官方Prefab
-                if v.fn and _G.debug.getinfo(v.fn, "S").source == "scripts/prefabs/slingshotammo.lua" then        --Prefab 的Fn
-                    if v.name:sub(-5) == "_proj" then
-                        --table.insert(ammo_prefabs, Prefab(name, function() return fn(data) end, assets, prefabs))  --新
-                        --table.insert(ammo_prefabs, Prefab(v.name.."_proj", function() return projectile_fn(v) end, assets, prefabs))  --旧
-                        local ammo_data = Upvaluehelper.GetUpvalue(v.fn, "data") --"v" > "data"
-                        if ammo_data ~= nil and type(ammo_data) == "table" then
-                            SLINGSHOT_AMMO_DATA[ammo_data.name] = ammo_data
-                        end
-                    end
-                end
-            end
-
-            local function GetSlingshotAmmoData(inst)
-                return SLINGSHOT_AMMO_DATA[prefab]
-            end
-            local ammo_data = GetSlingshotAmmoData(ammo)
-            if ammo_data ~= nil then
-                if ammo_data.damage ~= nil then cn("dmg", ammo_data.damage) end
-                if ammo_data.planar ~= nil then cn("basedmg", ammo_data.planar) end
-
-            end
-        end
-        -- 冬季盛宴树
-        if item:HasTag("winter_tree") then
-            local giftable = viewer.components.wintertreegiftable
-            if giftable and giftable.GetDaysSinceLastGift then
-                local days = giftable:GetDaysSinceLastGift()
-                if type(days) == "number" then
-                    if days >= 4 then
-                        table.insert(desc_table, "@" .. MY_STRINGS.winter_gift_ready)
-                    else
-                        local remaining_days = math.ceil(4 - days)
-                        table.insert(desc_table, "@" .. string.format(
-                            MY_STRINGS.winter_gift_wait,
-                            remaining_days
-                        ))
-                    end
-                end
-            end
-        end
-        ------------------Check prefabs?----------------------
-        if prefab=="pond" or prefab=="pond_mos" or prefab=="pond_cave" or prefab=="oasislake" then --池塘
-            if c.fishable and c.fishable.fishleft then
-                cn(c.fishable.fishleft==1 and "fish" or "fishes",c.fishable.fishleft)
-            end
-        elseif prefab=="aqvarium" and item.data then
-            if item.data.seeds and item.data.seeds>0 then --种子
-                table.insert(desc_table, "@Seeds: "..tostring(item.data.seeds))
-            end
-            if item.data.meat and item.data.meat>0 then --肉
-                table.insert(desc_table, "@Meat: "..tostring(item.data.meat))
-                --desc = cn(desc,item.data.meat,"Meat:",true)
-            end
-            local need_wet= item.data.need_wet or 60
-            if item.data.wet and item.data.wet>0 and item.data.wet<need_wet then --水
-                table.insert(desc_table, "@Water: "..tostring(round2(100*item.data.wet/need_wet).."%"))
-                --desc = cn(desc,round2(100*item.data.wet/need_wet).."%","Water:",true)
-            end
-            if item.total_heat then --总温度
-                local temp = item.total_heat/10 --+ _G.TheWorld.state.temperature
-                if temp>40 then temp = 40 end
-                if temp>=0 then
-                    cn("temperature",tostring(round2(temp,1)))
-                end
-            end
-        elseif prefab=="rainometer" then --雨量计
-            local function inSine(t, b, c, d)
-                return -c * math.cos(t / d * (math.pi / 2)) + c + b
-            end
-            cn("precipitationrate",round2(inSine(_G.TheWorld.state.precipitationrate, 0, 0.75, 1),3).."/s")
-            cn("wetness",round2(_G.TheWorld.state.wetness,1))
-        elseif prefab=="winterometer" then --温度计
-            local w=_G.TheWorld.state
-            local tt=round2(w.temperature,1)
-            cn("temperature",tt)
-        elseif prefab=="spice_garlic" then
-            local data = KNOWN_BUFFS.buff_playerabsorption
-            cn("buff",data.name,0,TUNING[data.power]+1)
-        elseif prefab=="spice_chili" then
-            local data = KNOWN_BUFFS.buff_attack
-            cn("buff",data.name,0,TUNING[data.power])
-        elseif prefab=="spice_sugar" then
-            local data = KNOWN_BUFFS.buff_workeffectiveness
-            cn("buff",data.name,0,TUNING[data.power])
-        elseif prefab=="moon_fissure" and c.sanityaura and c.sanityaura.aurafn then --月亮裂隙
-            local current_sanity = c.sanityaura.aurafn(item, viewer)
-            local max_sanity = 100/(TUNING.SEG_TIME*2) -- hardcoded!
-            local effectiveness = current_sanity / max_sanity
-            cn("effectiveness",round2(effectiveness * 100))
-        elseif prefab=='boat' or prefab=='anchor' or prefab=='mast' or prefab=='boat_leak' or prefab=='mast_malbatross' or prefab=='steeringwheel' then --船工具
-            --没有信息，只有船的状态
-            AddBoatStatus(viewer)
-        elseif prefab=="cannonball_rock_item" then
-            cn("dmg", TUNING.CANNONBALL_DAMAGE)
-        end
-
-        --其他物品添加标签    VOIDCLOTH
-        local o_t_list = {
-        "orchitwigs",    --1
-        "halloweenpotion_health_large", "halloweenpotion_health_small",    --2~3
-        "halloweenpotion_sanity_large", "halloweenpotion_sanity_small",    --4~5
-        "halloweenpotion_bravery_small", "halloweenpotion_bravery_large",    --6~7
-        "slingshot_frame_wagpunk","slingshot_frame_wagpunk_0",    --8~9
-        "wx78module_taser", "wx78module_nightvision", "wx78module_light", "slingshotammo_thulecite", "slingshotammo_freeze","slingshotammo_poop", "wolfgang_whistle",  "lileaves", "rosorns", "shark_teethhat", "brainjellyhat", "gashat", "onemanband", "armorseashell", "book_birds", "book_brimstone", "book_gardening", "book_silviculture", "book_sleep", "slingshot_frame_bone", "slingshot_frame_gems", "slingshot_handle_voidcloth", }
-        for i, n in pairs(o_t_list) do
-            if prefab == n then        --必须是列表里面的，不然全部物品都加上这些标签0.0!
-                if i == 1 then
-                    if c.weapon.onattack ~= nil then
-                        cn("aoe", TUNING.BASE_SURVIVOR_ATTACK*0.7)    --兰草穗群伤，目前只能写死伤害
-                    end
-                elseif i > 1 and i <= 3 then
-                    cn("other_tag", "halloweenpotion_health")
-                elseif i > 3 and i <= 5 then
-                    cn("other_tag", "halloweenpotion_sanity")
-                elseif i > 5 and i <= 7 then
-                    local potion_time = 0.5
-                    if i == 7 then
-                        potion_time = 0.75
-                    end
-                    table.insert(desc_table, "@"..string.format(o_t.hpotion_bravery, potion_time))
-                elseif i > 7 and i <= 9 then
-                    cn("other_tag", "slingshot_frame_wagpunk_0")
-                elseif i > 9 then
-                    cn("other_tag", n)
-                end
-            end
-        end
-
-        add_entity_description(item, desc_table)
-
-        -- 女武神书
-        process_songdata(item, desc_table)
-        -- 阿比盖尔的药水
-        process_potion(item, desc_table)
-
-        --重生护符
-        if (prefab == "ancient_amulet_red" or prefab == "amulet") and c.hauntable then
-            cn("other_tag", "amulet")
-        end
-        --Charges: lightning rod / lamp
-        if item.chargeleft and item.chargeleft > 0 then
-            table.insert(desc_table, "@"..o_t.will_other..tostring(math.floor(item.chargeleft+0.5))..SHOWME_STRINGS.days) --避雷针
-        end
-        if show_fuel ~= false and c.fuel ~= nil then    --燃料信息
-            table.insert(desc_table, "@"..o_t.ot_fuelval..DataTimerFn(c.fuel.fuelvalue))
-        end
-        --Mod support:
-        if item.GetShowItemInfo then
-            local custom1, custom2, custom3 = item:GetShowItemInfo(viewer)
-            if custom1 then table.insert(desc_table, "@"..tostring(custom1)) end
-            if custom2 then table.insert(desc_table, "@"..tostring(custom2)) end
-            if custom3 then table.insert(desc_table, "@"..tostring(custom3)) end
-        end
-        if c.pickable and c.pickable.task then --草和树苗
-            local targettime = c.pickable.targettime
-            if targettime then
-                local delta = targettime - GetTime()
-                if delta > 0 then
-                    cn("grow_in",round2(delta/TUNING.TOTAL_DAY_TIME,1)) --days
-                end
-            end
-        end
-        --可采摘次数
-        if c.pickable and c.pickable.transplanted and c.pickable.cycles_left ~= nil and c.pickable.max_cycles ~= nil then
-            table.insert(desc_table, "@"..o_t.ot_pickable..c.pickable.cycles_left.." / "..c.pickable.max_cycles)
-        end
-        --种植的幼苗，一般用在旧农场
-        if c.crop and c.crop.product_prefab and c.crop.product_prefab and c.crop.growthpercent
-            and type(c.crop.growthpercent) == 'number' and c.crop.growthpercent < 1
-        then
-            --作物的生长百分比
-            cn("crop",c.crop.product_prefab,round2(c.crop.growthpercent*100,0))
-        end
-        if show_buddle_item == 1 and c.unwrappable and c.unwrappable.itemdata and type(c.unwrappable.itemdata) == 'table' then
-            --包裹信息？？每样一行
-            for i,v in ipairs(c.unwrappable.itemdata) do
-                if v.prefab then
-                    --发送预制件的名称和天数。
-                    local delta = v.data and v.data.perishable and v.data.perishable.time
-                    local count = v.data and v.data.stackable and v.data.stackable.stack
-                    cn('perish_product', v.prefab, count or 0, delta and round2(delta/TUNING.TOTAL_DAY_TIME,1))
-                end
-            end
-        end
-        --"Pickle It!" 模组
-        if c.pickler and c.pickler.targettime then
-            local delta = c.pickler.targettime - GetTime()
-            cn('just_time', round2(delta/TUNING.TOTAL_DAY_TIME,1))
-        end
-        --“Thirst”模组，检查“cwater”组件
-        if c.cwater then
-            local w = c.cwater
-            if w.current and w.max then
-                cn('water',round2(w.current,0),round2(w.max,0))
-            end
-            if w.waterperdrink and type(w.waterperdrink)=="number" and w.waterperdrink ~= 0 then
-                cn("sip",round2(w.waterperdrink,0))
-            end
-            if w.watergainspeed and type(w.watergainspeed)=="number" and w.watergainspeed ~= 0 then
-                cn("watergainspeed",round2(w.watergainspeed,0))
-            end
-            if w.poisoned then
-                cn("water_poisoned")
-            end
-        end
-        if c.friendlevels then    --好感度
-            cn("friendlevels",round2(c.friendlevels.level,0))
-        end
-		-- 堆叠上限显示
-		if c.stackable and c.stackable.StackSize then
-			local n = c.stackable:StackSize()
-			if n and type(n)=="number" and n > 999 then
-				cn("true_number",round2(n,0))
-			end
-		end
-		-- 寄居蟹房子的装饰度
-		local pds = c.pearldecorationscore
-		if pds and pds.GetScore then
-			local line = o_t.decor_score .. tostring(round2(pds:GetScore(), 1))
-			if pds.IsEnabled then
-				line = line .. (pds:IsEnabled()
-					and ""
-					or " (" .. o_t.decor_disabled  .. ")")
-			end
-			table.insert(desc_table, "@" .. line)
-		end
-		-- 铥矿奖章, 仅在地洞世界显示当前噩梦阶段剩余时间, 读秒有点不准但能用就行
-		if prefab == "nightmare_timepiece" and _G.TheWorld:HasTag("cave") then
-			-- print("[ShowMe-DBG] === dumping world.components ===")
-			-- for k, v in pairs(_G.TheWorld.components) do
-				-- print(string.format("[ShowMe-DBG]   %s : %s", tostring(k), type(v)))
-			-- end
-			local phase = _G.TheWorld.state.nightmarephase
-			local progress = _G.TheWorld.state.nightmaretimeinphase
-
-			if phase and phase ~= "none" and progress then
-				local SEG_TIME  = _G.TUNING.SEG_TIME or 30
-				local PHASE_SEGS = {
-					calm = _G.TUNING.NIGHTMARE_SEGS and _G.TUNING.NIGHTMARE_SEGS.CALM,
-					warn = _G.TUNING.NIGHTMARE_SEGS and _G.TUNING.NIGHTMARE_SEGS.WARN,
-					wild = _G.TUNING.NIGHTMARE_SEGS and _G.TUNING.NIGHTMARE_SEGS.WILD,
-					dawn = _G.TUNING.NIGHTMARE_SEGS and _G.TUNING.NIGHTMARE_SEGS.DAWN,
-				}
-				local segs = PHASE_SEGS[phase]
-
-				if segs and segs > 0 then
-					-- 基础时长 = seg 数 × SEG_TIME；忽略 0~NIGHTMARE_SEG_VARIATION 的随机加成
-					local remaining = segs * SEG_TIME * (1 - progress)
-					if remaining > 0 then
-						local name = o_t["nightmare_" .. phase] or phase
-						table.insert(desc_table, "@" .. name .. ": " .. DataTimerFn(remaining))
-					end
-				end
-			end
-		end
-		if prefab == "wobybig" and c.hunger then
-			local cur = math.floor(c.hunger.current + 0.5)
-			local max = math.floor(c.hunger.max + 0.5)
-			table.insert(desc_table, "@" .. MY_DATA.hunger.desc .. cur .. " / " .. max)
-		end
-        --Stress points 新版耕地农作物状态显示
-        local TS_crop = Switch("T_crop", true)
-        if TS_crop then
-            if c.farmplantstress and c.farmplantstress.stress_points then
-                local x, y, z = item.Transform:GetWorldPosition()
-                local g = GetTileNutrientsAtPoint(x, y, z)
-                local m = GetTileMoistureAtPoint(x, y, z)
-                cn("nutrient", m, g.formula, g.compost, g.manure)
-
-                local reason = {c.farmplantstress.stress_points}
-                if c.farmplantstress.stressors_testfns then
-                    for k,fn in pairs(c.farmplantstress.stressors_testfns) do
-                        if k == 'happiness' then
-                            if c.farmplantstress.stressors and c.farmplantstress.stressors.happiness then
-                                table.insert(reason, k)
-                            end
-                        else
-                            local bool = fn(item,k,false)
-                            if bool then
-                                table.insert(reason, k)
-                            end
-                        end
-                    end
-                end
-                cn("stress_tag", table.concat(reason, ","))
-            end
-        end
+            -- 语言数据（相关代码待重构）
+            -- str = { TODO },
+        }
     end
-    if c.beerpower then
-        local blb = c.beerpower
-        if c.beerpower ~= nil then table.insert(desc_table, "@"..o_t.beerpowerpower.."< "..blb.power.." / "..blb.PowerMax.." >") end
-    end
-    if c.waterpower then
-        local blw = c.waterpower
-        if c.waterpower ~= nil then table.insert(desc_table, "@"..o_t.waterpowerpower.."< "..blw.power.." / "..blw.PowerMax.." >") end
-    end
+    local processed_descriptors = {} -- 同一描述文件注册多个组件键时只执行一次
+    -- 按组件获取信息
+    for components_name, component in pairs(item.components or {}) do
+        local descriptor = showme_descriptors[components_name]
+        if descriptor and descriptor.Describe and not processed_descriptors[descriptor] then
+            processed_descriptors[descriptor] = true
+            local context = MakeContext()
 
-    if c.gaspower then
-        local blg = c.gaspower
-        if c.gaspower ~= nil then table.insert(desc_table, "@"..o_t.gaspowerpower.."< "..blg.power.." / "..blg.PowerMax.." >") end
-    end
-
-    --生物巢,生物：6/6
-    if c.childspawner then
-		local function IsSpawnerHouse(prefab)
-			return prefab == "mermhouse_crafted" or prefab == "mermwatchtower"
-		end
-
-		local inside = math.floor(tonumber(c.childspawner.childreninside) or 0)
-		local maximum = math.floor(tonumber(c.childspawner.maxchildren) or 0)
-		local child_name = GetPrefabFancyName(c.childspawner.childname or MY_DATA.children.desc) .. ": " -- 直接从官方字符串拿生物名
-
-		if IsSpawnerHouse(prefab) then -- 用于人鱼屋
-			local spawner = c.childspawner
-
-			local outside = spawner.CountChildrenOutside and spawner:CountChildrenOutside() or 0	-- 外出的
-			local total = inside + outside	-- 屋内 + 屋外
-
-			local cur_max = child_name .. total .. " / " .. maximum
-
-			-- 判定"已停止"的两种依据（满足任一即视为停止）
-			local timer = c.worldsettingstimer
-			local tm = timer and timer.GetTimeLeft and timer:GetTimeLeft("ChildSpawner_RegenPeriod")
-
-			if total >= maximum or not tm then
-				-- 已达上限 或 计时器未在跑（例如白天 StopSpawning / 世界设置禁用）
-				cur_max = cur_max .. " (" .. SHOWME_STRINGS.stopped .. ")"
-			elseif tm > 0 then
-				cur_max = cur_max .. " | " .. o_t.spawn_in .. DataTimerFn(tm)
-			end
-
-			table.insert(desc_table, "@" .. cur_max)
-        else
-			if inside and maximum then
-				cn("children",round2(inside,0),round2(maximum,0))
-			end
-		end
-    end
-
-    --从武器信息看:
-    if viewer.components.inventory then
-        local weapon = viewer.components.inventory:GetEquippedItem(_G.EQUIPSLOTS.HANDS)
-        if weapon then
-            local resist = nil --base resist
-            local total_resist = nil --base + bonus resist
-            local now = nil --amount of current resist
-            if weapon.prefab=="icestaff" and c.freezable then
-                resist = c.freezable.resistance
-                total_resist = c.freezable.ResolveResistance and c.freezable:ResolveResistance() or resist
-                if c.freezable.coldness and c.freezable.coldness ~= 0 then
-                    now = round2(total_resist - c.freezable.coldness,1)
+            local result = descriptor.Describe(component, context)
+            if result then
+                -- 单条目对象靠 data_key/description 识别，数组则直接展开
+                if result[1] == nil and (result.data_key or result.description) then
+                    result = { result }
                 end
-            elseif (weapon.prefab=="blowdart_sleep" or weapon.prefab=="panflute") and c.sleeper then
-                resist = c.sleeper.resistance
-                total_resist = resist -- there is sleep time bonus but not sleep armor bonus
-                if c.sleeper.sleepiness and c.sleeper.sleepiness ~= 0 then
-                    now = round2(total_resist - c.sleeper.sleepiness,1)
-                end
-            end
-            if resist then
-                if total_resist ~= resist then
-                    resist = resist .. '+' .. round2(math.abs(total_resist-resist),1)
-                end
-                if now then
-                    resist = now .. ' / ' .. resist
-                end
-                cn("resist",resist)
-            end
-        end
-    end
-    if item.inlove and item.inlove>0 then
-        if prefab=="chester" then
-            cn("love",item.inlove/10)
-        else
-            cn("love",item.inlove)
-        end
-    end
-    --Additional
-    if c.timer and c.timer.timers then
-        --local get_time = GetTime()
-        local t = c.timer
-        for name, data in pairs(t.timers) do
-            if not IsUselessTimer(prefab,name) then
-                --GetTimeLeft(name) IsPaused
-                local tm = t:GetTimeLeft(name)
-                local paused = t:IsPaused(name)
-                if tm then
-                    if item:HasTag("critter") then
-                        return
-                    end
-                    cn('timer', round2(tm,0), name, paused and 1 or nil)
-                else
-                    cn('timer', "-", name)
+                for _, entry in ipairs(result) do
+                    entry.order = #item_descriptors -- 插入序号，供同优先级排序保持组件内代码顺序
+                    table.insert(item_descriptors, entry)
                 end
             end
         end
     end
-    --预计：
-    if c.worldsettingstimer and c.worldsettingstimer.timers and not (prefab == "grass" and c.pickable.transplanted) then --transplanted 可移植的
-        --local get_time = GetTime()
-        local t = c.worldsettingstimer
-        for name, data in pairs(t.timers) do
-            if not IsUselessTimer(prefab,name) then
-                --IsPaused GetMaxTime TimerEnabled GetTimeLeft
-                local tm = t:GetTimeLeft(name)
-                local paused = t:IsPaused(name)
-                if tm then
-                    cn('timer', round2(tm,0), name, paused and 1 or nil)
-                elseif t.GetMaxTime then
-                    local max_tm = t:GetMaxTime(name)
-                    if max_tm then
-                        cn('timer', round2(data.maxtime,0), name, 2)
-                    end
-                else
-                    cn('timer', "-", name)
-                end
-            end
+
+    -- prefab/feature 描述段：单 prefab 按文件名路由，功能文件按自声明 prefabs/tags/fields 路由（fields：实体自由字段锚点）
+    --（两段式保序：条目在组件条目之后收集，order 序保证输出在后）
+    local prefab_context = MakeContext()
+    local function CollectEntries(result)
+        if not result then
+            return
+        end
+        if result[1] == nil and (result.data_key or result.description) then
+            result = { result }
+        end
+        for _, entry in ipairs(result) do
+            entry.order = #item_descriptors
+            table.insert(item_descriptors, entry)
         end
     end
-    -- 新晾肉架
-    if c.dryingrack and c.dryingrack.GetDryingInfoSnapshot then
-        local snapshot = c.dryingrack:GetDryingInfoSnapshot()
-        if snapshot then
-            for k,v in pairs(snapshot) do
-                if type(v) == "number" then
-                    table.insert(desc_table, "@" .. (k.name or k.prefab or tostring(k)) .. " " .. o_t.will_other .. round2(v/TUNING.TOTAL_DAY_TIME,1) .. SHOWME_STRINGS.days)
-                end
-            end
+
+    -- 按Prefab名获取信息
+    local pdesc = prefab_routes[prefab]
+    if pdesc and pdesc.Describe then
+        CollectEntries(pdesc.Describe(prefab_context))
+    end
+
+    -- 按Tag获取信息
+    for tag_name, tdesc in pairs(tag_routes) do
+        if item.HasTag and item:HasTag(tag_name) and tdesc.Describe then
+            CollectEntries(tdesc.Describe(prefab_context))
         end
     end
+
+    -- 按字段获取信息
+    for field_name, fdesc in pairs(field_routes) do
+        if item[field_name] and fdesc.Describe then
+            CollectEntries(fdesc.Describe(prefab_context))
+        end
+    end
+
+    -- 查看者手持武器路由（weapon_resist：冰杖/睡眠吹箭/排箫显示目标抗性）
+    local viewer_inventory = viewer.components.inventory
+    local viewer_weapon = viewer_inventory and viewer_inventory:GetEquippedItem(_G.EQUIPSLOTS.HANDS)
+    if viewer_weapon then
+        local wdesc = weapon_routes[viewer_weapon.prefab]
+        if wdesc and wdesc.Describe then
+            CollectEntries(wdesc.Describe(prefab_context))
+        end
+    end
+
+    table.sort(item_descriptors, function(a, b)
+        local pa, pb = a.priority or 0, b.priority or 0
+        if pa ~= pb then
+            return pa > pb -- 优先级高的信息放前面
+        end
+        return a.order < b.order -- Lua 排序不稳定，同优先级按插入顺序
+    end)
+
+    -- 条目写入 desc_table
+    for _, entry in ipairs(item_descriptors) do
+        EncodeEntry(entry)
+    end
+
+
+    -- 主人识别
+    local owner_entries = GetOwnerEntries(item)
+    if owner_entries then
+        for _, entry in ipairs(owner_entries) do
+            EncodeEntry(entry)
+        end
+    end
+
+    --Mod support:
+    if item.GetShowItemInfo then
+        local custom1, custom2, custom3 = item:GetShowItemInfo(viewer)
+        if custom1 then table.insert(desc_table, "@"..tostring(custom1)) end
+        if custom2 then table.insert(desc_table, "@"..tostring(custom2)) end
+        if custom3 then table.insert(desc_table, "@"..tostring(custom3)) end
+    end
+
     return table.concat(desc_table,"\2") --an error with no info
 end    -- 函数GetTestString END
 
 -- 服务器处理end
-end
-
--- 其它单独物品的信息显示
-if SERVER_SIDE then
-    -- 暗影槌 (参考了Insight模组的获取方式)
-    local max_level = #TUNING.SHADOW_BATTLEAXE.LEVEL_THRESHOLDS
-    AddPrefabPostInit("shadow_battleaxe", function(inst)
-        inst.GetShowItemInfo = function()
-            -- How many bosses we've killed on this threshold level.
-            local this_level_boss_kills = 0
-            -- The number of bosses that need to be killed to reach the next level.
-            local boss_kills_for_next_level = 0
-            if inst.level < max_level then
-                this_level_boss_kills = inst.epic_kill_count - TUNING.SHADOW_BATTLEAXE.LEVEL_THRESHOLDS[inst.level]
-                boss_kills_for_next_level = TUNING.SHADOW_BATTLEAXE.LEVEL_THRESHOLDS[inst.level + 1] - TUNING.SHADOW_BATTLEAXE.LEVEL_THRESHOLDS[inst.level]
-            end
-            local level_string = string.format(o_t.level .. "%s / %s",
-                inst.level,
-                max_level
-            )
-            local boss_progress_string
-
-            if boss_kills_for_next_level > 0 then
-                boss_progress_string = string.format(o_t.kills .. "BOSS: %s / %s",
-                    this_level_boss_kills,
-                    boss_kills_for_next_level
-                )
-            end
-
-            -- 吸血信息
-            local lifesteal_info
-            if inst._lifesteal > 0 then
-                lifesteal_info = string.format(o_t.life_stealing .. "%.2f (" .. MY_DATA.sanity.desc .. "%.2f)",
-                    inst._lifesteal,
-                    -inst._lifesteal * TUNING.SHADOW_BATTLEAXE.LIFE_STEAL_SANITY_LOSS_SCALE
-                )
-            end
-
-            -- 汇总信息
-            local description
-            if lifesteal_info then
-                description = lifesteal_info .. "\n" .. level_string
-            else
-                description = level_string
-            end
-            if boss_progress_string then
-                description = description .. " | " .. boss_progress_string
-            end
-            if inst.components and inst.components.hunger then
-                description = description .. "\n" .. MY_DATA.hunger.desc .. round2(inst.components.hunger.current,0) .. " / " .. TUNING.SHADOW_BATTLEAXE.MAX_HUNGER
-            end
-
-            return description
-        end
-    end)
 end
 
 ----------------------------WeGame有在维护，请勿搬运，为避免出现多个相同模组----------------------------
@@ -3194,7 +1822,7 @@ end
 ----------------------------------------
 
 PrefabFiles = { "showme_range" } --加载prefab文件
-if Switch("Show_range", true) and TheNet:GetIsServer() then --范围显示功能
+if GetModConfigData("Show_range") and TheNet:GetIsServer() then --范围显示功能
     modimport("scripts/showme_range_indicators.lua")
 end
 

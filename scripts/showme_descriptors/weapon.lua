@@ -1,0 +1,78 @@
+-- weapon 组件：武器伤害（含增益与位面抵抗换算）、位面伤害与特殊伤害类型
+local Describe = function(self, context)
+    -- item_info_mod：客户端显式开启优先，客户端为默认档(0)时跟随服务器设置
+    local item_info_mod = context.config.client.item_info_mod
+    if item_info_mod == 0 then
+        item_info_mod = context.config.server.item_info_mod
+    end
+    if item_info_mod ~= 0 then
+        return nil
+    end
+    local entity = context.entity
+    local utils = context.utils
+    local c = entity.components
+
+    if entity.damage and type(entity.damage) == "number" and entity.damage > 0 then
+        local entries = { { data_key = "dmg", params = { utils.round2(entity.damage, 1) } } }
+        if entity.basedamage and type(entity.basedamage) == "number" and entity.basedamage > 0 then
+            table.insert(entries, { data_key = "basedmg", params = { utils.round2(entity.basedamage, 1) } })
+        end
+        return entries
+    end
+
+    -- show_planar_resist：客户端显式关闭优先，客户端为默认档(true)时跟随服务器设置
+    local show_planar_resist = context.config.client.show_planar_resist
+    if show_planar_resist then
+        show_planar_resist = context.config.server.show_planar_resist
+    end
+
+    if c.weapon ~= nil and c.weapon.damage and type(c.weapon.damage) == "number" and c.weapon.damage > 0 then
+        local r = c.weapon.damage
+        local tm_buff = utils.GetDebuffTime(context.player, "buff_attack")
+        if tm_buff then
+            local power = TUNING[utils.KNOWN_BUFFS.buff_attack.power]
+            if power then
+                r = r * power
+            end
+        end
+        -- 位面伤害对暗影/梦魇怪的等效抵抗换算
+        local prval = tostring(utils.round2((math.sqrt(r * 4 + 64) - 8) * 4, 1))
+        local pr_val = ""
+        if show_planar_resist then
+            pr_val = " ( " .. context.modenv.OTHER_TITLES.resist .. prval .. " )"
+        end
+
+        local entries = {
+            { data_key = "dmg", params = { utils.round2(r, 1) .. pr_val, tm_buff and utils.round2(tm_buff) } },
+        }
+
+        -- 武器/工具的位面伤害，不吃增益
+        if c.planardamage ~= nil and c.planardamage.basedamage and type(c.planardamage.basedamage) == "number" and c.planardamage.basedamage > 0 then
+            table.insert(entries, { data_key = "basedmg", params = { utils.round2(math.floor(c.planardamage.basedamage)) } })
+        end
+
+        -- 吸收分类 mod 支持
+        if entity.phys_dmg then
+            local p = entity.phys_dmg == "blunt" and "Blunt" or (
+                entity.phys_dmg == "pierc" and "Piercing" or (
+                    entity.phys_dmg == "slash" and "Slashing" or nil
+                )
+            )
+            if p ~= nil then
+                table.insert(entries, { description = "Type: " .. p })
+            end
+        end
+
+        -- 武器攻击范围（原版为独立显示块，随伤害一并迁入）
+        if c.weapon.attackrange and type(c.weapon.attackrange) == "number" and c.weapon.attackrange > 0.3 then
+            table.insert(entries, { data_key = "range", params = { utils.round2(c.weapon.attackrange, 1) } })
+        end
+        return entries
+    end
+
+    return nil
+end
+
+return {
+    Describe = Describe,
+}

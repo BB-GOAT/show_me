@@ -320,7 +320,7 @@ MY_DATA.buff.fn = function(arr)
     arr.param[3] = bonus
     if bonus then
         return name .. ' ' .. tostring(bonus) .. '%'
-            .. (days ~= '0' and SHOWME_STRINGS.chixu .. tostring(days) .. ' ' .. SHOWME_STRINGS.days or '')
+            .. (days ~= '0' and SHOWME_STRINGS.chixu .. tostring(days) .. SHOWME_STRINGS.days or '')
     end
     return name .. SHOWME_STRINGS.chixu .. tostring(days) .. ' ' .. SHOWME_STRINGS.days
 end
@@ -1004,8 +1004,8 @@ local function cn(key, ...)
         return
     end
     local parts = {}
-    for i = 1, select("#", ...) do
-        local v = select(i, ...)
+    for i = 1, _G.select("#", ...) do
+        local v = _G.select(i, ...)
         if v ~= nil then
             parts[#parts + 1] = tostring(v)
         end
@@ -1564,12 +1564,6 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
                 end
             end
         end
-        if item.kills and type(item.kills) == "number" and item.kills>0 then
-            cn(item.kills==1 and "kill" or "kills",item.kills)
-        end
-        if item.aggro and type(item.aggro) == "number" and item.aggro>0 then
-            cn("aggro",item.aggro)
-        end
         --伤害增加百分比。 例如，女武神 +25%
         if c.combat and c.combat.damagemultiplier and c.combat.damagemultiplier ~= 1 then
             local perc = c.combat.damagemultiplier - 1
@@ -1607,15 +1601,6 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
         if h.absorb~=0 or h.playerabsorb~=0 then
             local perc = 1-(1-h.absorb)*(1-h.playerabsorb)
             cn("armor_character",round2(perc*100,0))
-        end
-        if item.asunaheal_score and prefab == "asuna" and TUNING.ASUNA_HEAL_SCORE_SWORD
-            and item.asunaheal_score < TUNING.ASUNA_HEAL_SCORE_SWORD
-        then
-            local asuna_proof = round2(math.floor((item.asunaheal_score/TUNING.ASUNA_HEAL_SCORE_SWORD)*100+0.5),0)
-            if asuna_proof > 99 then
-                asuna_proof = 99
-            end
-            table.insert(desc_table, "@Asuna Proof: "..asuna_proof.."%")
         end
         if c.domesticatable ~= nil then
             if c.domesticatable.GetObedience ~= nil then
@@ -2133,14 +2118,6 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
         if c.instrument and type(c.instrument.range)=="number" and c.instrument.range>0.4 then
             cn("range",round2(c.instrument.range,0))
         end
-        if c.crystallizable and c.crystallizable.formation --support of Krizor's mod
-            and c.crystallizable.formation.thickness
-            and type(c.crystallizable.formation.thickness)=="table"
-            and c.crystallizable.formation.thickness.current
-            and c.crystallizable.formation.thickness.current>0
-        then
-            cn("thickness",round2(c.crystallizable.formation.thickness.current,1))
-        end
         --装备饥饿减免
         if prefab=="beargervest" then
             table.insert(desc_table, "@"..string.format(o_t.hungerslow, (1-TUNING.ARMORBEARGER_SLOW_HUNGER)*100).."%")
@@ -2312,26 +2289,6 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
         if prefab=="pond" or prefab=="pond_mos" or prefab=="pond_cave" or prefab=="oasislake" then --池塘
             if c.fishable and c.fishable.fishleft then
                 cn(c.fishable.fishleft==1 and "fish" or "fishes",c.fishable.fishleft)
-            end
-        elseif prefab=="aqvarium" and item.data then
-            if item.data.seeds and item.data.seeds>0 then --种子
-                table.insert(desc_table, "@Seeds: "..tostring(item.data.seeds))
-            end
-            if item.data.meat and item.data.meat>0 then --肉
-                table.insert(desc_table, "@Meat: "..tostring(item.data.meat))
-                --desc = cn(desc,item.data.meat,"Meat:",true)
-            end
-            local need_wet= item.data.need_wet or 60
-            if item.data.wet and item.data.wet>0 and item.data.wet<need_wet then --水
-                table.insert(desc_table, "@Water: "..tostring(round2(100*item.data.wet/need_wet).."%"))
-                --desc = cn(desc,round2(100*item.data.wet/need_wet).."%","Water:",true)
-            end
-            if item.total_heat then --总温度
-                local temp = item.total_heat/10 --+ _G.TheWorld.state.temperature
-                if temp>40 then temp = 40 end
-                if temp>=0 then
-                    cn("temperature",tostring(round2(temp,1)))
-                end
             end
         elseif prefab=="rainometer" then --雨量计
             local function inSine(t, b, c, d)
@@ -2638,13 +2595,7 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
             end
         end
     end
-    if item.inlove and item.inlove>0 then
-        if prefab=="chester" then
-            cn("love",item.inlove/10)
-        else
-            cn("love",item.inlove)
-        end
-    end
+
     --Additional
     if c.timer and c.timer.timers then
         --local get_time = GetTime()
