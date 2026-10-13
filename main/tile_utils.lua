@@ -1,4 +1,3 @@
-local OldGetTileDataAtPoint
 local _nutrientgrid
 local _moisturegrid
 local _drinkersgrid
@@ -18,9 +17,9 @@ end)
 
 --- Get tile nutrients at point
 local function GetTileNutrientsAtPoint(x, y, z)
-    local nutrients
+    if not farming_manager then return end
     local tx, ty = _G.TheWorld.Map:GetTileCoordsAtPoint(x, y, z)
-    nutrients = {farming_manager:GetTileNutrients(tx, ty)}
+    local nutrients = {farming_manager:GetTileNutrients(tx, ty)}
     return {
         formula = nutrients[1],
         compost = nutrients[2],
@@ -29,10 +28,6 @@ local function GetTileNutrientsAtPoint(x, y, z)
 end
 
 local function GetTileDataAtPoint(x, y, z)
-    if OldGetTileDataAtPoint then
-        return OldGetTileDataAtPoint(false, x, y, z)
-    end
-
     if not _nutrientgrid or not _moisturegrid or not _drinkersgrid or not _overlaygrid then
         if not _nutrientgrid then print("[Show Me] 警告：未找到上值 _nutrientgrid") end
         if not _moisturegrid then print("[Show Me] 警告：未找到上值 _moisturegrid") end

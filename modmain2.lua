@@ -173,13 +173,14 @@ local KNOWN_BUFFS = buffs_data.KNOWN_BUFFS
 local GetDebuffTime = buffs_data.GetDebuffTime
 local IsUselessTimer = buffs_data.IsUselessTimer
 
--- 新版农作物信息相关函数
-local tile_data = Import(MODROOT .. "main/tile_utils.lua", env)
-local GetTileNutrientsAtPoint = tile_data.GetTileNutrientsAtPoint
-local GetTileMoistureAtPoint = tile_data.GetTileMoistureAtPoint
-
--- 识别启用的其它模组
+local GetTileNutrientsAtPoint, GetTileMoistureAtPoint
 if SERVER_SIDE then
+    -- 新版农作物信息相关函数
+    local tile_data = Import(MODROOT .. "main/tile_utils.lua", env)
+    GetTileNutrientsAtPoint = tile_data.GetTileNutrientsAtPoint
+    GetTileMoistureAtPoint = tile_data.GetTileMoistureAtPoint
+
+    -- 识别启用的其它模组
     local server_mods_data = Import(MODROOT .. "main/check_mods.lua", env)
     server_config.is_HealthInfo = server_mods_data.is_HealthInfo -- 简易血条
     server_config.is_DisplayFoodValues = server_mods_data.is_DisplayFoodValues -- Display food values
