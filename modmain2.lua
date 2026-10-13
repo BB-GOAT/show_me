@@ -116,7 +116,6 @@ chestB = chestB == -1 and 1 or chestB
 
 local item_info_mod = Switch("item_info_mod", 0) -- 兼容item info模组
 local perish_style = Switch("perish_style", 0) -- 食物腐烂样式
-local show_fuel = Switch("show_fuel", true) -- 物品燃料值
 -- local show_fueled = Switch("show_fueled", 3) -- 穿戴装备天数
 -- local show_planar_resist = Switch("show_planar_resist", true) -- 显示位面抵抗
 local show_naughtiness = GetModConfigData("Show_naughtiness") -- 显示淘气值
@@ -906,10 +905,6 @@ server_config.is_HealthInfo = is_HealthInfo
 local is_DisplayFoodValues = mods.active_mods_by_name["Display food values"]
 server_config.is_DisplayFoodValues = is_DisplayFoodValues -- 服务器检测结果：供 edible 描述文件判断是否隐藏食物属性
 
-local cooking = require("cooking")
-
-local ing = cooking.ingredients
-
 local world_state
 AddPrefabPostInit("world",function(inst)
     world_state = inst.state
@@ -1148,6 +1143,7 @@ end
 local showme_descriptors = {
     compostingbin = require("showme_descriptors/compostingbin"), -- 堆肥桶
     fueled = require("showme_descriptors/fueled"), -- 建筑燃料与服饰耐久
+    fuel = require("showme_descriptors/fuel"), -- 燃料燃烧时长
     health = require("showme_descriptors/health"), -- 血量与防御
     hunger = require("showme_descriptors/hunger"), -- 饥饿
     perishable = require("showme_descriptors/perishable"), -- 生物剩余寿命
@@ -1224,8 +1220,11 @@ local FEATURE_DESCRIPTOR_FILES = {
     "showme_feature_descriptors/wx78_modules",
     "showme_feature_descriptors/battlesong_notes",
     "showme_feature_descriptors/abigail_elixir",
+    "showme_feature_descriptors/food_units",
+    "showme_feature_descriptors/season_rocks",
+    "showme_feature_descriptors/weapon_resist",
 }
-local prefab_routes, tag_routes, field_routes = {}, {}, {}
+local prefab_routes, tag_routes, field_routes, weapon_routes = {}, {}, {}, {} -- Prefab、Tag、字段、手持特定武器
 for _, path in ipairs(PREFAB_DESCRIPTOR_FILES) do
     prefab_routes[string.match(path, "([^/]+)$")] = require(path)
 end
@@ -1234,6 +1233,7 @@ for _, path in ipairs(FEATURE_DESCRIPTOR_FILES) do
     for name in pairs(mod.prefabs or {}) do prefab_routes[name] = mod end
     for name in pairs(mod.tags or {}) do tag_routes[name] = mod end
     for name in pairs(mod.fields or {}) do field_routes[name] = mod end
+    for name in pairs(mod.viewer_holding or {}) do weapon_routes[name] = mod end
 end
 
 -- 描述文件运行在全局环境，modmain2 的 local 工具需经 context.utils 传入；搬移新组件时按需补充
@@ -1258,23 +1258,6 @@ local function EncodeEntry(entry)
     elseif entry.description then
         table.insert(desc_table, "@" .. entry.description)
     end
-end
-
---- 石头上的季节信息（未开启季节时钟时的替代显示）
----@return table entries 协议条目数组：当前季节、季节剩余天数、世界温度
-local function GetSeasonEntries()
-    local w = _G.TheWorld.state -- 世界状态
-    local entries = {}
-    local season_keys = { iswinter = "S1", issummer = "S2", isspring = "S3", isautumn = "S4" } -- 四季互斥，只命中一个
-    for flag, key in pairs(season_keys) do
-        if w[flag] then
-            table.insert(entries, { data_key = key })
-            break
-        end
-    end
-    table.insert(entries, { data_key = "remaining_days", params = { w.remainingdaysinseason } })
-    table.insert(entries, { data_key = "temperature", params = { round2(w.temperature, 1) } })
-    return entries
 end
 
 --- 主人识别
@@ -1320,6 +1303,7 @@ function GetTestString(item, viewer)
         }
     end
     local processed_descriptors = {} -- 同一描述文件注册多个组件键时只执行一次
+    -- 按组件获取信息
     for components_name, component in pairs(item.components or {}) do
         local descriptor = showme_descriptors[components_name]
         if descriptor and descriptor.Describe and not processed_descriptors[descriptor] then
@@ -1356,18 +1340,33 @@ function GetTestString(item, viewer)
         end
     end
 
+    -- 按Prefab名获取信息
     local pdesc = prefab_routes[prefab]
     if pdesc and pdesc.Describe then
         CollectEntries(pdesc.Describe(prefab_context))
     end
+
+    -- 按Tag获取信息
     for tag_name, tdesc in pairs(tag_routes) do
         if item.HasTag and item:HasTag(tag_name) and tdesc.Describe then
             CollectEntries(tdesc.Describe(prefab_context))
         end
     end
+
+    -- 按字段获取信息
     for field_name, fdesc in pairs(field_routes) do
         if item[field_name] and fdesc.Describe then
             CollectEntries(fdesc.Describe(prefab_context))
+        end
+    end
+
+    -- 查看者手持武器路由（weapon_resist：冰杖/睡眠吹箭/排箫显示目标抗性）
+    local viewer_inventory = viewer.components.inventory
+    local viewer_weapon = viewer_inventory and viewer_inventory:GetEquippedItem(_G.EQUIPSLOTS.HANDS)
+    if viewer_weapon then
+        local wdesc = weapon_routes[viewer_weapon.prefab]
+        if wdesc and wdesc.Describe then
+            CollectEntries(wdesc.Describe(prefab_context))
         end
     end
 
@@ -1384,130 +1383,23 @@ function GetTestString(item, viewer)
         EncodeEntry(entry)
     end
 
-    --------------------------------------------------------------------------------------------------------------------
 
-    if (prefab=="rock1" or prefab=="rock2") and not viewer.has_AlwaysOnStatus then    --没有开季节时钟则在石头上显示季节与剩余天数
-        for _, entry in ipairs(GetSeasonEntries()) do
+    -- 主人识别
+    local owner_entries = GetOwnerEntries(item)
+    if owner_entries then
+        for _, entry in ipairs(owner_entries) do
             EncodeEntry(entry)
         end
-    -- elseif c.health and not item.grow_stage then
-        --生物显示已全部由组件描述文件输出（血量/饥饿/精神等），无残留可显示项
-    else
-        --Part 1: primary info（烹饪锅、冷却已迁至 showme_descriptors/stewer.lua、cooldown.lua）
-        --Part 2: secondary info
-        --护甲、武器伤害、攻击范围已迁至 showme_descriptors/armor.lua、weapon.lua、range.lua（combat 键触发范围，见 range.lua）
-        --工具工作效率增益已迁至 showme_descriptors/tool.lua
-        --保暖/隔热已迁至 showme_descriptors/insulator.lua
-        --恶魔花回san已迁至 showme_prefab_descriptors/flower_evil.lua
-        --装备移速加成已迁至 showme_descriptors/equippable.lua
-        --防水已迁至 showme_descriptors/waterproofer.lua
-        --船桨力度已迁至 showme_descriptors/oar.lua
-        --食物属性（含温度/记忆/Warly BUFF）已迁至 showme_descriptors/edible.lua
-        --肥料信息已迁至 showme_descriptors/fertilizer.lua
-        --物品腐烂时间已并入 showme_descriptors/perishable.lua（生物寿命同文件）
-        --显示食物填充单位
-        if ing[prefab] and show_food_units ~= 2 then -- ==2 means that food info is forbidden on the server.
-            for k,v in pairs(ing[prefab].tags) do
-                if k~="precook" and k~="dried" then
-                    cn("units_of",v,k)
-                end
-            end
-        end
-        --治疗量已迁至 showme_descriptors/healer.lua
-        --工具、武器耐久已迁至 showme_descriptors/finiteuses.lua
-        --温度
-        --当前温度、乐器范围已迁至 showme_descriptors/temperature.lua、instrument.lua
-
-        --装备饥饿减免已迁至 showme_feature_descriptors/hungerslow.lua
-        --主人识别三级链已收敛至 GetOwnerEntries；follower 组件的主人与忠诚度由 follower.lua 处理
-        local owner_entries = GetOwnerEntries(item)
-        if owner_entries then
-            for _, entry in ipairs(owner_entries) do
-                EncodeEntry(entry)
-            end
-        end
-        --笼中生物倒计时、晾肉架已迁至 showme_descriptors/occupiable.lua、dryer.lua
-        --鞍具、交易价值已迁至 showme_descriptors/saddler.lua、tradable.lua
-        --冰箱保鲜倍率已迁至 showme_feature_descriptors/fridge.lua
-        --船修理值、收获已迁至 showme_descriptors/repairer.lua、harvestable.lua
-        --弹弓弹药已迁至 showme_feature_descriptors/slingshot_ammo.lua
-
-        --冬季盛宴树礼物冷却已迁至 showme_feature_descriptors/winter_tree.lua
-        ------------------Check prefabs?----------------------
-        --池塘鱼数已迁至 showme_feature_descriptors/pond_fish.lua
-        --雨量计/温度计已迁至 showme_feature_descriptors/world_gauge.lua
-        --三香料BUFF已迁至 showme_feature_descriptors/spice.lua
-        --天体裂隙已迁至 showme_prefab_descriptors/moon_fissure.lua
-        --船部件查看标记已迁至 showme_feature_descriptors/boat_parts.lua
-        --石炮弹伤害已迁至 showme_prefab_descriptors/cannonball_rock_item.lua
-
-        --万圣节药水已迁至 showme_feature_descriptors/halloween_potion.lua、兰草穗群伤已迁至 showme_prefab_descriptors/orchitwigs.lua
-        --物品专属说明已迁至 showme_feature_descriptors/special_item_notes.lua
-
-        --desc_handlers 已并入 showme_feature_descriptors/special_weapon_notes.lua、slingshot_upgrades.lua、wx78_modules.lua
-
-        --女武神战歌已迁至 showme_feature_descriptors/battlesong_notes.lua、阿比盖尔药水已迁至 showme_feature_descriptors/abigail_elixir.lua
-
-        --重生护符已迁至 showme_feature_descriptors/rebirth_amulet.lua、充能天数已迁至 showme_feature_descriptors/charged_days.lua
-        if show_fuel ~= false and c.fuel ~= nil then    --燃料信息
-            table.insert(desc_table, "@"..o_t.ot_fuelval..DataTimerFn(c.fuel.fuelvalue))
-        end
-        --Mod support:
-        if item.GetShowItemInfo then
-            local custom1, custom2, custom3 = item:GetShowItemInfo(viewer)
-            if custom1 then table.insert(desc_table, "@"..tostring(custom1)) end
-            if custom2 then table.insert(desc_table, "@"..tostring(custom2)) end
-            if custom3 then table.insert(desc_table, "@"..tostring(custom3)) end
-        end
-
-        --采摘倒计时/次数已迁至 showme_descriptors/pickable.lua
-        --旧农场作物生长进度已迁至 showme_descriptors/crop.lua
-        --捆绑包内容已迁至 showme_descriptors/unwrappable.lua
-        --好感度已迁至 showme_descriptors/friendlevels.lua
-		--堆叠上限已迁至 showme_descriptors/stackable.lua
-		--寄居蟹装饰度已迁至 showme_descriptors/pearldecorationscore.lua
-        --铥矿奖章已迁至 showme_prefab_descriptors/nightmare_timepiece.lua
-        --农作物压力已迁至 showme_descriptors/farmplantstress.lua
-    end
-    --不灵电力/水量/气体已迁至 showme_descriptors/beerpower.lua、waterpower.lua、gaspower.lua
-
-    --生物巢已迁至 showme_descriptors/childspawner.lua
-
-    --从武器信息看:
-    if viewer.components.inventory then
-        local weapon = viewer.components.inventory:GetEquippedItem(_G.EQUIPSLOTS.HANDS)
-        if weapon then
-            local resist = nil --base resist
-            local total_resist = nil --base + bonus resist
-            local now = nil --amount of current resist
-            if weapon.prefab=="icestaff" and c.freezable then
-                resist = c.freezable.resistance
-                total_resist = c.freezable.ResolveResistance and c.freezable:ResolveResistance() or resist
-                if c.freezable.coldness and c.freezable.coldness ~= 0 then
-                    now = round2(total_resist - c.freezable.coldness,1)
-                end
-            elseif (weapon.prefab=="blowdart_sleep" or weapon.prefab=="panflute") and c.sleeper then
-                resist = c.sleeper.resistance
-                total_resist = resist -- there is sleep time bonus but not sleep armor bonus
-                if c.sleeper.sleepiness and c.sleeper.sleepiness ~= 0 then
-                    now = round2(total_resist - c.sleeper.sleepiness,1)
-                end
-            end
-            if resist then
-                if total_resist ~= resist then
-                    resist = resist .. '+' .. round2(math.abs(total_resist-resist),1)
-                end
-                if now then
-                    resist = now .. ' / ' .. resist
-                end
-                cn("resist",resist)
-            end
-        end
     end
 
-    --实体计时器已迁至 showme_descriptors/timer.lua
-    --世界设置计时器已迁至 showme_descriptors/worldsettingstimer.lua
-    --新晾肉架快照已迁至 showme_descriptors/dryingrack.lua
+    --Mod support:
+    if item.GetShowItemInfo then
+        local custom1, custom2, custom3 = item:GetShowItemInfo(viewer)
+        if custom1 then table.insert(desc_table, "@"..tostring(custom1)) end
+        if custom2 then table.insert(desc_table, "@"..tostring(custom2)) end
+        if custom3 then table.insert(desc_table, "@"..tostring(custom3)) end
+    end
+
     return table.concat(desc_table,"\2") --an error with no info
 end    -- 函数GetTestString END
 
