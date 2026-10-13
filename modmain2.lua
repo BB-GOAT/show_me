@@ -1522,6 +1522,7 @@ local PREFAB_DESCRIPTOR_FILES = {
     "showme_prefab_descriptors/moon_fissure",
     "showme_prefab_descriptors/flower_evil",
     "showme_prefab_descriptors/cannonball_rock_item",
+    "showme_prefab_descriptors/orchitwigs",
 }
 local FEATURE_DESCRIPTOR_FILES = {
     "showme_feature_descriptors/pond_fish",
@@ -1532,8 +1533,12 @@ local FEATURE_DESCRIPTOR_FILES = {
     "showme_feature_descriptors/hungerslow",
     "showme_feature_descriptors/winter_tree",
     "showme_feature_descriptors/boat_parts",
+    "showme_feature_descriptors/halloween_potion",
+    "showme_feature_descriptors/special_item_notes",
+    "showme_feature_descriptors/rebirth_amulet",
+    "showme_feature_descriptors/charged_days",
 }
-local prefab_routes, tag_routes = {}, {}
+local prefab_routes, tag_routes, field_routes = {}, {}, {}
 for _, path in ipairs(PREFAB_DESCRIPTOR_FILES) do
     prefab_routes[string.match(path, "([^/]+)$")] = require(path)
 end
@@ -1541,6 +1546,7 @@ for _, path in ipairs(FEATURE_DESCRIPTOR_FILES) do
     local mod = require(path)
     for name in pairs(mod.prefabs or {}) do prefab_routes[name] = mod end
     for name in pairs(mod.tags or {}) do tag_routes[name] = mod end
+    for name in pairs(mod.fields or {}) do field_routes[name] = mod end
 end
 
 -- 描述文件运行在全局环境，modmain2 的 local 工具需经 context.utils 传入；搬移新组件时按需补充
@@ -1648,7 +1654,7 @@ function GetTestString(item, viewer)
         end
     end
 
-    -- prefab/feature 描述段：单 prefab 按文件名路由，功能文件按自声明 prefabs/tags 路由
+    -- prefab/feature 描述段：单 prefab 按文件名路由，功能文件按自声明 prefabs/tags/fields 路由（fields：实体自由字段锚点）
     --（两段式保序：条目在组件条目之后收集，order 序保证输出在后）
     local prefab_context = MakeContext()
     local function CollectEntries(result)
@@ -1671,6 +1677,11 @@ function GetTestString(item, viewer)
     for tag_name, tdesc in pairs(tag_routes) do
         if item.HasTag and item:HasTag(tag_name) and tdesc.Describe then
             CollectEntries(tdesc.Describe(prefab_context))
+        end
+    end
+    for field_name, fdesc in pairs(field_routes) do
+        if item[field_name] and fdesc.Describe then
+            CollectEntries(fdesc.Describe(prefab_context))
         end
     end
 
@@ -1744,37 +1755,8 @@ function GetTestString(item, viewer)
         --船部件查看标记已迁至 showme_feature_descriptors/boat_parts.lua
         --石炮弹伤害已迁至 showme_prefab_descriptors/cannonball_rock_item.lua
 
-        --其他物品添加标签    VOIDCLOTH
-        local o_t_list = {
-        "orchitwigs",    --1
-        "halloweenpotion_health_large", "halloweenpotion_health_small",    --2~3
-        "halloweenpotion_sanity_large", "halloweenpotion_sanity_small",    --4~5
-        "halloweenpotion_bravery_small", "halloweenpotion_bravery_large",    --6~7
-        "slingshot_frame_wagpunk","slingshot_frame_wagpunk_0",    --8~9
-        "wx78module_taser", "wx78module_nightvision", "wx78module_light", "slingshotammo_thulecite", "slingshotammo_freeze","slingshotammo_poop", "wolfgang_whistle",  "lileaves", "rosorns", "shark_teethhat", "brainjellyhat", "gashat", "onemanband", "armorseashell", "book_birds", "book_brimstone", "book_gardening", "book_silviculture", "book_sleep", "slingshot_frame_bone", "slingshot_frame_gems", "slingshot_handle_voidcloth", }
-        for i, n in pairs(o_t_list) do
-            if prefab == n then        --必须是列表里面的，不然全部物品都加上这些标签0.0!
-                if i == 1 then
-                    if c.weapon.onattack ~= nil then
-                        cn("aoe", TUNING.BASE_SURVIVOR_ATTACK*0.7)    --兰草穗群伤，目前只能写死伤害
-                    end
-                elseif i > 1 and i <= 3 then
-                    cn("other_tag", "halloweenpotion_health")
-                elseif i > 3 and i <= 5 then
-                    cn("other_tag", "halloweenpotion_sanity")
-                elseif i > 5 and i <= 7 then
-                    local potion_time = 0.5
-                    if i == 7 then
-                        potion_time = 0.75
-                    end
-                    table.insert(desc_table, "@"..string.format(o_t.hpotion_bravery, potion_time))
-                elseif i > 7 and i <= 9 then
-                    cn("other_tag", "slingshot_frame_wagpunk_0")
-                elseif i > 9 then
-                    cn("other_tag", n)
-                end
-            end
-        end
+        --万圣节药水已迁至 showme_feature_descriptors/halloween_potion.lua、兰草穗群伤已迁至 showme_prefab_descriptors/orchitwigs.lua
+        --物品专属说明已迁至 showme_feature_descriptors/special_item_notes.lua
 
         add_entity_description(item, desc_table)
 
@@ -1783,14 +1765,7 @@ function GetTestString(item, viewer)
         -- 阿比盖尔的药水
         process_potion(item, desc_table)
 
-        --重生护符
-        if (prefab == "ancient_amulet_red" or prefab == "amulet") and c.hauntable then
-            cn("other_tag", "amulet")
-        end
-        --Charges: lightning rod / lamp
-        if item.chargeleft and item.chargeleft > 0 then
-            table.insert(desc_table, "@"..o_t.will_other..tostring(math.floor(item.chargeleft+0.5))..SHOWME_STRINGS.days) --避雷针
-        end
+        --重生护符已迁至 showme_feature_descriptors/rebirth_amulet.lua、充能天数已迁至 showme_feature_descriptors/charged_days.lua
         if show_fuel ~= false and c.fuel ~= nil then    --燃料信息
             table.insert(desc_table, "@"..o_t.ot_fuelval..DataTimerFn(c.fuel.fuelvalue))
         end
