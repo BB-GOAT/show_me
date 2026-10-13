@@ -1,20 +1,19 @@
 ---@diagnostic disable: lowercase-global
 local L = locale ~= "zh" and locale ~= "zhr" and locale ~= "zht"
-version = "0.61.2"
-version_compatible = "0.61"
+version = "0.62"
+version_compatible = "0.62"
 name = L and "Show Me (New)" or "Show Me (中文)"
 author = "Star, +Serp, 傳說覺悟, 冰冰羊"
 -- forumthread = ""
 description = "当前版本: "..version.."\n" ..
 [[
 最新更新：
-- 修复淘气值功能的一些小问题
+优化工具可使用次数提示
+农作物状态显示新增选项：带耕作先驱帽/使用沃姆伍德角色才显示详情信息
 
-- 重写淘气值显示功能，如果开启了【综合状态显示】模组能直接在对应的UI内显示
-- 添加模组英文翻译
-- 修改模组语言加载逻辑
-- 修复DataTimerFn函数的时间精度问题（现在不会显示1分60秒这种东西了，而是正确显示为2分钟）
-- 其它细节优化
+新增Beta版代码，在模组设置中开启Beta版本来体验它！
+在Beta版中大部分(屎山)代码得到了修改/重构
+如果在Beta模式下遇到任何问题请及时反馈
 
 历史更新日志请前往创意工坊页面查看
 
@@ -39,7 +38,8 @@ priority = 0.00666155465 --Priority does not matter.
 server_filter_tags = {
     "showme",
     "showme " .. version,
-    "提示语句",
+    "show me 中文",
+    "show me new"
 }
 
 ---@param label string|nil 标题
@@ -224,14 +224,15 @@ configuration_options =
         default = true,
     },
     {
-        name = "T_crop",
+        name = "T_crop_mode",
         label = "农作物状态显示",
         hover = "例如缺肥料、水分、家族、有杂草等，成长计时不受影响",
         options = {
-            {description = "开", data = true},
-            {description = "关", data = false},
+            {description = "开", data = 2},
+            {description = "耕作先驱帽/沃姆伍德", data = 1, hover = "需装备耕作先驱帽或园艺帽才能查看，沃姆伍德可直接查看"},
+            {description = "关", data = 0},
         },
-        default = true,
+        default = 2,
     },
     {
         name = "show_buddle_item",
@@ -254,15 +255,7 @@ configuration_options =
         },
         default = 0,
     },
-    {
-        name = "",
-        label = "箱子提示颜色",
-        hover = "",
-        options =    {
-                        {description = "", data = 0},
-                    },
-        default = 0,
-    },
+    SkipSpace("箱子提示颜色"),
     {
         name = "chestR",
         label = "红色值",
@@ -284,16 +277,7 @@ configuration_options =
         options = color_options,
         default = -1,
     },
-
-    {
-        name = "",
-        label = "调试功能Debug",
-        hover = "",
-        options =    {
-                        {description = "", data = 0},
-                    },
-        default = 0,
-    },
+    SkipSpace("其它"),
     {
         name = "Show_range",
         label = "覆盖范围显示",

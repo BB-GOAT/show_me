@@ -102,6 +102,7 @@ local server_config = {
     show_fuel = GetModConfigData("show_fuel"), -- 物品燃料值
     show_fueled = GetModConfigData("show_fueled"), -- 穿戴装备天数
     show_planar_resist = GetModConfigData("show_planar_resist"), -- 显示位面抵抗
+    T_crop_mode = GetModConfigData("T_crop_mode"), -- 农作物状态显示
 }
 
 local client_config = {
@@ -118,6 +119,7 @@ local client_config = {
     show_fuel = GetModConfigData("show_fuel", true), -- 物品燃料值
     show_fueled = GetModConfigData("show_fueled", true), -- 穿戴装备天数
     show_planar_resist = GetModConfigData("show_planar_resist", true), -- 显示位面抵抗
+    T_crop_mode = GetModConfigData("T_crop_mode", true), -- 农作物状态显示
 }
 local player_config = {}
 

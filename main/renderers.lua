@@ -278,13 +278,9 @@ MY_DATA.units_of.fn = function(arr)
         return arr.param[1] .. SHOWME_STRINGS.units_many .. s
     end
 end
---工具可用度
+--工具可用度：前缀用自身 desc（MY_STRINGS.uses_of），后接 当前/总次数
 MY_DATA.uses_of.fn = function(arr)
-    if arr.param[1] == "1" then
-        return SHOWME_STRINGS.uses_1 .. arr.param[2]
-    else
-        return arr.param[1] .. SHOWME_STRINGS.uses_many .. arr.param[2]
-    end
+    return arr.data.desc .. arr.param[1] .. "/" .. arr.param[2]
 end
 --距离腐烂
 MY_DATA.perish.fn = function(arr)

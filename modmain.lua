@@ -536,13 +536,9 @@ MY_DATA.units_of.fn = function(arr)
         return arr.param[1] .. SHOWME_STRINGS.units_many .. s
     end
 end
---工具可用度
+--工具可用度：前缀用自身 desc（MY_STRINGS.uses_of），后接 当前/总次数
 MY_DATA.uses_of.fn = function(arr)
-    if arr.param[1] == "1" then
-        return SHOWME_STRINGS.uses_1 .. arr.param[2]
-    else
-        return arr.param[1] .. SHOWME_STRINGS.uses_many .. arr.param[2]
-    end
+    return arr.data.desc .. arr.param[1] .. "/" .. arr.param[2]
 end
 --距离腐烂
 MY_DATA.perish.fn = function(arr)
@@ -2485,9 +2481,16 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
 			local max = math.floor(c.hunger.max + 0.5)
 			table.insert(desc_table, "@" .. MY_DATA.hunger.desc .. cur .. " / " .. max)
 		end
-        --Stress points 新版耕地农作物状态显示
-        local TS_crop = GetModConfigData("T_crop")
-        if TS_crop then
+        --Stress points 新版耕地农作物状态显示（T_crop_mode：0 关 / 1 耕作先驱帽或沃姆伍德才显示 / 2 开）
+        local TS_crop = GetModConfigData("T_crop_mode")
+        local show_crop = TS_crop == 2
+        if TS_crop == 1 then
+            -- 帽子档：需装备耕作先驱帽或园艺帽，沃姆伍德可直接查看
+            local hat = viewer and viewer.components.inventory and viewer.components.inventory:GetEquippedItem(_G.EQUIPSLOTS.HEAD)
+            show_crop = (hat and (hat.prefab == "plantregistryhat" or hat.prefab == "nutrientsgoggleshat")) ~= nil
+                or (viewer ~= nil and viewer.prefab == "wormwood")
+        end
+        if show_crop then
             if c.farmplantstress and c.farmplantstress.stress_points then
                 local x, y, z = item.Transform:GetWorldPosition()
                 local g = GetTileNutrientsAtPoint(x, y, z)
@@ -2509,7 +2512,8 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
                         end
                     end
                 end
-                cn("stress_tag", table.concat(reason, ","))
+
+                cn("stress_tag", _G.unpack(reason))
             end
         end
     end
