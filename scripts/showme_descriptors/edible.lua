@@ -122,7 +122,7 @@ local Describe = function(self, context)
                         if data.shift and data.power then
                             power = power + 1
                         end
-                        buff_name = data.name
+                        buff_name = context.modenv.SHOWME_STRINGS[data.name] -- name 存键名，运行时查译名（兼容实时切换语言功能）
                     else
                         local up = buff_name:upper()
                         duration = TUNING[up .. '_DURATION']

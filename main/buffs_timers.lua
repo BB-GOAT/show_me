@@ -68,44 +68,43 @@ local function GetPerishTime(inst, c)
     end
 end
 
---食物BUFF 信息显示
---local test_buff_seen = {buff_playerabsorption=1, buff_workeffectiveness=1, buff_attack=1}
+-- 食物 BUFF 信息显示：name 存 SHOWME_STRINGS 键名（其它模块运行时查询，兼容实时切换语言功能）；duration/power 存 TUNING 键名
 local KNOWN_BUFFS = {
     buff_workeffectiveness = {
-        name = SHOWME_STRINGS.xiaolv,
+        name = "xiaolv",
         duration = 'BUFF_WORKEFFECTIVENESS_DURATION',
         power = 'BUFF_WORKEFFECTIVENESS_MODIFIER',
     },
     buff_playerabsorption = {
-        name = SHOWME_STRINGS.fangyu,
+        name = "fangyu",
         duration = 'BUFF_PLAYERABSORPTION_DURATION',
         power = 'BUFF_PLAYERABSORPTION_MODIFIER',
         shift = true,
     },
     buff_attack = {
-        name = SHOWME_STRINGS.gongji,
+        name = "gongji",
         duration = 'BUFF_ATTACK_DURATION',
         power = 'BUFF_ATTACK_MULTIPLIER',
     },
     buff_moistureimmunity = {
-        name = SHOWME_STRINGS.fangshui,
+        name = "fangshui",
         duration = 'BUFF_MOISTUREIMMUNITY_DURATION',
         --power = 'BUFF_WORKEFFECTIVENESS_MODIFIER',
     },
     buff_electricattack = {
-        name = SHOWME_STRINGS.gandian,
+        name = "gandian",
         duration = 'BUFF_ELECTRICATTACK_DURATION',
         --power = 'BUFF_WORKEFFECTIVENESS_MODIFIER',
     },
     wormlight_light_greater = {
-        name = SHOWME_STRINGS.faguang,
+        name = "faguang",
         duration = function()
             return TUNING.WORMLIGHT_DURATION and TUNING.WORMLIGHT_DURATION * 4 -- multiplier is hardcoded, sadly. See wormlight.lua
         end,
         --power = 'BUFF_WORKEFFECTIVENESS_MODIFIER',
     },
     healthregenbuff = {
-        name = SHOWME_STRINGS.huifu,
+        name = "huifu",
         duration = 'JELLYBEAN_DURATION',
         --power = 'BUFF_WORKEFFECTIVENESS_MODIFIER',
     },

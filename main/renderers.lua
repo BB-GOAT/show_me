@@ -20,8 +20,6 @@ local function GetRenderConfig(config_name)
     return GetModConfigData(config_name, true)
 end
 
-local o_t = OTHER_TITLES
-
 local function DefaultDisplayFn(arr) --输入有一个特殊的结构：{ data, param }。 data 是对 MY_DATA 元素的引用，param 是对数组 p 的引用。
     if arr.data == nil then
         return arr.param_str --以来自服务器的形式显示字符串（没有第一个字符）。 对“@”符号的适配
@@ -43,7 +41,7 @@ end
 
 --农作物
 MY_DATA.nutrient.fn = function(arr)
-    return string.format(o_t.nutrient, arr.param[1] or 0, arr.param[2] or 0, arr.param[3] or 0, arr.param[4] or 0)
+    return string.format(OTHER_TITLES.nutrient, arr.param[1] or 0, arr.param[2] or 0, arr.param[3] or 0, arr.param[4] or 0)
 end
 
 local function slice(tbl, start)
@@ -420,17 +418,9 @@ MY_DATA.food_memory.fn = function(arr)
     return arr.data.desc .. '(' .. perc .. '): ' .. DataTimerFn(arr.param[2])
 end
 
--- 依据实时配置更新渲染状态标志；由 main/change_modsettings.lua 在配置应用时通过 deps 调用
-local function ApplyRenderConfig()
-    local show_food_units = GetRenderConfig("show_food_units")
-    MY_DATA.units_of.hidden = (show_food_units == 0 or show_food_units == 2) or nil
-end
-ApplyRenderConfig() -- 加载时初始化
-
 return {
     DataTimerFn = DataTimerFn,
     GetPrefabFancyName = GetPrefabFancyName,
     DefaultDisplayFn = DefaultDisplayFn,
     SetConfigTable = SetConfigTable,
-    ApplyRenderConfig = ApplyRenderConfig,
 }

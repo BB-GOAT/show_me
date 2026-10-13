@@ -12,7 +12,7 @@ end
 
 ---@param client_config table modmain2 的内存客户端配置表（直接覆盖其内容）
 ---@param player_config table modmain2 的玩家个性化配置表（服务器端使用）
----@param deps table 模块依赖：SetupLanguage/ApplyRenderConfig/ChestColor/RefreshChests/ResolveChannel，由 modmain2 通过各模块 return 的导出注入
+---@param deps table 模块依赖：SetupLanguage/ChestColor/RefreshChests/ResolveChannel，由 modmain2 通过各模块 return 的导出注入
 return function(client_config, player_config, deps)
     --- 应用配置屏幕提交的客户端配置：覆盖内存配置表与本地效果，并同步给服务器
     ---@param keyed_settings table {配置名 = 新值}，来自配置屏幕“应用”时提交的数据
@@ -39,10 +39,6 @@ return function(client_config, player_config, deps)
         end
         if deps.RefreshChests ~= nil then
             deps.RefreshChests()
-        end
-
-        if deps.ApplyRenderConfig ~= nil then
-            deps.ApplyRenderConfig()
         end
 
         if keyed_settings.lang ~= nil and deps.SetupLanguage ~= nil then

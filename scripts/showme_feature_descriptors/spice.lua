@@ -8,7 +8,7 @@ local BUFF_KEY = {
 local Describe = function(context)
     local cfg = BUFF_KEY[context.entity.prefab]
     local data = context.utils.KNOWN_BUFFS[cfg.buff]
-    return { data_key = "buff", params = { data.name, 0, TUNING[data.power] + cfg.delta } }
+    return { data_key = "buff", params = { context.modenv.SHOWME_STRINGS[data.name], 0, TUNING[data.power] + cfg.delta } }
 end
 
 return {

@@ -149,7 +149,6 @@ local chest_data = Import(MODROOT .. "main/chest_highlight.lua", env)
 local SetupChangeModSettings = Import(MODROOT .. "main/change_modsettings.lua", env)
 SetupChangeModSettings(client_config, player_config, {
     SetupLanguage = language_data.SetupLanguage,
-    ApplyRenderConfig = renderers_data.ApplyRenderConfig,
     ChestColor = chest_data.color,
     RefreshChests = chest_data.Refresh,
     ResolveChannel = chest_data.ResolveChannel,
@@ -247,16 +246,31 @@ local FEATURE_DESCRIPTOR_FILES = {
     "showme_feature_descriptors/season_rocks",
     "showme_feature_descriptors/weapon_resist",
 }
-for _, path in ipairs(PREFAB_DESCRIPTOR_FILES) do
-    prefab_routes[string.match(path, "([^/]+)$")] = require(path)
-end
-for _, path in ipairs(FEATURE_DESCRIPTOR_FILES) do
-    local mod = require(path)
-    for name in pairs(mod.prefabs or {}) do prefab_routes[name] = mod end
-    for name in pairs(mod.tags or {}) do tag_routes[name] = mod end
-    for name in pairs(mod.fields or {}) do field_routes[name] = mod end
-    for name in pairs(mod.viewer_holding or {}) do weapon_routes[name] = mod end
-end
+
+local dynamic_prefab_modules = {} -- 动态匹配
+AddSimPostInit(function()
+    for _, path in ipairs(PREFAB_DESCRIPTOR_FILES) do
+        prefab_routes[string.match(path, "([^/]+)$")] = require(path)
+    end
+    for _, path in ipairs(FEATURE_DESCRIPTOR_FILES) do
+        local mod = require(path)
+        if mod.MatchPrefab then
+            table.insert(dynamic_prefab_modules, mod)
+        end
+        for name in pairs(mod.prefabs or {}) do
+            if prefab_routes[name] == nil then prefab_routes[name] = mod end -- 不覆盖既有注册（第三方 ShowMe API 优先）
+        end
+        for name in pairs(mod.tags or {}) do
+            if tag_routes[name] == nil then tag_routes[name] = mod end
+        end
+        for name in pairs(mod.fields or {}) do
+            if field_routes[name] == nil then field_routes[name] = mod end
+        end
+        for name in pairs(mod.viewer_holding or {}) do
+            if weapon_routes[name] == nil then weapon_routes[name] = mod end
+        end
+    end
+end)
 
 local descriptor_utils = {
     round2 = round2,
@@ -343,6 +357,15 @@ function GetTestString(item, viewer)
 
     -- 按Prefab名获取信息
     local pdesc = prefab_routes[prefab]
+    if pdesc == nil then
+        -- 静态路由未命中时交给动态匹配模块
+        for _, mod in ipairs(dynamic_prefab_modules) do
+            if mod.MatchPrefab(prefab) then
+                pdesc = mod
+                break
+            end
+        end
+    end
     if pdesc and pdesc.Describe then
         CollectEntries(pdesc.Describe(context))
     end
