@@ -338,7 +338,7 @@ MY_DATA.buff.fn = function(arr)
     arr.param[3] = bonus
     if bonus then
         return name .. ' ' .. tostring(bonus) .. '%'
-            .. (days ~= '0' and SHOWME_STRINGS.chixu .. tostring(days) .. ' ' .. SHOWME_STRINGS.days or '')
+            .. (days ~= '0' and SHOWME_STRINGS.chixu .. tostring(days) .. SHOWME_STRINGS.days or '')
     end
     return name .. SHOWME_STRINGS.chixu .. tostring(days) .. ' ' .. SHOWME_STRINGS.days
 end
@@ -1529,9 +1529,14 @@ local showme_descriptors = {
 -- prefab/feature 描述路由：单 prefab 文件按文件名注册，feature 文件自声明负责的 prefabs/tags
 local PREFAB_DESCRIPTOR_FILES = {
     "showme_prefab_descriptors/nightmare_timepiece",
+    "showme_prefab_descriptors/moon_fissure",
 }
 local FEATURE_DESCRIPTOR_FILES = {
     "showme_feature_descriptors/pond_fish",
+    "showme_feature_descriptors/fridge",
+    "showme_feature_descriptors/slingshot_ammo",
+    "showme_feature_descriptors/world_gauge",
+    "showme_feature_descriptors/spice",
 }
 local prefab_routes, tag_routes = {}, {}
 for _, path in ipairs(PREFAB_DESCRIPTOR_FILES) do
@@ -1601,23 +1606,6 @@ local function GetOwnerEntries(item)
         --不知道名字是什么，但这就是“主人”，所以需要取出来，而且这绝对不是user_id。
         table.insert(entries, { data_key = "owner", params = { item.owner } })
         return entries
-    end
-end
-
-local SLINGSHOT_AMMO_DATA -- 弹弓弹药数据
-local function Get_SLINGSHOT_AMMO_DATA() -- 首次获取数据
-    SLINGSHOT_AMMO_DATA = {}
-    for i,v in pairs(_G.Prefabs) do        --获取官方Prefab
-        if v.fn and _G.debug.getinfo(v.fn, "S").source == "scripts/prefabs/slingshotammo.lua" then        --Prefab 的Fn
-            if v.name:sub(-5) == "_proj" then
-                --table.insert(ammo_prefabs, Prefab(name, function() return fn(data) end, assets, prefabs))  --新
-                --table.insert(ammo_prefabs, Prefab(v.name.."_proj", function() return projectile_fn(v) end, assets, prefabs))  --旧
-                local ammo_data = Upvaluehelper.GetUpvalue(v.fn, "data") --"v" > "data"
-                if ammo_data ~= nil and type(ammo_data) == "table" then
-                    SLINGSHOT_AMMO_DATA[ammo_data.name] = ammo_data
-                end
-            end
-        end
     end
 end
 
@@ -1757,23 +1745,9 @@ function GetTestString(item, viewer)
         end
         --笼中生物倒计时、晾肉架已迁至 showme_descriptors/occupiable.lua、dryer.lua
         --鞍具、交易价值已迁至 showme_descriptors/saddler.lua、tradable.lua
-        --冰箱 etc
-        if TUNING.PERISH_FRIDGE_MULT ~= 0.5 and item:HasTag("fridge") then
-            local fridge = tonumber(TUNING.PERISH_FRIDGE_MULT);
-            if fridge then
-                cn("frigde",round2(fridge,1))
-            end
-        end
+        --冰箱保鲜倍率已迁至 showme_feature_descriptors/fridge.lua
         --船修理值、收获已迁至 showme_descriptors/repairer.lua、harvestable.lua
-        --弹弓弹药
-        if item:HasTag("slingshotammo") then
-            if not SLINGSHOT_AMMO_DATA then Get_SLINGSHOT_AMMO_DATA() end
-            local ammo_data = SLINGSHOT_AMMO_DATA and SLINGSHOT_AMMO_DATA[prefab]
-            if ammo_data ~= nil then
-                if ammo_data.damage ~= nil then cn("dmg", ammo_data.damage) end
-                if ammo_data.planar ~= nil then cn("basedmg", ammo_data.planar) end
-            end
-        end
+        --弹弓弹药已迁至 showme_feature_descriptors/slingshot_ammo.lua
 
         -- 冬季盛宴树
         if item:HasTag("winter_tree") then
@@ -1795,51 +1769,10 @@ function GetTestString(item, viewer)
         end
         ------------------Check prefabs?----------------------
         --池塘鱼数已迁至 showme_feature_descriptors/pond_fish.lua
-        if prefab=="aqvarium" and item.data then
-            if item.data.seeds and item.data.seeds>0 then --种子
-                table.insert(desc_table, "@Seeds: "..tostring(item.data.seeds))
-            end
-            if item.data.meat and item.data.meat>0 then --肉
-                table.insert(desc_table, "@Meat: "..tostring(item.data.meat))
-                --desc = cn(desc,item.data.meat,"Meat:",true)
-            end
-            local need_wet= item.data.need_wet or 60
-            if item.data.wet and item.data.wet>0 and item.data.wet<need_wet then --水
-                table.insert(desc_table, "@Water: "..tostring(round2(100*item.data.wet/need_wet).."%"))
-                --desc = cn(desc,round2(100*item.data.wet/need_wet).."%","Water:",true)
-            end
-            if item.total_heat then --总温度
-                local temp = item.total_heat/10 --+ _G.TheWorld.state.temperature
-                if temp>40 then temp = 40 end
-                if temp>=0 then
-                    cn("temperature",tostring(round2(temp,1)))
-                end
-            end
-        elseif prefab=="rainometer" then --雨量计
-            local function inSine(t, b, c, d)
-                return -c * math.cos(t / d * (math.pi / 2)) + c + b
-            end
-            cn("precipitationrate",round2(inSine(_G.TheWorld.state.precipitationrate, 0, 0.75, 1),3).."/s")
-            cn("wetness",round2(_G.TheWorld.state.wetness,1))
-        elseif prefab=="winterometer" then --温度计
-            local w=_G.TheWorld.state
-            local tt=round2(w.temperature,1)
-            cn("temperature",tt)
-        elseif prefab=="spice_garlic" then
-            local data = KNOWN_BUFFS.buff_playerabsorption
-            cn("buff",data.name,0,TUNING[data.power]+1)
-        elseif prefab=="spice_chili" then
-            local data = KNOWN_BUFFS.buff_attack
-            cn("buff",data.name,0,TUNING[data.power])
-        elseif prefab=="spice_sugar" then
-            local data = KNOWN_BUFFS.buff_workeffectiveness
-            cn("buff",data.name,0,TUNING[data.power])
-        elseif prefab=="moon_fissure" and c.sanityaura and c.sanityaura.aurafn then --月亮裂隙
-            local current_sanity = c.sanityaura.aurafn(item, viewer)
-            local max_sanity = 100/(TUNING.SEG_TIME*2) -- hardcoded!
-            local effectiveness = current_sanity / max_sanity
-            cn("effectiveness",round2(effectiveness * 100))
-        elseif prefab=='boat' or prefab=='anchor' or prefab=='mast' or prefab=='boat_leak' or prefab=='mast_malbatross' or prefab=='steeringwheel' then --船工具
+        --雨量计/温度计已迁至 showme_feature_descriptors/world_gauge.lua
+        --三香料BUFF已迁至 showme_feature_descriptors/spice.lua
+        --天体裂隙已迁至 showme_prefab_descriptors/moon_fissure.lua
+        if prefab=='boat' or prefab=='anchor' or prefab=='mast' or prefab=='boat_leak' or prefab=='mast_malbatross' or prefab=='steeringwheel' then --船工具
             --没有信息，只有船的状态
             AddBoatStatus(viewer)
         elseif prefab=="cannonball_rock_item" then

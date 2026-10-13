@@ -320,7 +320,7 @@ MY_DATA.buff.fn = function(arr)
     arr.param[3] = bonus
     if bonus then
         return name .. ' ' .. tostring(bonus) .. '%'
-            .. (days ~= '0' and SHOWME_STRINGS.chixu .. tostring(days) .. ' ' .. SHOWME_STRINGS.days or '')
+            .. (days ~= '0' and SHOWME_STRINGS.chixu .. tostring(days) .. SHOWME_STRINGS.days or '')
     end
     return name .. SHOWME_STRINGS.chixu .. tostring(days) .. ' ' .. SHOWME_STRINGS.days
 end
@@ -2289,26 +2289,6 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
         if prefab=="pond" or prefab=="pond_mos" or prefab=="pond_cave" or prefab=="oasislake" then --池塘
             if c.fishable and c.fishable.fishleft then
                 cn(c.fishable.fishleft==1 and "fish" or "fishes",c.fishable.fishleft)
-            end
-        elseif prefab=="aqvarium" and item.data then
-            if item.data.seeds and item.data.seeds>0 then --种子
-                table.insert(desc_table, "@Seeds: "..tostring(item.data.seeds))
-            end
-            if item.data.meat and item.data.meat>0 then --肉
-                table.insert(desc_table, "@Meat: "..tostring(item.data.meat))
-                --desc = cn(desc,item.data.meat,"Meat:",true)
-            end
-            local need_wet= item.data.need_wet or 60
-            if item.data.wet and item.data.wet>0 and item.data.wet<need_wet then --水
-                table.insert(desc_table, "@Water: "..tostring(round2(100*item.data.wet/need_wet).."%"))
-                --desc = cn(desc,round2(100*item.data.wet/need_wet).."%","Water:",true)
-            end
-            if item.total_heat then --总温度
-                local temp = item.total_heat/10 --+ _G.TheWorld.state.temperature
-                if temp>40 then temp = 40 end
-                if temp>=0 then
-                    cn("temperature",tostring(round2(temp,1)))
-                end
             end
         elseif prefab=="rainometer" then --雨量计
             local function inSine(t, b, c, d)
