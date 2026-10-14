@@ -223,6 +223,7 @@ local PREFAB_DESCRIPTOR_FILES = {
     "showme_prefab_descriptors/cannonball_rock_item",
     "showme_prefab_descriptors/orchitwigs",
     "showme_prefab_descriptors/shadow_battleaxe",
+    "showme_prefab_descriptors/volcano_altar",
 }
 local FEATURE_DESCRIPTOR_FILES = {
     "showme_feature_descriptors/pond_fish",
