@@ -1,7 +1,7 @@
 -- 此lua文件由冰冰羊参考其它模组的upvaluehelper代码制作，并进行了功能完善，如果你想使用我这个版本的upvaluehelper，建议去【冰冰羊的模组运行库】mod里获取最新版的
 -- 创意工坊：https://steamcommunity.com/sharedfiles/filedetails/?id=3750536829
 -- GitHub：https://github.com/BB-GOAT/bbgoat_utils/blob/master/bbgoat_utils/bbgoat_upvaluehelper.lua
--- 本文件更新时间：2026年8月6日
+-- 本文件更新时间：2026年10月14日
 
 local visit = {} -- 保存已经访问的 防止有嵌套
 local visitnum = 0

@@ -1,6 +1,4 @@
 -- food_units：食材的填充单位（eg 蔬菜类/肉类 值）
--- 食材注册（cooking.AddIngredientValues）可发生在任意模组 modmain 乃至运行时，路由键无法快照，
--- 经 MatchPrefab 供调度层运行时动态匹配（与原版 modmain 的 ing[prefab] 动态查询语义一致）
 local ing = require("cooking").ingredients
 
 local Describe = function(context)

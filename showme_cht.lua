@@ -49,6 +49,7 @@ local MY_STRINGS =
     timer = "預計: ",
     trade_gold = '價值金塊: ',
     trade_rock = '價值石頭: ',
+    trade_volcano = '火山獻祭: ',
     durability = '耐久度: ',
     strength = '攻擊力: ',
     aoe = "群傷: ",

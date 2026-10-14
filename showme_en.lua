@@ -49,6 +49,7 @@ local MY_STRINGS =    -- 调用 MY_DATA.armor.desc
     timer = "Timer: ",
     trade_gold = 'Gold tribute: ',
     trade_rock = 'Rock tribute: ',
+    trade_volcano = 'Volcano tribute: ',
     durability = 'Durability: ',
     strength = 'Strength: ',
     aoe = "AoE: ",

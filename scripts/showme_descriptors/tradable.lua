@@ -1,4 +1,4 @@
--- tradable 组件：物品价值 -- TODO 兼容岛屿冒险的交易方式
+-- tradable 组件：物品价值
 local Describe = function(self, context)
     local entries = {}
     if self.goldvalue and self.goldvalue > 1 then -- 价值金块

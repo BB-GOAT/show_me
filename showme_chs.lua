@@ -49,6 +49,7 @@ local MY_STRINGS =    -- 调用 MY_DATA.armor.desc
     timer = "预计: ",
     trade_gold = "价值金块: ",
     trade_rock = "价值石头: ",
+    trade_volcano = "火山献祭: ",
     durability = "耐久度: ",
     strength = "攻击力: ",
     aoe = "群伤: ",
