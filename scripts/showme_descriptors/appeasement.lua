@@ -1,6 +1,6 @@
 -- appeasement 组件：火山献祭价值
 local Describe = function(self, context)
-    if rawget(_G, "IsShipwreckedWorld") and not _G.IsShipwreckedWorld() then -- 仅海难/火山世界显示
+    if not TheWorld.state.isdry then -- 仅旱季显示
         return nil
     end
     local value = self.GetValue and self:GetValue()

@@ -2,12 +2,6 @@ _G = GLOBAL
 local _G = _G
 _G.setmetatable(env, {
     __index = function(t, k)
-        if not modname:find("workshop%-") then
-            local info = _G.debug.getinfo(2)
-            if string.find(info.source, modname) then
-                print("[Show Me] 当前正在尝试从全局环境获取值", k, "调用于", info.source, info.currentline)
-            end
-        end
         return _G.rawget(_G, k)
     end
 })
