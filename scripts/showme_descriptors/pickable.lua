@@ -8,7 +8,7 @@ local Describe = function(self, context)
         if targettime then
             local delta = targettime - GetTime()
             if delta > 0 then
-                table.insert(entries, { data_key = "grow_in", params = { utils.round2(delta / TUNING.TOTAL_DAY_TIME, 1) } })
+                table.insert(entries, { data_key = "grow_in", params = { utils.round2(delta / TUNING.TOTAL_DAY_TIME, 2) } })
             end
         end
     end

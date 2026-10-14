@@ -12,7 +12,7 @@ local Describe = function(self, context)
     local entries = {}
     for k, v in pairs(snapshot) do
         if type(v) == "number" then
-            table.insert(entries, { description = (k.name or k.prefab or tostring(k)) .. " " .. o_t.will_other .. context.utils.round2(v / TUNING.TOTAL_DAY_TIME, 1) .. context.modenv.SHOWME_STRINGS.days })
+            table.insert(entries, { description = (k.name or k.prefab or tostring(k)) .. " " .. o_t.will_other .. context.utils.round2(v / TUNING.TOTAL_DAY_TIME, 2) .. context.modenv.SHOWME_STRINGS.days })
         end
     end
 

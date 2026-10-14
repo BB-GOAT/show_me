@@ -5,7 +5,7 @@ local Describe = function(context)
         return nil
     end
     local modenv = context.modenv
-    return { description = modenv.OTHER_TITLES.will_other .. tostring(math.floor(chargeleft + 0.5)) .. modenv.SHOWME_STRINGS.days }
+    return { description = modenv.OTHER_TITLES.will_other .. tostring(context.utils.round2(chargeleft, 2)) .. modenv.SHOWME_STRINGS.days }
 end
 
 return {

@@ -24,7 +24,7 @@ local Describe = function(self, context)
         return {
             priority = 90, -- 与 hunger 互斥，保持原第二位
             data_key = "will_die",
-            params = { utils.round2(time / TUNING.TOTAL_DAY_TIME, 1) },
+            params = { utils.round2(time / TUNING.TOTAL_DAY_TIME, 2) },
         }
     end
 
@@ -43,12 +43,12 @@ local Describe = function(self, context)
     local entries = {}
     if time < 0 then
         if fresh then
-            table.insert(entries, { data_key = "fresh", params = { utils.round2(fresh / TUNING.TOTAL_DAY_TIME, 1) } })
+            table.insert(entries, { data_key = "fresh", params = { utils.round2(fresh / TUNING.TOTAL_DAY_TIME, 2) } })
         end
     elseif time ~= math.huge and time ~= -math.huge then
         if entity:HasTag("critter") then
             -- 宠物饥饿倒计时走服务器文本旁路（无对应协议词条）
-            table.insert(entries, { description = context.modenv.OTHER_TITLES.critterhunger .. tostring(utils.round2(time / TUNING.TOTAL_DAY_TIME, 1)) .. context.modenv.SHOWME_STRINGS.days })
+            table.insert(entries, { description = context.modenv.OTHER_TITLES.critterhunger .. tostring(utils.round2(time / TUNING.TOTAL_DAY_TIME, 2)) .. context.modenv.SHOWME_STRINGS.days })
         else
             -- 可食生物（鱼等）按新鲜度分界换算剩余倒计时阶段
             local countdown_stage
@@ -66,7 +66,7 @@ local Describe = function(self, context)
                     end
                 end
             end
-            table.insert(entries, { data_key = "perish", params = { utils.round2(countdown_time / TUNING.TOTAL_DAY_TIME, 1), countdown_stage or "", utils.round2(time / TUNING.TOTAL_DAY_TIME, 1) } })
+            table.insert(entries, { data_key = "perish", params = { utils.round2(countdown_time / TUNING.TOTAL_DAY_TIME, 2), countdown_stage or "", utils.round2(time / TUNING.TOTAL_DAY_TIME, 2) } })
         end
     end
     if #entries == 0 then

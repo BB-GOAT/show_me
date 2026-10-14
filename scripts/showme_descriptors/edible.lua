@@ -136,7 +136,7 @@ local Describe = function(self, context)
                     end
                     if duration and not _shown_buffs[buff_name] then
                         _shown_buffs[buff_name] = true
-                        duration = round2(duration / TUNING.TOTAL_DAY_TIME, 1)
+                        duration = round2(duration / TUNING.TOTAL_DAY_TIME, 2)
                         table.insert(entries, { data_key = "buff", params = { buff_name, duration, power } })
                     end
                 end

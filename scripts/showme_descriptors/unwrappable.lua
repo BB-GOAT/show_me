@@ -17,7 +17,7 @@ local Describe = function(self, context)
             local count = v.data and v.data.stackable and v.data.stackable.stack
             local params = { v.prefab, count or 0 }
             if delta then
-                params[3] = context.utils.round2(delta / TUNING.TOTAL_DAY_TIME, 1)
+                params[3] = context.utils.round2(delta / TUNING.TOTAL_DAY_TIME, 2)
             end
             table.insert(entries, { data_key = "perish_product", params = params })
         end

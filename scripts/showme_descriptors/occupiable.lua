@@ -15,7 +15,7 @@ local Describe = function(self, context)
     end
     return {
         data_key = "will_die",
-        params = { context.utils.round2(time / TUNING.TOTAL_DAY_TIME, 1) },
+        params = { context.utils.round2(time / TUNING.TOTAL_DAY_TIME, 2) },
     }
 end
 

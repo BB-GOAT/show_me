@@ -33,7 +33,7 @@ local Describe = function(self, context)
     -- 服饰/工具耐久：按燃料类型与物品类型决定是否显示
     if show_fueled ~= false and not entity:HasTag("hide_percentage") then
         local FueledTime = utils.DataTimerFn(self.currentfuel)
-        local FueledDay = tostring(utils.round2(self.currentfuel / TUNING.TOTAL_DAY_TIME, 1))
+        local FueledDay = tostring(utils.round2(self.currentfuel / TUNING.TOTAL_DAY_TIME, 2))
         local FDays = s_str.days
         local s_fval
         if show_fueled == 1 then --根据配置，显示不同的样式
