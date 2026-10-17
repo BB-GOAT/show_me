@@ -48,9 +48,10 @@ local Describe = function(self, context)
     local base_mult = viewer.components.foodmemory ~= nil and viewer.components.foodmemory:GetFoodMultiplier(prefab) or 1
     do -- 进食者的吸收倍率，增加 eater 组件检查
         local eater = viewer.components.eater
-        local hp_mult = (self.healthabsorption or 1) * base_mult * (eater and eater.healthabsorption or 1)
-        local hg_mult = (self.hungerabsorption or 1) * base_mult * (eater and eater.hungerabsorption or 1)
-        local sn_mult = (self.sanityabsorption or 1) * base_mult * (eater and eater.sanityabsorption or 1)
+        -- 永不妥协会把 eater 的血量/精神吸收清零并把原值缓存在玩家实体上（食物收益随时间生效功能），须读缓存值才与实际收益一致
+        local hp_mult = (self.healthabsorption or 1) * base_mult * (viewer.modded_healthabsorption or (eater and eater.healthabsorption) or 1)
+        local hg_mult = (self.hungerabsorption or 1) * base_mult * (viewer.modded_hungerabsorption or (eater and eater.hungerabsorption) or 1)
+        local sn_mult = (self.sanityabsorption or 1) * base_mult * (viewer.modded_sanityabsorption or (eater and eater.sanityabsorption) or 1)
         hp = hp * hp_mult
         hg = hg * hg_mult
         sn = sn * sn_mult

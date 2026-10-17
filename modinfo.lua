@@ -1,6 +1,6 @@
 ---@diagnostic disable: lowercase-global
 local L = locale ~= "zh" and locale ~= "zhr" and locale ~= "zht"
-version = "0.62"
+version = "0.62.1"
 version_compatible = "0.62"
 name = L and "Show Me (New)" or "Show Me (中文)"
 author = "Star, +Serp, 傳說覺悟, 冰冰羊"
@@ -8,16 +8,7 @@ author = "Star, +Serp, 傳說覺悟, 冰冰羊"
 description = "当前版本: "..version.."\n" ..
 [[
 最新更新：
-优化工具可使用次数提示
-农作物状态显示新增选项：带耕作先驱帽/使用沃姆伍德角色才显示详情信息
-修复【预计腐烂】功能实际上是【是否按照食物新鲜度折算恢复的三维】功能的BUG(现在关掉后不会显示多久腐烂了)
-
-新增Beta版代码，在模组设置中开启Beta版本来体验它！
-- 大部分(屎山)代码得到了修改/重构
-- 支持在游戏内输入聊天命令 /showme 来实时修改客户端侧模组设置
-- 支持识别物品火山献祭价值/火山祭坛显示多久后开始爆发
-- 剩余x天精确到2位小数，修复避雷针等充能物品剩余时间显示不准的问题
-如果在Beta模式下遇到任何问题请及时反馈
+兼容永不妥协【食物收益随时间缓慢生效】功能
 
 历史更新日志请前往创意工坊页面查看
 
@@ -40,7 +31,6 @@ api_version = 10
 priority = 0.00666155465 --Priority does not matter.
 
 server_filter_tags = {
-    "showme",
     "showme " .. version,
     "show me 中文",
     "show me new"
