@@ -266,6 +266,18 @@ configuration_options =
         },
         default = 0,
     },
+    {
+        name = "show_itemmimic",
+        live_config = true,
+        label = "显示拟态信息（Beta）",
+        hover = "显示拟态物品的显形倒计时及暂停状态，仅Beta版生效",
+        options =
+        {
+            {description = "关闭", data = false},
+            {description = "开启", data = true, hover = "拟态显形: 0:30"},
+        },
+        default = true,
+    },
     SkipSpace("箱子提示颜色"),
     {
         name = "chestR",
