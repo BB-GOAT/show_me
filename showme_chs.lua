@@ -89,6 +89,8 @@ local MY_STRINGS =    -- 调用 MY_DATA.armor.desc
 }
 
 local SHOWME_STRINGS = {
+    time_for_next_tool = "%s后需要另一个工具",
+    experiment_time = "%s后实验完成",
     loyal = "臣服", --忠诚度
     of = "属于 ", -- X of Y (reserved)
     units_1 = "1 单位",

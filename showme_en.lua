@@ -89,6 +89,8 @@ local MY_STRINGS =    -- 调用 MY_DATA.armor.desc
 }
 
 local SHOWME_STRINGS = {
+    time_for_next_tool = "Another tool needed in %s",
+    experiment_time = "Experiment completes in %s",
     loyal = "forever", --for very loyal pigman with loyalty over 9000
     of = " of ", -- X of Y (reserved)
     units_1 = "1 unit of ",

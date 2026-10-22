@@ -222,6 +222,7 @@ local PREFAB_DESCRIPTOR_FILES = {
     "showme_prefab_descriptors/volcano_altar",
 }
 local FEATURE_DESCRIPTOR_FILES = {
+    "showme_feature_descriptors/moonstorm_static",
     "showme_feature_descriptors/pond_fish",
     "showme_feature_descriptors/fridge",
     "showme_feature_descriptors/slingshot_ammo",
