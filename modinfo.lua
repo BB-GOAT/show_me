@@ -63,15 +63,15 @@ local color_options = {
 configuration_options =
 {
     {
-        name = "use_beta",
+        name = "use_beta2",
         label = "是否使用Beta版本",
         hover = "",
         options =
         {
-            {description = "否", data = false, hover = "否"},
+            {description = "否", data = false, hover = "遇到了问题？请前往创意工坊反馈；若无法发送评论请换个加速器"},
             {description = "是", data = true, hover = "感谢参与测试~有BUG请及时反馈"},
         },
-        default = false,
+        default = true,
     },
     SkipSpace(""),
     {

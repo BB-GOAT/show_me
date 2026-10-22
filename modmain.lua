@@ -29,7 +29,7 @@
 
 -- 临时代码
 -- 是否使用Beta版
-if GetModConfigData("use_beta") then
+if GetModConfigData("use_beta2") then
     modimport("modmain2.lua")
     return
 end
