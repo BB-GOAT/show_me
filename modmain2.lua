@@ -221,6 +221,7 @@ local PREFAB_DESCRIPTOR_FILES = {
     "showme_prefab_descriptors/shadow_battleaxe",
     "showme_prefab_descriptors/volcano_altar",
     "showme_prefab_descriptors/junk_pile_big",
+    "showme_prefab_descriptors/king_cane",
 }
 local FEATURE_DESCRIPTOR_FILES = {
     "showme_feature_descriptors/moonstorm_static",

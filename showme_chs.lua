@@ -89,6 +89,15 @@ local MY_STRINGS =    -- 调用 MY_DATA.armor.desc
 }
 
 local SHOWME_STRINGS = {
+    king_cane = {
+        corruption = "腐化: %s/%s",
+        decay = "腐化衰减: %s ( %s )",
+        gem = "宝石: %s", no_gem = "宝石: 未镶嵌",
+        gem_effects = {
+            redgem = "火焰攻击", bluegem = "冰冻攻击", purplegem = "传送目标",
+            orangegem = "瞬移", yellowgem = "召唤矮星", greengem = "分解目标",
+        },
+    },
     time_for_next_tool = "%s后需要另一个工具",
     experiment_time = "%s后实验完成",
     loyal = "臣服", --忠诚度

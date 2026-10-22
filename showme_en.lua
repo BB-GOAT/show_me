@@ -89,6 +89,15 @@ local MY_STRINGS =    -- 调用 MY_DATA.armor.desc
 }
 
 local SHOWME_STRINGS = {
+    king_cane = {
+        corruption = "Corruption: %s/%s",
+        decay = "Corruption decay: %s ( %s )",
+        gem = "Gem: %s", no_gem = "Gem: None",
+        gem_effects = {
+            redgem = "Fire attack", bluegem = "Freeze attack", purplegem = "Teleport target",
+            orangegem = "Blink", yellowgem = "Summon dwarf star", greengem = "Deconstruct target",
+        },
+    },
     time_for_next_tool = "Another tool needed in %s",
     experiment_time = "Experiment completes in %s",
     loyal = "forever", --for very loyal pigman with loyalty over 9000

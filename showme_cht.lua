@@ -89,6 +89,15 @@ local MY_STRINGS =
 }
 
 local SHOWME_STRINGS = {
+    king_cane = {
+        corruption = "腐化: %s/%s",
+        decay = "腐化衰減: %s ( %s )",
+        gem = "寶石: %s", no_gem = "寶石: 未鑲嵌",
+        gem_effects = {
+            redgem = "火焰攻擊", bluegem = "冰凍攻擊", purplegem = "傳送目標",
+            orangegem = "瞬移", yellowgem = "召喚矮星", greengem = "分解目標",
+        },
+    },
     time_for_next_tool = "%s後需要另一個工具",
     experiment_time = "%s後實驗完成",
     loyal = "臣服", --for very loyal pigman with loyalty over 9000

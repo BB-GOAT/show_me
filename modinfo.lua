@@ -1,15 +1,22 @@
 ---@diagnostic disable: lowercase-global
 local L = locale ~= "zh" and locale ~= "zhr" and locale ~= "zht"
-version = "0.62.1"
-version_compatible = "0.62"
+version = "0.63"
+version_compatible = "0.63"
 name = L and "Show Me (New)" or "Show Me (中文)"
 author = "Star, +Serp, 傳說覺悟, 冰冰羊"
 -- forumthread = ""
 description = "当前版本: "..version.."\n" ..
 [[
 最新更新：
-兼容永不妥协【食物收益随时间缓慢生效】功能
+- 现在默认开启Beta版Show Me
+- 支持显示拟态物品信息
+- 支持显示约束静电的下一次工具需求与实验完成倒计时
+- 支持显示摇摇欲坠的垃圾堆 栅栏/机械残骸 刷新倒计时
+- 支持显示国王权杖信息
 
+如果遇到问题请及时留言反馈
+并且可以在模组设置中关闭beta版show me以(尝试)解决问题。
+如果没有问题 下个版本会移除旧版代码 彻底使用新版代码。
 历史更新日志请前往创意工坊页面查看
 
 如果不显示血量，是因为与简易血条MOD一起开启了，要显示请在模组设置 → 显示血量 → 是
