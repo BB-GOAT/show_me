@@ -1,4 +1,4 @@
--- junk_pile_big：垃圾堆下一轮补货（机械残骸、缺失的栅栏及科学笔记）
+-- junk_pile_big：垃圾堆：机械残骸、栅栏及科学笔记的补货倒计时
 local Describe = function(context)
     local manager = TheWorld.components.wagpunk_manager
     if not manager or manager.bigjunk ~= context.entity or not manager:IsEnabled() then

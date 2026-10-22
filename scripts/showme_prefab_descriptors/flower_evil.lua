@@ -1,4 +1,4 @@
--- flower_evil：恶魔花的噩梦光环——靠近掉精神，以负回san显示
+-- flower_evil：恶魔花：显示靠近时的精神损失
 local Describe = function(context)
     return { data_key = "sanity", params = { -TUNING.SANITY_TINY, 1 } }
 end

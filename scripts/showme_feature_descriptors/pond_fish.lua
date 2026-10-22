@@ -1,4 +1,4 @@
--- pond_fish：池塘系的剩余鱼数（四种水域共用同一显示）
+-- pond_fish：池塘系的剩余鱼数
 local Describe = function(context)
     local fishable = context.entity.components.fishable
     if fishable and fishable.fishleft then

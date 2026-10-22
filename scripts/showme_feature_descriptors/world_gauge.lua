@@ -1,4 +1,4 @@
--- world_gauge：雨量计与温度计——显示的是世界状态（降雨/湿度/温度），而非物品自身
+-- world_gauge：雨量计与温度计：显示世界降雨速率、潮湿度或温度
 local Describe = function(context)
     local w = TheWorld.state
     if context.entity.prefab == "rainometer" then -- 雨量计

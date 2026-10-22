@@ -1,4 +1,4 @@
--- food_units：食材的填充单位（eg 蔬菜类/肉类 值）
+-- food_units：食材的填充单位
 local ing = require("cooking").ingredients
 
 local Describe = function(context)

@@ -1,4 +1,4 @@
--- abigail_elixir：阿比盖尔的药水效果（按 potion_tunings 的字段特征识别药水种类）
+-- abigail_elixir：阿比盖尔的药水效果
 local Describe = function(context)
     local g_pt = context.entity.potion_tunings
     if not g_pt then

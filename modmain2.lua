@@ -213,47 +213,47 @@ end
 
 -- prefab/feature 描述路由：单 prefab 文件按文件名注册，feature 文件自声明负责的 prefabs/tags
 local PREFAB_DESCRIPTOR_FILES = {
-    "showme_prefab_descriptors/nightmare_timepiece",
-    "showme_prefab_descriptors/moon_fissure",
-    "showme_prefab_descriptors/flower_evil",
-    "showme_prefab_descriptors/cannonball_rock_item",
-    "showme_prefab_descriptors/orchitwigs",
-    "showme_prefab_descriptors/shadow_battleaxe",
-    "showme_prefab_descriptors/volcano_altar",
-    "showme_prefab_descriptors/junk_pile_big",
-    "showme_prefab_descriptors/king_cane",
+    "nightmare_timepiece", -- 铥矿奖章：显示洞穴当前噩梦阶段及预计剩余时间
+    "moon_fissure", -- 天体裂隙：显示对查看者的精神光环效能百分比
+    "flower_evil", -- 恶魔花：显示靠近时的精神损失
+    "cannonball_rock_item", -- 炮弹：显示固定伤害
+    "orchitwigs", -- 兰草穗：显示挥击的群体伤害
+    "shadow_battleaxe", -- 暗影槌：显示等级、升级所需 BOSS 击杀进度及吸血效果
+    "volcano_altar", -- 火山祭坛：显示喷发状态或距离下次喷发的天数
+    "junk_pile_big", -- 垃圾堆：显示机械残骸、栅栏及科学笔记的补货倒计时
+    "king_cane", -- 国王权杖：显示宝石能力、腐化值与恢复时间、技能冷却及精神影响
 }
 local FEATURE_DESCRIPTOR_FILES = {
-    "showme_feature_descriptors/moonstorm_static",
-    "showme_feature_descriptors/pond_fish",
-    "showme_feature_descriptors/fridge",
-    "showme_feature_descriptors/slingshot_ammo",
-    "showme_feature_descriptors/world_gauge",
-    "showme_feature_descriptors/spice",
-    "showme_feature_descriptors/hungerslow",
-    "showme_feature_descriptors/winter_tree",
-    "showme_feature_descriptors/boat_parts",
-    "showme_feature_descriptors/halloween_potion",
-    "showme_feature_descriptors/special_item_notes",
-    "showme_feature_descriptors/rebirth_amulet",
-    "showme_feature_descriptors/charged_days",
-    "showme_feature_descriptors/special_weapon_notes",
-    "showme_feature_descriptors/slingshot_upgrades",
-    "showme_feature_descriptors/wx78_modules",
-    "showme_feature_descriptors/battlesong_notes",
-    "showme_feature_descriptors/abigail_elixir",
-    "showme_feature_descriptors/food_units",
-    "showme_feature_descriptors/season_rocks",
-    "showme_feature_descriptors/weapon_resist",
+    "moonstorm_static", -- 约束静电：显示下一次工具需求及实验完成倒计时
+    "pond_fish", -- 池塘与绿洲湖：显示剩余鱼数
+    "fridge", -- 冰箱类容器：保鲜倍率偏离原版默认值时显示倍率
+    "slingshot_ammo", -- 弹弓弹药：显示普通伤害与位面伤害
+    "world_gauge", -- 雨量计与温度计：显示世界降雨速率、潮湿度或温度
+    "spice", -- 蒜粉、辣椒粉与糖粉：预览食用增益效果
+    "hungerslow", -- 减缓饥饿的装备：显示饥饿消耗降低百分比
+    "winter_tree", -- 冬季盛宴树：显示查看者领取礼物的冷却天数或可领取状态
+    "boat_parts", -- 船及船部件：设置查看者的 120 秒标记，供修理材料显示修理值
+    "halloween_potion", -- 万圣节药水：显示生命、理智药水效果及勇气药水持续时间
+    "special_item_notes", -- 特定物品：显示书籍、装备、弹弓部件及模块等的专属说明词条
+    "rebirth_amulet", -- 重生护符：显示可用于重生的说明
+    "charged_days", -- 带 chargeleft 字段的充能物品：显示剩余可用天数
+    "special_weapon_notes", -- 蝙蝠棒、铥矿棒、铥矿皇冠与盐粉：显示吸血、暗影触手或治疗加成说明
+    "slingshot_upgrades", -- 特殊弹药与弹弓皮筋：显示附加效果、群体伤害、射程及弹速等
+    "wx78_modules", -- WX-78 电路模块：显示属性提升、回复及其他模块效果
+    "battlesong_notes", -- 薇格弗德战歌：显示各类战歌的增益或即时效果
+    "abigail_elixir", -- 阿比盖尔药水：显示回血、攻击、移速或护盾效果及持续时间
+    "food_units", -- 烹饪食材：显示肉度、菜度等食材单位
+    "season_rocks", -- 岩石与金矿：未启用综合状态显示时，显示季节、剩余天数及世界温度
+    "weapon_resist", -- 手持冰杖或催眠吹箭：显示目标的冰冻或睡眠抗性及当前剩余值
 }
 
 local dynamic_prefab_modules = {} -- 动态匹配
 AddSimPostInit(function()
     for _, path in ipairs(PREFAB_DESCRIPTOR_FILES) do
-        prefab_routes[string.match(path, "([^/]+)$")] = require(path)
+        prefab_routes[path] = require("showme_prefab_descriptors/" .. path)
     end
     for _, path in ipairs(FEATURE_DESCRIPTOR_FILES) do
-        local mod = require(path)
+        local mod = require("showme_feature_descriptors/" .. path)
         if mod.MatchPrefab then
             table.insert(dynamic_prefab_modules, mod)
         end

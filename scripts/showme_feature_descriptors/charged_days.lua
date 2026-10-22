@@ -1,6 +1,6 @@
--- charged_days：避雷针/灯等充能物品的剩余可用天数（chargeleft 是实体自由字段，非组件）
+-- charged_days：避雷针/灯等充能物品的剩余可用天数
 local Describe = function(context)
-    local chargeleft = context.entity.chargeleft
+    local chargeleft = context.entity.chargeleft -- chargeleft 是实体自由字段，非组件
     if not chargeleft or chargeleft <= 0 then
         return nil
     end

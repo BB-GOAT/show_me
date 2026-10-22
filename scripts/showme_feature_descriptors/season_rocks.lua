@@ -1,4 +1,4 @@
--- season_rocks：石头的季节与季节剩余天数（未开季节时钟时替代显示）
+-- season_rocks：在石头上显示当前季节与季节剩余天数（玩家未开季节时钟时显示）
 local Describe = function(context)
     local viewer = context.player
     if viewer.has_AlwaysOnStatus then

@@ -1,4 +1,4 @@
--- hungerslow：装备的饥饿减缓显示（熊皮背心/皮弗娄斗篷系/蘑菇帽共用文案，仅 TUNING 键不同）
+-- hungerslow：装备的饥饿减缓显示
 local SLOW_TUNING = {
     beargervest = "ARMORBEARGER_SLOW_HUNGER",
     armorslurper = "ARMORSLURPER_SLOW_HUNGER",

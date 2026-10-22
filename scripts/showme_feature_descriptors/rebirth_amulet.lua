@@ -1,4 +1,4 @@
--- rebirth_amulet：重生护符系的"可重生"说明
+-- rebirth_amulet：重生护符的"可重生"说明
 local Describe = function(context)
     if not context.entity.components.hauntable then
         return nil
@@ -7,6 +7,6 @@ local Describe = function(context)
 end
 
 return {
-    prefabs = { ancient_amulet_red = true, amulet = true },
+    prefabs = { amulet = true },
     Describe = Describe,
 }

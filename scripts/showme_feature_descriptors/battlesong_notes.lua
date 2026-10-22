@@ -1,4 +1,4 @@
--- battlesong_notes：女武神战歌的效果说明（按实体 songdata 表对象分派）
+-- battlesong_notes：薇格弗德各类战歌的增益或即时效果
 local song_tunings = require("prefabs/battlesongdefs").song_defs
 
 local SONG_HANDLERS = {}

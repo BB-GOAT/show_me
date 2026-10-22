@@ -1,4 +1,4 @@
--- boat_parts：查看船部件时在查看者身上打 120 秒节流标记（repairer.lua 据此显示"修理: X"）
+-- boat_parts：查看船部件时在查看者身上打 120 秒标记 供修理材料显示修理值
 local function AddBoatStatus(viewer)
     if viewer.boat_status_task then
         viewer.boat_status_task:Cancel()

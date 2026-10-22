@@ -1,4 +1,4 @@
--- slingshot_upgrades：弹弓升级件（特殊弹药变体与皮筋）的专属说明
+-- slingshot_upgrades：弹弓升级件（特殊弹药变体与皮筋）
 local Describe = function(context)
     local o_t = context.modenv.OTHER_TITLES
     local D = {}

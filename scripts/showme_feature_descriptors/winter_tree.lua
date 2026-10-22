@@ -1,4 +1,4 @@
--- winter_tree：冬季盛宴树的礼物冷却（按查看者的 wintertreegiftable 组件计算，与树自身无关）
+-- winter_tree：冬季盛宴树的礼物冷却
 local Describe = function(context)
     local giftable = context.player.components.wintertreegiftable
     if not (giftable and giftable.GetDaysSinceLastGift) then
