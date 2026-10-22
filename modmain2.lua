@@ -221,7 +221,7 @@ local PREFAB_DESCRIPTOR_FILES = {
     "shadow_battleaxe", -- 暗影槌：显示等级、升级所需 BOSS 击杀进度及吸血效果
     "volcano_altar", -- 火山祭坛：显示喷发状态或距离下次喷发的天数
     "junk_pile_big", -- 垃圾堆：显示机械残骸、栅栏及科学笔记的补货倒计时
-    "king_cane", -- 国王权杖：显示宝石能力、腐化值与恢复时间、技能冷却及精神影响
+    "king_cane", -- 国王魔杖：显示宝石能力、腐化值与恢复时间、技能冷却及精神影响
 }
 local FEATURE_DESCRIPTOR_FILES = {
     "moonstorm_static", -- 约束静电：显示下一次工具需求及实验完成倒计时

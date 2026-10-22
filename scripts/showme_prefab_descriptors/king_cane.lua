@@ -1,4 +1,4 @@
--- king_cane：国王权杖信息（宝石能力、腐化与恢复时间、技能冷却、基础精神影响）
+-- king_cane：国王魔杖信息（宝石能力、腐化与恢复时间、技能冷却、基础精神影响）
 local Describe = function(context)
     local inst = context.entity
     local corruption = inst.components.corruption
