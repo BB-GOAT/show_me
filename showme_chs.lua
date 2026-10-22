@@ -125,6 +125,7 @@ local FOOD_TAGS = {
 
 --给显示预计:xxx定义名称，例如显示【预计:wall_cd 00:30】，定义名称后显示：【沙墙冷却 00:30】
 local INTERNAL_TIMERS = {
+    showme_junkyard_restock = "栅栏/机械残骸刷新尝试",
     showme_itemmimic_reveal = "拟态显形",
     --蚁狮Antlion
     wall_cd = "沙墙冷却", rage = '距离发怒', nextrepair = '进行恢复', eat_cd = "修复",
