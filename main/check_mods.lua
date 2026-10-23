@@ -13,7 +13,6 @@ if TheNet and TheNet:GetIsServer() then
         end
     end
 
-    local is_DisplayFoodValues = active_mods_by_name["Display food values"]
     local is_HealthInfo --检查服务器血量显示模组
     for name in pairs(active_mods_by_name) do
         if name:find("简易血条",1,true) or name:find("Health Bar",1,true) then
@@ -24,6 +23,5 @@ if TheNet and TheNet:GetIsServer() then
 
     return {
         is_HealthInfo = is_HealthInfo,
-        is_DisplayFoodValues = is_DisplayFoodValues,
     }
 end

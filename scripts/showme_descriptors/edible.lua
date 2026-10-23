@@ -11,11 +11,6 @@ local Describe = function(self, context)
         return nil
     end
 
-    -- 服务器已检测到 "Display food values" 模组时不再重复显示（服务器侧检测结果，无客户端配置可读）
-    if context.config.server.is_DisplayFoodValues then
-        return nil
-    end
-
     local viewer = context.player
     local entity = context.entity
     local utils = context.utils

@@ -169,7 +169,6 @@ if SERVER_SIDE then
     -- 识别启用的其它模组
     local server_mods_data = Import(MODROOT .. "main/check_mods.lua", env)
     server_config.is_HealthInfo = server_mods_data.is_HealthInfo -- 简易血条
-    server_config.is_DisplayFoodValues = server_mods_data.is_DisplayFoodValues -- Display food values
 end
 
 Import(MODROOT .. "main/hint_system.lua", env) -- 信息显示
