@@ -148,15 +148,15 @@ local function TrackEntity(inst)
         entities[inst] = true
         UpdateEntity(inst)
     end
-    local function Untrack() -- 休眠或移除时停止追踪，并恢复原色
+    local function Sleep()
         entities[inst] = nil
         SetEntityHighlight(inst, false)
     end
     -- 主机可能保留已休眠的实体；客机直接登记
     entities[inst] = (not SERVER_SIDE or inst.entity:IsAwake()) and true or nil
     inst:ListenForEvent("entitywake", Wake)
-    inst:ListenForEvent("entitysleep", Untrack)
-    inst:ListenForEvent("onremove", Untrack)
+    inst:ListenForEvent("entitysleep", Sleep)
+    inst:ListenForEvent("onremove", function() entities[inst] = nil end)
     return UpdateEntity
 end
 
@@ -212,7 +212,7 @@ end
 
 -- 原版 takeitem 没有 dirty 事件，使用net_event替代持续查询
 AddPrefabPostInit("gelblob_storage", function(storage) -- storage：恶液储存箱实体
-    local notice = _G.net_event(storage.GUID, "ShowMe_gelblob_food_changed")
+    storage._showme_food_changed = _G.net_event(storage.GUID, "ShowMe_gelblob_food_changed") -- 料理变化通知
     if CLIENT_SIDE then
         local previous_food -- 上次展示的料理，用于料理更换后刷新旧实体
         local function refresh() -- 重新判断旧料理和当前展示料理的高亮
@@ -234,7 +234,7 @@ AddPrefabPostInit("gelblob_storage", function(storage) -- storage：恶液储存
         local holder = storage.components.inventoryitemholder -- 服务器端持物组件，恶液储存箱没有 container
         local function Notify(previous_food, ...) -- previous_food：原料理
             if storage.takeitem:value() ~= previous_food then
-                notice:push() -- 部分取走堆叠时实体未变，不发送通知
+                storage._showme_food_changed:push() -- 部分取走堆叠时实体未变，不发送通知
             end
             return ...
         end

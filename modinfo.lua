@@ -1,7 +1,7 @@
 ---@diagnostic disable: lowercase-global
 local L = locale ~= "zh" and locale ~= "zhr" and locale ~= "zht"
-version = "0.64"
-version_compatible = "0.64"
+version = "0.64.1"
+version_compatible = "0.64.1"
 name = L and "Show Me (New)" or "Show Me (中文)"
 author = "冰冰羊, 傳說覺悟, Star, +Serp"
 
