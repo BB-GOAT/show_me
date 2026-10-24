@@ -1,11 +1,11 @@
 ---@diagnostic disable: lowercase-global
 local L = locale ~= "zh" and locale ~= "zhr" and locale ~= "zht"
-version = "0.63"
-version_compatible = "0.63"
+version = "0.64"
+version_compatible = "0.64"
 name = L and "Show Me (New)" or "Show Me (中文)"
-author = "Star, +Serp, 傳說覺悟, 冰冰羊"
--- forumthread = ""
-description = "当前版本: "..version.."\n" ..
+author = "冰冰羊, 傳說覺悟, Star, +Serp"
+
+description = "当前版本: " .. version .. "\n" ..
 [[
 最新更新：
 - 更新高亮物品功能，支持高亮地面/龙鳞火炉/恶液储存箱内的物品
@@ -26,14 +26,14 @@ description = "当前版本: "..version.."\n" ..
 icon_atlas = "images/modicon.xml"
 icon = "modicon.tex"
 
-dst_compatible = true -- 兼容联机版
-forge_compatible = true -- 兼容熔炉
-gorge_compatible = true -- 兼容暴食
+dst_compatible = true          -- 兼容联机版
+forge_compatible = true        -- 兼容熔炉
+gorge_compatible = true        -- 兼容暴食
 dont_starve_compatible = false -- 不兼容单机版
 
-all_clients_require_mod=true
-client_only_mod=false
-server_only_mod=false
+all_clients_require_mod = true
+client_only_mod = false
+server_only_mod = false
 
 api_version = 10
 priority = 0.00666155465 --Priority does not matter.
@@ -48,23 +48,24 @@ server_filter_tags = {
 ---@param client_config boolean|nil 是否仅显示在客户端设置页面上
 ---@return table
 local function SkipSpace(label, client_config)
-    return { name = "",label = label, hover = "", options = { { description = "", data = false }, }, default = false, client = client_config}
+    return { name = "", label = label, hover = "", options = { { description = "", data = false }, }, default = false, client =
+    client_config }
 end
 
 
 local color_options = {
-    {description = "默认", data = -1,},
-    {description = "0%", data = 0,},
-    {description = "10%", data = 0.1,},
-    {description = "20%", data = 0.2,},
-    {description = "30%", data = 0.3,},
-    {description = "40%", data = 0.4,},
-    {description = "50%", data = 0.5,},
-    {description = "60%", data = 0.6,},
-    {description = "70%", data = 0.7,},
-    {description = "80%", data = 0.8,},
-    {description = "90%", data = 0.9,},
-    {description = "100%", data = 1,},
+    { description = "默认", data = -1, },
+    { description = "0%", data = 0, },
+    { description = "10%", data = 0.1, },
+    { description = "20%", data = 0.2, },
+    { description = "30%", data = 0.3, },
+    { description = "40%", data = 0.4, },
+    { description = "50%", data = 0.5, },
+    { description = "60%", data = 0.6, },
+    { description = "70%", data = 0.7, },
+    { description = "80%", data = 0.8, },
+    { description = "90%", data = 0.9, },
+    { description = "100%", data = 1, },
 }
 
 -- live_config = true：支持游戏内实时修改（/showme 面板只显示带此标记的配置项）
@@ -76,8 +77,8 @@ configuration_options =
         hover = "",
         options =
         {
-            {description = "否", data = false, hover = "遇到了问题？请前往创意工坊反馈；若无法发送评论请换个加速器"},
-            {description = "是", data = true, hover = "感谢参与测试~有BUG请及时反馈"},
+            { description = "否", data = false, hover = "遇到了问题？请前往创意工坊反馈；若无法发送评论请换个加速器" },
+            { description = "是", data = true, hover = "感谢参与测试~有BUG请及时反馈" },
         },
         default = true,
     },
@@ -89,10 +90,10 @@ configuration_options =
         --hover = "",
         options =
         {
-            {description = "自动", data = "auto", hover = "检测语言包"},
-            {description = "简体中文", data = "chs", hover = "简体中文"},
-            {description = "繁体中文", data = "cht", hover = "繁体中文"},
-            {description = "English", data = "en", hover = "English"},
+            { description = "自动", data = "auto", hover = "检测语言包" },
+            { description = "简体中文", data = "chs", hover = "简体中文" },
+            { description = "繁体中文", data = "cht", hover = "繁体中文" },
+            { description = "English", data = "en", hover = "English" },
         },
         default = "auto",
     },
@@ -102,9 +103,9 @@ configuration_options =
         label = "食物属性样式",
         options =
         {
-            {description = "默认", data = 0, hover = "默认是 \"详细\""},
-            {description = "详细", data = 1, hover = "饥饿: +12.5 / 精神: -10 / 生命: +3"},
-            {description = "简洁", data = 2, hover = "+12.5 / -10 / +3"},
+            { description = "默认", data = 0, hover = "默认是 \"详细\"" },
+            { description = "详细", data = 1, hover = "饥饿: +12.5 / 精神: -10 / 生命: +3" },
+            { description = "简洁", data = 2, hover = "+12.5 / -10 / +3" },
         },
         default = 0,
     },
@@ -114,9 +115,9 @@ configuration_options =
         label = "食物属性格式",
         options =
         {
-            {description = "默认", data = 0, hover = "默认是 \"标准\""},
-            {description = "标准", data = 1, hover = "饥饿 / 精神 / 生命"},
-            {description = "自定", data = 2, hover = "生命 / 饥饿 / 精神"},
+            { description = "默认", data = 0, hover = "默认是 \"标准\"" },
+            { description = "标准", data = 1, hover = "饥饿 / 精神 / 生命" },
+            { description = "自定", data = 2, hover = "生命 / 饥饿 / 精神" },
         },
         default = 0,
     },
@@ -127,9 +128,9 @@ configuration_options =
         hover = "预测食物腐烂时间！",
         options =
         {
-            {description = "默认", data = -1, hover = "是"},
-            {description = "否", data = 0, hover = "否"},
-            {description = "是", data = 1, hover = "是"},
+            { description = "默认", data = -1, hover = "是" },
+            { description = "否", data = 0, hover = "否" },
+            { description = "是", data = 1, hover = "是" },
         },
         default = -1,
     },
@@ -140,9 +141,9 @@ configuration_options =
         hover = "不新鲜于: 0.1 天( 0.3 天)",
         options =
         {
-            {description = "总天数", data = 0, hover = "预计腐烂: 0.3 天"},
-            {description = "阶段", data = 1, hover = "不新鲜于：0.1 天"},
-            {description = "两者", data = 2, hover = "不新鲜于: 0.1 天( 0.3 天)"},
+            { description = "总天数", data = 0, hover = "预计腐烂: 0.3 天" },
+            { description = "阶段", data = 1, hover = "不新鲜于：0.1 天" },
+            { description = "两者", data = 2, hover = "不新鲜于: 0.1 天( 0.3 天)" },
         },
         default = 2,
     },
@@ -153,10 +154,10 @@ configuration_options =
         hover = "显示食物单位，比如肉类、蔬菜类、水果类！",
         options =
         {
-            {description = "默认", data = -1, hover = "是"},
-            {description = "否", data = 0, hover = "否"},
-            {description = "是", data = 1, hover = "是"},
-            {description = "禁止", data = 2, hover = "服务端将不会发送属性信息给客户端"},
+            { description = "默认", data = -1, hover = "是" },
+            { description = "否", data = 0, hover = "否" },
+            { description = "是", data = 1, hover = "是" },
+            { description = "禁止", data = 2, hover = "服务端将不会发送属性信息给客户端" },
         },
         default = -1,
     },
@@ -167,10 +168,10 @@ configuration_options =
         hover = "",
         options =
         {
-            {description = "默认", data = -1, hover = "是"},
-            {description = "否", data = 0, hover = "否"},
-            {description = "是", data = 1, hover = "是"},
-            {description = "禁止", data = 2, hover = "服务端将不会发送属性信息给客户端"},
+            { description = "默认", data = -1, hover = "是" },
+            { description = "否", data = 0, hover = "否" },
+            { description = "是", data = 1, hover = "是" },
+            { description = "禁止", data = 2, hover = "服务端将不会发送属性信息给客户端" },
         },
         default = -1,
     },
@@ -181,9 +182,9 @@ configuration_options =
         hover = "",
         options =
         {
-            {description = "关闭", data = false, hover = ""},
-            {description = "详细", data = 1, hover = "催长剂: 8 / 堆肥: 8 / 粪肥: 32"},
-            {description = "简洁", data = 2, hover = "肥料: 8 / 8 / 32"},
+            { description = "关闭", data = false, hover = "" },
+            { description = "详细", data = 1, hover = "催长剂: 8 / 堆肥: 8 / 粪肥: 32" },
+            { description = "简洁", data = 2, hover = "肥料: 8 / 8 / 32" },
         },
         default = 1,
     },
@@ -194,10 +195,10 @@ configuration_options =
         --hover = "",
         options =
         {
-            {description = "自动", data = -1, hover = "取决于安装的模组"},
-            {description = "否", data = 0, hover = "鼠标指针查看生物将不显示血量"},
-            {description = "是", data = 1, hover = "显示鼠标指针下的生物血量"},
-            {description = "禁止", data = 2, hover = "服务端将不会发送属性信息给客户端"},
+            { description = "自动", data = -1, hover = "取决于安装的模组" },
+            { description = "否", data = 0, hover = "鼠标指针查看生物将不显示血量" },
+            { description = "是", data = 1, hover = "显示鼠标指针下的生物血量" },
+            { description = "禁止", data = 2, hover = "服务端将不会发送属性信息给客户端" },
         },
         default = 1,
     },
@@ -208,10 +209,10 @@ configuration_options =
         hover = "",
         options =
         {
-            {description = "关闭", data = false, hover = "不显示"},
-            {description = "时间", data = 1, hover = "耐久: 1:19"},
-            {description = "天数", data = 2, hover = "耐久: 6.8 天"},
-            {description = "两者", data = 3, hover = "耐久: 3:59 ( 0.5 天 )"},
+            { description = "关闭", data = false, hover = "不显示" },
+            { description = "时间", data = 1, hover = "耐久: 1:19" },
+            { description = "天数", data = 2, hover = "耐久: 6.8 天" },
+            { description = "两者", data = 3, hover = "耐久: 3:59 ( 0.5 天 )" },
         },
         default = 3,
     },
@@ -222,8 +223,8 @@ configuration_options =
         hover = "显示物品的燃料值，例如草、木材、腐烂食物等",
         options =
         {
-            {description = "关闭", data = false, hover = "关闭后火堆的燃烧效率也将隐藏"},
-            {description = "开启", data = true, hover = "燃料值: 0:30"},
+            { description = "关闭", data = false, hover = "关闭后火堆的燃烧效率也将隐藏" },
+            { description = "开启", data = true, hover = "燃料值: 0:30" },
         },
         default = true,
     },
@@ -234,8 +235,8 @@ configuration_options =
         hover = "在显示工具、武器攻击附加显示位面抵抗造成的伤害",
         options =
         {
-            {description = "关闭", data = false, hover = "关闭后生物上显示“拥有位面抵抗”也将隐藏"},
-            {description = "开启", data = true, hover = "攻击力: 68 ( 位抗: 41.3 )"},
+            { description = "关闭", data = false, hover = "关闭后生物上显示“拥有位面抵抗”也将隐藏" },
+            { description = "开启", data = true, hover = "攻击力: 68 ( 位抗: 41.3 )" },
         },
         default = true,
     },
@@ -245,9 +246,9 @@ configuration_options =
         label = "农作物状态显示",
         hover = "例如缺肥料、水分、家族、有杂草等，成长计时不受影响",
         options = {
-            {description = "开启", data = 2},
-            {description = "耕作先驱帽/沃姆伍德", data = 1, hover = "需装备耕作先驱帽或园艺帽才能查看，沃姆伍德可直接查看"},
-            {description = "关闭", data = 0},
+            { description = "开启", data = 2 },
+            { description = "耕作先驱帽/沃姆伍德", data = 1, hover = "需装备耕作先驱帽或园艺帽才能查看，沃姆伍德可直接查看" },
+            { description = "关闭", data = 0 },
         },
         default = 2,
     },
@@ -257,8 +258,8 @@ configuration_options =
         label = "显示捆绑包内容",
         options =
         {
-            {description = "是", data = 1},
-            {description = "否", data = 0},
+            { description = "是", data = 1 },
+            { description = "否", data = 0 },
         },
         default = 1,
     },
@@ -269,8 +270,8 @@ configuration_options =
         hover = "如果打开，Show me将不显示与item info相同的信息",
         options =
         {
-            {description = "关闭", data = 0, hover = "没开item info模组默认关闭就好"},
-            {description = "开启", data = 1, hover = "** Show me将不显示与item info相同的信息 **"},
+            { description = "关闭", data = 0, hover = "没开item info模组默认关闭就好" },
+            { description = "开启", data = 1, hover = "** Show me将不显示与item info相同的信息 **" },
         },
         default = 0,
     },
@@ -281,8 +282,8 @@ configuration_options =
         hover = "显示拟态物品的显形倒计时及暂停状态，仅Beta版生效",
         options =
         {
-            {description = "关闭", data = false},
-            {description = "开启", data = true, hover = "拟态显形: 0:30"},
+            { description = "关闭", data = false },
+            { description = "开启", data = true, hover = "拟态显形: 0:30" },
         },
         default = true,
     },
@@ -293,9 +294,9 @@ configuration_options =
         hover = "显示赃物袋中已生成的重要战利品，仅Beta版生效。默认关闭；服务器设为禁止时，所有客户端均无法查看",
         options =
         {
-            {description = "否", data = 0},
-            {description = "是", data = 1},
-            {description = "禁止", data = 2, hover = "服务端将不会发送战利品信息给客户端"},
+            { description = "否", data = 0 },
+            { description = "是", data = 1 },
+            { description = "禁止", data = 2, hover = "服务端将不会发送战利品信息给客户端" },
         },
         default = 0,
     },
@@ -331,8 +332,8 @@ configuration_options =
         hover = "显示避雷针、高树的覆盖范围",
         options =
         {
-            {description = "关闭", data = false, hover = ""},
-            {description = "开启", data = true, hover = "使用有问题就关掉吧"},
+            { description = "关闭", data = false, hover = "" },
+            { description = "开启", data = true, hover = "使用有问题就关掉吧" },
         },
         default = true,
     },
@@ -341,8 +342,8 @@ configuration_options =
         label = "淘气值显示",
         hover = "显示玩家的淘气值\n如果开启了【综合状态显示】模组，淘气值将显示在它的小部件里，否则在人物头顶说出淘气值",
         options = {
-            {description = "关闭", data = false},
-            {description = "开启", data = true, hover = "使用有问题就关掉吧"},
+            { description = "关闭", data = false },
+            { description = "开启", data = true, hover = "使用有问题就关掉吧" },
         },
         default = true,
     },
