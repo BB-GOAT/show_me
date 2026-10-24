@@ -29,8 +29,8 @@ return function(client_config, player_config, deps)
             end
         end
 
-        -- 箱子高亮颜色是纯客户端效果，重绘使已高亮的箱子应用新颜色
-        -- 颜色表与重绘函数来自 main/chest_highlight.lua 的 return 导出，由 modmain2 通过 deps 注入
+        -- 高亮颜色是纯客户端效果，重绘容器、世界物品和库存图标以应用新颜色
+        -- 颜色表与重绘函数来自 main/item_highlight.lua；依赖字段名保留原名以兼容现有接口
         local chest_color = deps.ChestColor
         if chest_color ~= nil then
             chest_color.r = deps.ResolveChannel(keyed_settings.chestR, "chestR", 0.3)

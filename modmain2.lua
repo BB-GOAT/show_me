@@ -138,16 +138,16 @@ renderers_data.SetConfigTable(client_config)
 local DataTimerFn = renderers_data.DataTimerFn
 local GetPrefabFancyName = renderers_data.GetPrefabFancyName
 
--- 箱子高亮
-local chest_data = Import(MODROOT .. "main/chest_highlight.lua", env)
+-- 物品高亮
+local highlight_data = Import(MODROOT .. "main/item_highlight.lua", env)
 
 -- 游戏内实时修改配置
 local SetupChangeModSettings = Import(MODROOT .. "main/change_modsettings.lua", env)
 SetupChangeModSettings(client_config, player_config, {
     SetupLanguage = language_data.SetupLanguage,
-    ChestColor = chest_data.color,
-    RefreshChests = chest_data.Refresh,
-    ResolveChannel = chest_data.ResolveChannel,
+    ChestColor = highlight_data.color,
+    RefreshChests = highlight_data.Refresh,
+    ResolveChannel = highlight_data.ResolveChannel,
 })
 
 Import(MODROOT .. "main/temperature_client.lua", env) -- 温度相关
