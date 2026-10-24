@@ -251,12 +251,12 @@ local INTERNAL_TIMERS = {
     --Water Tree Community
     lookforfish = "Patrol", eat_cooldown = "Eat", investigating = "Inspecting", enriched_cooldown = "Enriched", shed = "Shed", facetarget = "Stare", flotsamgenerator_sink = "Sink", cocoon_regrow_check = "Cocoon Regen", regrow_oceantreenut = "Fig Seed Regen",
     --Moon Dock
-    startportalevent = "Event Start", fireportalevent = "Event Ongoing", spawnportalloot_tick = "Spawn Item", right_of_passage = "Passport Active", hit = "Hit",
+    startportalevent = "Event Start", fireportalevent = "Event Ongoing", spawnportalloot_tick = "Spawn Item", right_of_passage = "Passport Active", hit = "Hit", refreshwares = "Refresh Wares",
     --Terra
     summon_delay = "Summoning", warning = "Warning", spawneyes_cd = "Spawn Eye", leash_cd = "Leash", charge_cd = "Charge",
     --Shadow and Moon Factions
     targetswitched = "Target Switch", attack_cooldown = "Attack", idletimer = "Idle Time", try_crystals = "Try Crystals", trynextstage = "Next Stage", seedmiasma = "Merge Shadow", close = "Rift Close", jump_cooldown = "Jump Attack", chase_tick = "Split", finish_spawn = "Finish Spawn", start_explosion = "Explosion", spawn_delay = "Spawn Delay", start_ball_growing = "Expand", stalk_cd = "Stalk", roar_cd = "Roar",
-	push_sleep_anim = "Push Sleep", expiretime = "Expire Time", quickjump_cd = "Quickjump", stunned = "Stunned", active_time = "Active", supernova_cd = "Supernova", erode_timer = "Erode",
+	push_sleep_anim = "Push Sleep", expiretime = "Expire Time", quickjump_cd = "Quickjump", stunned = "Stunned", active_time = "Active", supernova_cd = "Supernova", erode_timer = "Erode", teleportcd = "Teleport", opticblastcd = "Optic Blast", portalcd = "Portal",
     --Myth
     growup = "Grow", light = "Light Left", peach = "Peach Left", blackbear = "Black Wind Respawn", despawn = "Disappear", flyaway = "Fly Away", goaway = "Leave", cd = "Cooldown", myth_nian_timer = "Nian Beast", nian_leave = "Nian Occupies", bomb_cd = "Corruption Cloud", bombboom = "Corruption Cloud Explode", nian_noclose = "Always Open", nian_killed = "Discount", timeover = "Contract", yj_spear_elec = "Charge",
     TreeDance = "Tree Dance",
