@@ -11,22 +11,19 @@ local Describe = function(self, context)
     local entity = context.entity
     local utils = context.utils
     local c = entity.components
+    local entries = {}
 
     if entity.damage and type(entity.damage) == "number" and entity.damage > 0 then
-        local entries = { { data_key = "dmg", params = { utils.round2(entity.damage, 1) } } }
+        table.insert(entries, { data_key = "dmg", params = { utils.round2(entity.damage, 1) } })
         if entity.basedamage and type(entity.basedamage) == "number" and entity.basedamage > 0 then
             table.insert(entries, { data_key = "basedmg", params = { utils.round2(entity.basedamage, 1) } })
         end
-        return entries
-    end
-
-    -- show_planar_resist：客户端显式关闭优先，客户端为默认档(true)时跟随服务器设置
-    local show_planar_resist = context.config.client.show_planar_resist
-    if show_planar_resist then
-        show_planar_resist = context.config.server.show_planar_resist
-    end
-
-    if c.weapon ~= nil and c.weapon.damage and type(c.weapon.damage) == "number" and c.weapon.damage > 0 then
+    elseif c.weapon ~= nil and c.weapon.damage and type(c.weapon.damage) == "number" and c.weapon.damage > 0 then
+        -- show_planar_resist：客户端显式关闭优先，客户端为默认档(true)时跟随服务器设置
+        local show_planar_resist = context.config.client.show_planar_resist
+        if show_planar_resist then
+            show_planar_resist = context.config.server.show_planar_resist
+        end
         local r = c.weapon.damage
         local tm_buff = utils.GetDebuffTime(context.player, "buff_attack")
         if tm_buff then
@@ -42,9 +39,7 @@ local Describe = function(self, context)
             pr_val = " ( " .. context.modenv.OTHER_TITLES.resist .. prval .. " )"
         end
 
-        local entries = {
-            { data_key = "dmg", params = { utils.round2(r, 1) .. pr_val, tm_buff and utils.round2(tm_buff) } },
-        }
+        table.insert(entries, { data_key = "dmg", params = { utils.round2(r, 1) .. pr_val, tm_buff and utils.round2(tm_buff) } })
 
         -- 武器/工具的位面伤害，不吃增益
         if c.planardamage ~= nil and c.planardamage.basedamage and type(c.planardamage.basedamage) == "number" and c.planardamage.basedamage > 0 then
@@ -62,15 +57,15 @@ local Describe = function(self, context)
                 table.insert(entries, { description = "Type: " .. p })
             end
         end
-
-        -- 武器攻击范围（原版为独立显示块，随伤害一并迁入）
-        if c.weapon.attackrange and type(c.weapon.attackrange) == "number" and c.weapon.attackrange > 0.3 then
-            table.insert(entries, { data_key = "range", params = { utils.round2(c.weapon.attackrange, 1) } })
-        end
-        return entries
     end
 
-    return nil
+    -- 射程与伤害独立：弹弓的 weapon.damage 为 0，伤害由弹药投射物提供
+    if (c.health == nil or entity.grow_stage)
+        and self.damage and type(self.attackrange) == "number" and self.attackrange > 0.3
+    then
+        table.insert(entries, { data_key = "range", params = { utils.round2(self.attackrange, 1) } })
+    end
+    return #entries > 0 and entries or nil
 end
 
 return {

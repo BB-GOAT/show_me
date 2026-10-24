@@ -369,10 +369,9 @@ function GetTestString(item, viewer)
         CollectEntries(pdesc.Describe(context))
     end
 
-    -- 按Tag获取信息：反向遍历实体自身 tags 查路由表，避免全表逐键 HasTag（引擎内线性扫描物品标签）
-    for _, tag_name in ipairs(item.tags or {}) do
-        local tdesc = tag_routes[tag_name]
-        if tdesc and tdesc.Describe then
+    -- 按Tag获取信息
+    for tag_name, tdesc in pairs(tag_routes) do
+        if item:HasTag(tag_name) and tdesc.Describe then
             CollectEntries(tdesc.Describe(context))
         end
     end
