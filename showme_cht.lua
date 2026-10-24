@@ -86,6 +86,7 @@ local MY_STRINGS =
 	true_number = "實際數量: ",
     winter_gift_ready = "可以開啟禮物",
     winter_gift_wait = "還差 %s 天可以開啟禮物",
+    klaus_sack_loot = "重要戰利品:",
 }
 
 local SHOWME_STRINGS = {

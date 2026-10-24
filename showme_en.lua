@@ -86,6 +86,7 @@ local MY_STRINGS =    -- 调用 MY_DATA.armor.desc
 	true_number = "True number: ",
     winter_gift_ready = "Gift can be opened",
     winter_gift_wait = "Gift can be opened in %s more days",
+    klaus_sack_loot = "Notable loot:",
 }
 
 local SHOWME_STRINGS = {

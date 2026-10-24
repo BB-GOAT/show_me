@@ -31,9 +31,9 @@ local CLIENT_SIDE = _G.TheNet:GetIsClient() or (SERVER_SIDE and not _G.TheNet:Is
 
 -- 颜色优先使用客户端配置，其次服务器配置，最后使用默认值
 local function ResolveChannel(value, name, fallback) -- value：配置值；name：配置项名；fallback：默认值
-    value = tonumber(value)
+    value = _G.tonumber(value)
     if value == nil or value < 0 then
-        value = tonumber(GetModConfigData(name))
+        value = _G.tonumber(GetModConfigData(name))
     end
     return value and value >= 0 and value or fallback
 end

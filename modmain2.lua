@@ -2,6 +2,7 @@ _G = GLOBAL
 local _G = _G
 _G.setmetatable(env, {
     __index = function(t, k)
+        -- local info = _G.debug.getinfo(2) if string.find(info.source, modname) then print("[Show Me] 当前正在尝试从全局环境获取值", k, "调用于", info.source, info.currentline) end
         return _G.rawget(_G, k)
     end
 })
@@ -97,6 +98,7 @@ local server_config = {
     show_itemmimic = GetModConfigData("show_itemmimic"), -- 显示拟态信息
     show_planar_resist = GetModConfigData("show_planar_resist"), -- 显示位面抵抗
     T_crop_mode = GetModConfigData("T_crop_mode"), -- 农作物状态显示
+    show_klaus_sack_loot = GetModConfigData("show_klaus_sack_loot"), -- 显示赃物袋重要战利品
 }
 
 local client_config = {
@@ -115,6 +117,7 @@ local client_config = {
     show_itemmimic = GetModConfigData("show_itemmimic", true), -- 显示拟态信息
     show_planar_resist = GetModConfigData("show_planar_resist", true), -- 显示位面抵抗
     T_crop_mode = GetModConfigData("T_crop_mode", true), -- 农作物状态显示
+    show_klaus_sack_loot = GetModConfigData("show_klaus_sack_loot", true), -- 显示赃物袋重要战利品
 }
 local player_config = {}
 
@@ -221,6 +224,7 @@ local PREFAB_DESCRIPTOR_FILES = {
     "volcano_altar", -- 火山祭坛：显示喷发状态或距离下次喷发的天数
     "junk_pile_big", -- 垃圾堆：显示机械残骸、栅栏及科学笔记的补货倒计时
     "king_cane", -- 国王魔杖：显示宝石能力、腐化值与恢复时间、技能冷却及精神影响
+    "klaus_sack", -- 赃物袋：读取已生成的重要战利品，由客户端决定是否显示
 }
 local FEATURE_DESCRIPTOR_FILES = {
     "moonstorm_static", -- 约束静电：显示下一次工具需求及实验完成倒计时

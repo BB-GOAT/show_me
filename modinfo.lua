@@ -8,11 +8,12 @@ author = "Star, +Serp, 傳說覺悟, 冰冰羊"
 description = "当前版本: "..version.."\n" ..
 [[
 最新更新：
-- 现在默认开启Beta版Show Me
-- 支持显示拟态物品信息
-- 支持显示约束静电的下一次工具需求与实验完成倒计时
-- 支持显示摇摇欲坠的垃圾堆 栅栏/机械残骸 刷新倒计时
-- 支持显示国王魔杖信息
+- 更新高亮物品功能，支持高亮地面/龙鳞火炉/恶液储存箱内的物品
+- 支持显示生物补充计时器
+- 支持显示赃物袋重要战利品（默认关闭）
+
+- 食物回复的三维现在应该能始终正确显示了
+- 修复无法显示沃尔特弹弓/弹药信息的问题
 
 如果遇到问题请及时留言反馈
 并且可以在模组设置中关闭beta版show me以(尝试)解决问题。
@@ -244,9 +245,9 @@ configuration_options =
         label = "农作物状态显示",
         hover = "例如缺肥料、水分、家族、有杂草等，成长计时不受影响",
         options = {
-            {description = "开", data = 2},
+            {description = "开启", data = 2},
             {description = "耕作先驱帽/沃姆伍德", data = 1, hover = "需装备耕作先驱帽或园艺帽才能查看，沃姆伍德可直接查看"},
-            {description = "关", data = 0},
+            {description = "关闭", data = 0},
         },
         default = 2,
     },
@@ -268,8 +269,8 @@ configuration_options =
         hover = "如果打开，Show me将不显示与item info相同的信息",
         options =
         {
-            {description = "关", data = 0, hover = "没开item info模组默认关闭就好"},
-            {description = "开", data = 1, hover = "** Show me将不显示与item info相同的信息 **"},
+            {description = "关闭", data = 0, hover = "没开item info模组默认关闭就好"},
+            {description = "开启", data = 1, hover = "** Show me将不显示与item info相同的信息 **"},
         },
         default = 0,
     },
@@ -284,6 +285,19 @@ configuration_options =
             {description = "开启", data = true, hover = "拟态显形: 0:30"},
         },
         default = true,
+    },
+    {
+        name = "show_klaus_sack_loot",
+        live_config = true,
+        label = "显示赃物袋重要战利品（Beta）",
+        hover = "显示赃物袋中已生成的重要战利品，仅Beta版生效。默认关闭；服务器设为禁止时，所有客户端均无法查看",
+        options =
+        {
+            {description = "否", data = 0},
+            {description = "是", data = 1},
+            {description = "禁止", data = 2, hover = "服务端将不会发送战利品信息给客户端"},
+        },
+        default = 0,
     },
     SkipSpace("物品查找高亮颜色"),
     {
