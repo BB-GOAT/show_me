@@ -18,31 +18,39 @@ local Describe = function(self, context)
     local KNOWN_BUFFS = utils.KNOWN_BUFFS
     local prefab = entity.prefab
 
-    local can_eat = false
-    if viewer.components.eater then
-        can_eat = viewer.components.eater:CanEat(entity)
-    end
-    if not can_eat then
+    local eater = viewer.components.eater
+    if eater == nil or not eater:CanEat(entity) then
         return nil
     end
 
-    -- 始终按食物当前新鲜度折算实际收益
-    local hp = round2(self:GetHealth(viewer), 1)
-    local hg = round2(self:GetHunger(viewer), 1)
-    local sn = round2(self:GetSanity(viewer), 1)
+    -- getter 按食物当前新鲜度折算实际收益
+    local hp = self:GetHealth(viewer)
+    local hg = self:GetHunger(viewer)
+    local sn = self:GetSanity(viewer)
 
     if viewer.FoodValuesChanger ~= nil then -- 一种特殊功能，其目的是在食用时改变食物。
         local hp2, hg2, sn2 = viewer:FoodValuesChanger(entity)
         if sn2 ~= nil then
-            hp = round2(hp2, 1)
-            hg = round2(hg2, 1)
-            sn = round2(sn2, 1)
+            hp = hp2
+            hg = hg2
+            sn = sn2
         end
     end
 
+    -- 判断是否免除负面效果
+    local do_food_effects = eater:DoFoodEffects(entity)
+    if viewer.components.health == nil or (self.healthvalue < 0 and not do_food_effects) then
+        hp = 0
+    end
+    if viewer.components.hunger == nil then
+        hg = 0
+    end
+    if viewer.components.sanity == nil or (self.sanityvalue < 0 and not do_food_effects) then
+        sn = 0
+    end
+
     local base_mult = viewer.components.foodmemory ~= nil and viewer.components.foodmemory:GetFoodMultiplier(prefab) or 1
-    do -- 进食者的吸收倍率，增加 eater 组件检查
-        local eater = viewer.components.eater
+    do -- 进食者的吸收倍率
         -- 永不妥协会把 eater 的血量/精神吸收清零并把原值缓存在玩家实体上（食物收益随时间生效功能），须读缓存值才与实际收益一致
         local hp_mult = (self.healthabsorption or 1) * base_mult * (viewer.modded_healthabsorption or (eater and eater.healthabsorption) or 1)
         local hg_mult = (self.hungerabsorption or 1) * base_mult * (viewer.modded_hungerabsorption or (eater and eater.hungerabsorption) or 1)
@@ -52,9 +60,26 @@ local Describe = function(self, context)
         sn = sn * sn_mult
     end
 
-    if prefab == "petals_evil" then
-        sn = round2(sn - TUNING.SANITY_TINY, 1)
+    -- 在吸收倍率和食物记忆之后应用自定义三维修正
+    if eater.custom_stats_mod_fn ~= nil then
+        hp, hg, sn = eater.custom_stats_mod_fn(viewer, hp, hg, sn, entity, viewer)
     end
+
+    local oldager = viewer.components.oldager
+    if hp > 0 and oldager ~= nil and not oldager.valid_healing_causes[prefab] then
+        hp = 0 -- 旺达不接受普通食物的治疗
+    end
+
+    local health = viewer.components.health
+    if hp < 0 and health ~= nil then
+        -- 食物扣血没有 afflicter；对应 Health:DoDelta 的两层伤害吸收。
+        local external_absorb = health.externalabsorbmodifiers ~= nil and health.externalabsorbmodifiers:Get() or 0
+        hp = hp * math.clamp(1 - (health.absorb or 0), 0, 1) * math.max(1 - external_absorb, 0)
+    end
+
+    hp = round2(hp, 1)
+    hg = round2(hg, 1)
+    sn = round2(sn, 1)
 
     local entries = {}
 
