@@ -1,4 +1,16 @@
 -- worldsettingstimer 组件：世界设置计时器遍历
+
+local function ShouldShowTimer(self, entity, name)
+    if name == "ChildSpawner_RegenPeriod" then
+        local spawner = entity.components.childspawner
+        -- 满员时仍存有暂停计时；洞外生物也占名额，应急生物与普通生物共用补充计时
+        return spawner and spawner.useexternaltimer and spawner.regening
+            and not (spawner:IsFull() and spawner:IsEmergencyFull())
+            and self:TimerEnabled(name) and self:ActiveTimerExists(name)
+    end
+    return true
+end
+
 local Describe = function(self, context)
     if not self.timers then
         return nil
@@ -13,7 +25,7 @@ local Describe = function(self, context)
 
     local entries = {}
     for name, data in pairs(self.timers) do
-        if not utils.IsUselessTimer(prefab, name) then
+        if not utils.IsUselessTimer(prefab, name) and ShouldShowTimer(self, entity, name) then
             local tm = self:GetTimeLeft(name)
             local paused = self:IsPaused(name)
             if tm then

@@ -134,6 +134,7 @@ local FOOD_TAGS = {
 
 --给显示预计:xxx定义名称，例如显示【预计:wall_cd 00:30】，定义名称后显示：【沙墙冷却 00:30】
 local INTERNAL_TIMERS = {
+    ChildSpawner_RegenPeriod = "生物补充",
     showme_junkyard_restock = "栅栏/机械残骸刷新尝试",
     showme_itemmimic_reveal = "拟态显形",
     --蚁狮Antlion

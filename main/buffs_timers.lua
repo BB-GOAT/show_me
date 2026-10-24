@@ -130,7 +130,7 @@ end
 local USELESS_TIMERS = {	-- 生物巢定时器屏蔽
     --default for all prefabs
     toadstool = { channeltick = true },
-    all = { ChildSpawner_RegenPeriod = true, ChildSpawner_SpawnPeriod = true, dominant = true },	-- 下次刷新, 下次放出
+    all = { ChildSpawner_SpawnPeriod = true, dominant = true },
 	wobybig = { decay = true },	-- 沃比的消失屏蔽掉
     wobysmall = { decay = true },
     hermitcrab = { speak_time = true, complain_time = true, salad = true },
