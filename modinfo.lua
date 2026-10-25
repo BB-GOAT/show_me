@@ -8,16 +8,10 @@ author = "冰冰羊, 傳說覺悟, Star, +Serp"
 description = "当前版本: " .. version .. "\n" ..
 [[
 最新更新：
-- 更新高亮物品功能，支持高亮地面/龙鳞火炉/恶液储存箱内的物品
-- 支持显示生物补充计时器
-- 支持显示赃物袋重要战利品（默认关闭）
-
-- 食物回复的三维现在应该能始终正确显示了
-- 修复无法显示沃尔特弹弓/弹药信息的问题
+- 支持管理高亮显示功能应用在哪些地方
 
 如果遇到问题请及时留言反馈
-并且可以在模组设置中关闭beta版show me以(尝试)解决问题。
-如果没有问题 下个版本会移除旧版代码 彻底使用新版代码。
+并且可以在模组设置中关闭beta版show me以(尝试)解决问题
 历史更新日志请前往创意工坊页面查看
 
 如果不显示血量，是因为与简易血条MOD一起开启了，要显示请在模组设置 → 显示血量 → 是
@@ -82,10 +76,9 @@ configuration_options =
         },
         default = true,
     },
-    SkipSpace(""),
+    SkipSpace("信息控制"),
     {
         name = "lang",
-        live_config = true,
         label = "语言 Language",
         --hover = "",
         options =
@@ -96,10 +89,10 @@ configuration_options =
             { description = "English", data = "en", hover = "English" },
         },
         default = "auto",
+        live_config = true,
     },
     {
         name = "food_style",
-        live_config = true,
         label = "食物属性样式",
         options =
         {
@@ -108,10 +101,10 @@ configuration_options =
             { description = "简洁", data = 2, hover = "+12.5 / -10 / +3" },
         },
         default = 0,
+        live_config = true,
     },
     {
         name = "food_order",
-        live_config = true,
         label = "食物属性格式",
         options =
         {
@@ -120,10 +113,10 @@ configuration_options =
             { description = "自定", data = 2, hover = "生命 / 饥饿 / 精神" },
         },
         default = 0,
+        live_config = true,
     },
     {
         name = "food_estimation",
-        live_config = true,
         label = "预计腐烂",
         hover = "预测食物腐烂时间！",
         options =
@@ -133,10 +126,10 @@ configuration_options =
             { description = "是", data = 1, hover = "是" },
         },
         default = -1,
+        live_config = true,
     },
     {
         name = "perish_style",
-        live_config = true,
         label = "食物腐烂样式",
         hover = "不新鲜于: 0.1 天( 0.3 天)",
         options =
@@ -146,10 +139,10 @@ configuration_options =
             { description = "两者", data = 2, hover = "不新鲜于: 0.1 天( 0.3 天)" },
         },
         default = 2,
+        live_config = true,
     },
     {
         name = "show_food_units",
-        live_config = true,
         label = "显示食物单位",
         hover = "显示食物单位，比如肉类、蔬菜类、水果类！",
         options =
@@ -160,10 +153,10 @@ configuration_options =
             { description = "禁止", data = 2, hover = "服务端将不会发送属性信息给客户端" },
         },
         default = -1,
+        live_config = true,
     },
     {
         name = "show_uses",
-        live_config = true,
         label = "显示工具用途",
         hover = "",
         options =
@@ -174,10 +167,10 @@ configuration_options =
             { description = "禁止", data = 2, hover = "服务端将不会发送属性信息给客户端" },
         },
         default = -1,
+        live_config = true,
     },
     {
         name = "show_nutrients",
-        live_config = true,
         label = "显示肥料值",
         hover = "",
         options =
@@ -187,10 +180,10 @@ configuration_options =
             { description = "简洁", data = 2, hover = "肥料: 8 / 8 / 32" },
         },
         default = 1,
+        live_config = true,
     },
     {
         name = "display_hp",
-        live_config = true,
         label = "显示血量",
         --hover = "",
         options =
@@ -201,10 +194,10 @@ configuration_options =
             { description = "禁止", data = 2, hover = "服务端将不会发送属性信息给客户端" },
         },
         default = 1,
+        live_config = true,
     },
     {
         name = "show_fueled",
-        live_config = true,
         label = "穿戴装备天数",
         hover = "",
         options =
@@ -215,10 +208,10 @@ configuration_options =
             { description = "两者", data = 3, hover = "耐久: 3:59 ( 0.5 天 )" },
         },
         default = 3,
+        live_config = true,
     },
     {
         name = "show_fuel",
-        live_config = true,
         label = "物品燃料值",
         hover = "显示物品的燃料值，例如草、木材、腐烂食物等",
         options =
@@ -227,10 +220,10 @@ configuration_options =
             { description = "开启", data = true, hover = "燃料值: 0:30" },
         },
         default = true,
+        live_config = true,
     },
     {
         name = "show_planar_resist",
-        live_config = true,
         label = "显示位面抵抗",
         hover = "在显示工具、武器攻击附加显示位面抵抗造成的伤害",
         options =
@@ -239,10 +232,10 @@ configuration_options =
             { description = "开启", data = true, hover = "攻击力: 68 ( 位抗: 41.3 )" },
         },
         default = true,
+        live_config = true,
     },
     {
         name = "T_crop_mode",
-        live_config = true,
         label = "农作物状态显示",
         hover = "例如缺肥料、水分、家族、有杂草等，成长计时不受影响",
         options = {
@@ -251,10 +244,10 @@ configuration_options =
             { description = "关闭", data = 0 },
         },
         default = 2,
+        live_config = true,
     },
     {
         name = "show_buddle_item",
-        live_config = true,
         label = "显示捆绑包内容",
         options =
         {
@@ -262,10 +255,10 @@ configuration_options =
             { description = "否", data = 0 },
         },
         default = 1,
+        live_config = true,
     },
     {
         name = "item_info_mod",
-        live_config = true,
         label = "兼容item info模组",
         hover = "如果打开，Show me将不显示与item info相同的信息",
         options =
@@ -274,10 +267,10 @@ configuration_options =
             { description = "开启", data = 1, hover = "** Show me将不显示与item info相同的信息 **" },
         },
         default = 0,
+        live_config = true,
     },
     {
         name = "show_itemmimic",
-        live_config = true,
         label = "显示拟态信息（Beta）",
         hover = "显示拟态物品的显形倒计时及暂停状态，仅Beta版生效",
         options =
@@ -286,10 +279,10 @@ configuration_options =
             { description = "开启", data = true, hover = "拟态显形: 0:30" },
         },
         default = true,
+        live_config = true,
     },
     {
         name = "show_klaus_sack_loot",
-        live_config = true,
         label = "显示赃物袋重要战利品（Beta）",
         hover = "显示赃物袋中已生成的重要战利品，仅Beta版生效。默认关闭；服务器设为禁止时，所有客户端均无法查看",
         options =
@@ -299,31 +292,69 @@ configuration_options =
             { description = "禁止", data = 2, hover = "服务端将不会发送战利品信息给客户端" },
         },
         default = 0,
+        live_config = true,
+    },
+    SkipSpace("物品查找", true),
+    {
+        name = "highlight_containers",
+        label = "高亮容器",
+        hover = "高亮存有查找物品的容器，以及恶液储存箱中展示的料理",
+        options = {
+            { description = "关闭", data = false },
+            { description = "开启", data = true },
+        },
+        default = true,
+        live_config = true,
+        client = true,
+    },
+    {
+        name = "highlight_inventory",
+        label = "高亮物品栏物品",
+        hover = "高亮物品栏、装备栏、背包和已打开容器中的同类物品图标",
+        options = {
+            { description = "关闭", data = false },
+            { description = "开启", data = true },
+        },
+        default = true,
+        live_config = true,
+        client = true,
+    },
+    {
+        name = "highlight_ground",
+        label = "高亮地面物品",
+        hover = "高亮地面上与手持物品或配方材料同类的物品",
+        options = {
+            { description = "关闭", data = false },
+            { description = "开启", data = true },
+        },
+        default = true,
+        live_config = true,
+        client = true,
     },
     SkipSpace("物品查找高亮颜色"),
     {
         name = "chestR",
-        live_config = true,
         label = "红色值",
         hover = "拿起物品或查看配方材料时，高亮同类物品；红绿蓝全为0%或100%时无彩色效果",
         options = color_options,
         default = -1,
+        live_config = true,
     },
     {
         name = "chestG",
-        live_config = true,
         label = "绿色值",
         hover = "拿起物品或查看配方材料时，高亮同类物品；红绿蓝全为0%或100%时无彩色效果",
         options = color_options,
         default = -1,
+        live_config = true,
     },
     {
         name = "chestB",
-        live_config = true,
         label = "蓝色值",
         hover = "拿起物品或查看配方材料时，高亮同类物品；红绿蓝全为0%或100%时无彩色效果",
         options = color_options,
         default = -1,
+        live_config = true,
     },
     SkipSpace("其它"),
     {

@@ -12,7 +12,7 @@ end
 
 ---@param client_config table modmain2 的内存客户端配置表（直接覆盖其内容）
 ---@param player_config table modmain2 的玩家个性化配置表（服务器端使用）
----@param deps table 模块依赖：SetupLanguage/ChestColor/RefreshChests/ResolveChannel，由 modmain2 通过各模块 return 的导出注入
+---@param deps table 模块依赖：SetupLanguage/RefreshChests/ResolveChannel，由 modmain2 注入
 return function(client_config, player_config, deps)
     --- 应用配置屏幕提交的客户端配置：覆盖内存配置表与本地效果，并同步给服务器
     ---@param keyed_settings table {配置名 = 新值}，来自配置屏幕“应用”时提交的数据
@@ -21,7 +21,6 @@ return function(client_config, player_config, deps)
             return
         end
 
-        -- 覆盖内存中的客户端配置，descriptor 通过 context.config.client 读取
         for config_name in pairs(client_config) do
             local new_value = keyed_settings[config_name]
             if new_value ~= nil then
@@ -29,18 +28,15 @@ return function(client_config, player_config, deps)
             end
         end
 
-        -- 高亮颜色是纯客户端效果，重绘容器、世界物品和库存图标以应用新颜色
-        -- 颜色表与重绘函数来自 main/item_highlight.lua；依赖字段名保留原名以兼容现有接口
-        local chest_color = deps.ChestColor
-        if chest_color ~= nil then
-            chest_color.r = deps.ResolveChannel(keyed_settings.chestR, "chestR", 0.3)
-            chest_color.g = deps.ResolveChannel(keyed_settings.chestG, "chestG", 1)
-            chest_color.b = deps.ResolveChannel(keyed_settings.chestB, "chestB", 1)
-        end
+        -- 箱子高亮颜色（优先使用客户端配置其次服务器）
+        client_config.chestR = deps.ResolveChannel(client_config.chestR, "chestR", 0.3)
+        client_config.chestG = deps.ResolveChannel(client_config.chestG, "chestG", 1)
+        client_config.chestB = deps.ResolveChannel(client_config.chestB, "chestB", 1)
         if deps.RefreshChests ~= nil then
-            deps.RefreshChests()
+            deps.RefreshChests() -- 应用新的高亮颜色
         end
 
+        -- 应用语言配置
         if keyed_settings.lang ~= nil and deps.SetupLanguage ~= nil then
             deps.SetupLanguage(keyed_settings.lang)
         end
@@ -51,7 +47,7 @@ return function(client_config, player_config, deps)
         end
     end
 
-    --- 移除不支持实时修改的配置项后构造屏幕
+    -- 移除不支持实时修改的配置项
     local function PushConfigScreenOnlyLive(construct_fn)
         local config_options = _G.KnownModIndex:LoadModConfigurationOptions(modname, true)
         local removed = {}
@@ -130,7 +126,6 @@ return function(client_config, player_config, deps)
             return
         end
 
-        -- 只保留 client_config 中已有配置键的标量值，客户端无法借此注入任意数据
         local valid_config = {}
         for config_name in pairs(client_config) do
             local value = config[config_name]
@@ -172,5 +167,4 @@ return function(client_config, player_config, deps)
             reconfigurable_mods[modname] = ApplyLiveConfig
         end
     end)
-
 end

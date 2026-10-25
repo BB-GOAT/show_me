@@ -29,20 +29,11 @@
 local SERVER_SIDE = _G.TheNet:GetIsServer()
 local CLIENT_SIDE = _G.TheNet:GetIsClient() or (SERVER_SIDE and not _G.TheNet:IsDedicated())
 
--- 颜色优先使用客户端配置，其次服务器配置，最后使用默认值
-local function ResolveChannel(value, name, fallback) -- value：配置值；name：配置项名；fallback：默认值
-    value = _G.tonumber(value)
-    if value == nil or value < 0 then
-        value = _G.tonumber(GetModConfigData(name))
-    end
-    return value and value >= 0 and value or fallback
+local api = {} -- 导出配置绑定与高亮刷新接口
+local config = {} -- 与实时配置共用客户端配置表，颜色与开关均由 modmain2 管理
+function api.SetConfigTable(client_config) -- client_config：modmain2 的内存客户端配置表
+    config = client_config
 end
-local color = {
-    r = ResolveChannel(GetModConfigData("chestR", true), "chestR", 0.3),
-    g = ResolveChannel(GetModConfigData("chestG", true), "chestG", 1),
-    b = ResolveChannel(GetModConfigData("chestB", true), "chestB", 1),
-}
-local api = { color = color, ResolveChannel = ResolveChannel }
 if _G.KnownModIndex:IsModEnabledAny("workshop-3363111676") then
     return api
 end
@@ -101,9 +92,10 @@ local function IsWorldItem(inst)
     local parent = inst.entity:GetParent()
     if parent then
         -- 恶液储存箱料理有父实体；只允许 takeitem 指向的展示料理
-        return parent.prefab == "gelblob_storage" and parent.takeitem:value() == inst
+        return config.highlight_containers ~= false
+            and parent.prefab == "gelblob_storage" and parent.takeitem:value() == inst
     end
-    return not inst.replica.inventoryitem:IsHeld()
+    return config.highlight_ground ~= false and not inst.replica.inventoryitem:IsHeld()
 end
 
 -- 设置或恢复实体颜色
@@ -119,7 +111,7 @@ local function SetEntityHighlight(inst, matches)
         end
     elseif inst.AnimState then
         if matches then
-            inst.AnimState:SetMultColour(color.r, color.g, color.b, 1)
+            inst.AnimState:SetMultColour(config.chestR, config.chestG, config.chestB, 1)
         else
             inst.AnimState:SetMultColour(1, 1, 1, 1) -- 取消高亮时恢复默认颜色，不保存原色。
         end
@@ -137,7 +129,8 @@ local function UpdateEntity(inst)
     end
     local contents = inst.ShowMe_chest_table -- 客户端解析后的容器内容集合，以 prefab 为键
     local active = ActivePrefab() -- 当前手持物品
-    local matches_contents = contents and ((active and contents[active]) -- 容器内容是否命中任一查找目标
+    -- matches_contents：容器高亮已开启，且内容命中任一查找目标
+    local matches_contents = config.highlight_containers ~= false and contents and ((active and contents[active])
         or (ingredient_prefab and contents[ingredient_prefab]))
     SetEntityHighlight(inst, matches_contents or (Matches(inst.prefab) and IsWorldItem(inst)))
 end
@@ -257,8 +250,8 @@ local function TintImage(image, matches) -- image：图标或附加图层；matc
     if matches then
         image._showme_original_tint = image._showme_original_tint or image.tint -- 高亮前的 RGBA 表
         local alpha, tint = image._showme_original_tint[4], image.tint -- 原透明度，当前图标颜色
-        if tint[1] ~= color.r or tint[2] ~= color.g or tint[3] ~= color.b or tint[4] ~= alpha then
-            image:SetTint(color.r, color.g, color.b, alpha)
+        if tint[1] ~= config.chestR or tint[2] ~= config.chestG or tint[3] ~= config.chestB or tint[4] ~= alpha then
+            image:SetTint(config.chestR, config.chestG, config.chestB, alpha)
         end
     elseif image._showme_original_tint then
         image:SetTint(unpack(image._showme_original_tint))
@@ -269,8 +262,8 @@ end
 -- 刷新 tile（ItemTile 控件）及其各层图片，排除鼠标光标上的物品
 local function UpdateTile(tile)
     local item = tile.item -- 该图标展示的物品实体
-    local matches = _G.ThePlayer ~= nil and item:IsValid() and item ~= active_item -- 图标是否需要高亮
-        and not tile.isactivetile and Matches(item.prefab)
+    local matches = config.highlight_inventory ~= false and _G.ThePlayer ~= nil -- 图标是否需要高亮
+        and item:IsValid() and item ~= active_item and not tile.isactivetile and Matches(item.prefab)
     TintImage(tile.image, matches)
     for _, image in ipairs(tile.image.layers or {}) do -- image：多层物品图标的附加图片
         TintImage(image, matches)
@@ -339,10 +332,7 @@ local function CancelIngredientTimer()
 end
 
 -- 更新本地手持查找目标；player：事件玩家；item：新手持物品，nil 表示放下
-local function SetActiveItem(player, item)
-    if player ~= _G.ThePlayer then
-        return
-    end
+local function SetActiveItem(item)
     CancelIngredientTimer()
     local changed = ingredient_prefab ~= nil or (active_item and active_item.prefab) ~= (item and item.prefab) -- 查找类型是否变化
     active_item, ingredient_prefab = item, nil
@@ -357,8 +347,8 @@ MOD_util:AddPlayerPostInit(function(world, player)
     if player ~= _G.ThePlayer then return end
     RefreshAll()
 
-    player:ListenForEvent("newactiveitem", function(_, data) SetActiveItem(player, data and data.item) end) -- data.item：新的手持物品
-    local function ClearSearch() SetActiveItem(player, nil) end -- 玩家离开时清除查找与材料计时器
+    player:ListenForEvent("newactiveitem", function(_, data) SetActiveItem(data and data.item) end) -- data.item：新的手持物品
+    local function ClearSearch() SetActiveItem() end -- 玩家离开时清除查找与材料计时器
     player:ListenForEvent("playerdeactivated", ClearSearch)
     player:ListenForEvent("onremove", ClearSearch)
 end)

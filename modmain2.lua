@@ -101,6 +101,15 @@ local server_config = {
     show_klaus_sack_loot = GetModConfigData("show_klaus_sack_loot"), -- 显示赃物袋重要战利品
 }
 
+-- 高亮颜色优先使用客户端配置，其次服务器配置，最后使用默认值。
+local function ResolveChannel(value, name, fallback) -- value：配置值；name：配置项名；fallback：默认色值
+    value = _G.tonumber(value)
+    if value == nil or value < 0 then
+        value = _G.tonumber(GetModConfigData(name))
+    end
+    return value and value >= 0 and value or fallback
+end
+
 local client_config = {
     food_order = GetModConfigData("food_order", true), -- 食物属性格式
     food_style = GetModConfigData("food_style", true), -- 食物属性样式
@@ -118,6 +127,15 @@ local client_config = {
     show_planar_resist = GetModConfigData("show_planar_resist", true), -- 显示位面抵抗
     T_crop_mode = GetModConfigData("T_crop_mode", true), -- 农作物状态显示
     show_klaus_sack_loot = GetModConfigData("show_klaus_sack_loot", true), -- 显示赃物袋重要战利品
+
+    ---------------------------------------------------------------------------------------------------
+
+    highlight_containers = GetModConfigData("highlight_containers", true), -- 高亮容器（含恶液箱料理）
+    highlight_inventory = GetModConfigData("highlight_inventory", true), -- 高亮物品栏等界面图标
+    highlight_ground = GetModConfigData("highlight_ground", true), -- 高亮地面物品
+    chestR = ResolveChannel(GetModConfigData("chestR", true), "chestR", 0.3), -- 高亮红色值
+    chestG = ResolveChannel(GetModConfigData("chestG", true), "chestG", 1), -- 高亮绿色值
+    chestB = ResolveChannel(GetModConfigData("chestB", true), "chestB", 1), -- 高亮蓝色值
 }
 local player_config = {}
 
@@ -143,14 +161,14 @@ local GetPrefabFancyName = renderers_data.GetPrefabFancyName
 
 -- 物品高亮
 local highlight_data = Import(MODROOT .. "main/item_highlight.lua", env)
+highlight_data.SetConfigTable(client_config)
 
 -- 游戏内实时修改配置
 local SetupChangeModSettings = Import(MODROOT .. "main/change_modsettings.lua", env)
 SetupChangeModSettings(client_config, player_config, {
     SetupLanguage = language_data.SetupLanguage,
-    ChestColor = highlight_data.color,
     RefreshChests = highlight_data.Refresh,
-    ResolveChannel = highlight_data.ResolveChannel,
+    ResolveChannel = ResolveChannel,
 })
 
 Import(MODROOT .. "main/temperature_client.lua", env) -- 温度相关
