@@ -28,12 +28,13 @@ local Describe = function(self, context)
         { data_key = "armor", params = { utils.round2(r * 100, 0), tm_buff and utils.round2(tm_buff) } },
     }
 
-    -- 新增的防具位面防御，不吃增益
+    -- 位面防御
     local planardefense = entity.components.planardefense
-    if planardefense and planardefense.basedefense and type(planardefense.basedefense) == "number" then
+    local defense = planardefense and planardefense:GetDefense()
+    if type(defense) == "number" and defense > 0 then
         table.insert(entries, {
             data_key = "basearmor",
-            params = { utils.round2(planardefense.basedefense, 0) .. context.modenv.OTHER_TITLES.point },
+            params = { utils.round2(defense, 0) .. context.modenv.OTHER_TITLES.point },
         })
     end
 

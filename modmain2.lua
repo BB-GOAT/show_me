@@ -110,6 +110,7 @@ local function ResolveChannel(value, name, fallback) -- value：配置值；name
     return value and value >= 0 and value or fallback
 end
 
+-- 客户端模组配置
 local client_config = {
     food_order = GetModConfigData("food_order", true), -- 食物属性格式
     food_style = GetModConfigData("food_style", true), -- 食物属性样式
