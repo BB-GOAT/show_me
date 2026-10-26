@@ -1,6 +1,6 @@
 ---@diagnostic disable: lowercase-global
 local L = locale ~= "zh" and locale ~= "zhr" and locale ~= "zht"
-version = "0.64.1"
+version = "0.64.2"
 version_compatible = "0.64.1"
 name = L and "Show Me (New)" or "Show Me (中文)"
 author = "冰冰羊, 傳說覺悟, Star, +Serp"
@@ -9,6 +9,7 @@ description = "当前版本: " .. version .. "\n" ..
 [[
 最新更新：
 - 支持管理高亮显示功能应用在哪些地方
+- 修复位面防御显示不计算额外加成的问题
 
 如果遇到问题请及时留言反馈
 并且可以在模组设置中关闭beta版show me以(尝试)解决问题
