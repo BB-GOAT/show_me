@@ -17,6 +17,7 @@ local Describe = function(self, context)
     end
 
     return {
+        priority = 97,
         data_key = "timer",
         params = { context.utils.round2(remaining), "showme_itemmimic_reveal", paused and 1 or nil },
     }

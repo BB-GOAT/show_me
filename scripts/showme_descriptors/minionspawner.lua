@@ -43,7 +43,6 @@ local Describe = function(self, context)
     end
 
     return {
-        priority = 0,
         description = pm,
     }
 end

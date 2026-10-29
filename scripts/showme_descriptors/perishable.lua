@@ -22,7 +22,7 @@ local Describe = function(self, context)
             return nil
         end
         return {
-            priority = 90, -- 与 hunger 互斥，保持原第二位
+            priority = 99, -- 与 hunger 互斥，保持原第二位
             data_key = "will_die",
             params = { utils.round2(time / TUNING.TOTAL_DAY_TIME, 2) },
         }
