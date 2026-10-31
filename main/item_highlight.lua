@@ -25,7 +25,6 @@
     end
 --]]
 
-
 local SERVER_SIDE = _G.TheNet:GetIsServer()
 local CLIENT_SIDE = _G.TheNet:GetIsClient() or (SERVER_SIDE and not _G.TheNet:IsDedicated())
 
@@ -42,7 +41,7 @@ local MONITORED_CONTAINER_PREFABS = {
     -- 原版箱子、储物设施与携带容器
     treasurechest = true, dragonflychest = true, pandoraschest = true, minotaurchest = true,
     icebox = true, saltbox = true, cookpot = true, dragonflyfurnace = true,
-    chester = true, hutch = true, beargerfur_sack = true, bookstation = true, wardrobe = true,
+    magician_chest = true, hutch = true, beargerfur_sack = true, bookstation = true, wardrobe = true,
     backpack = true, candybag = true, icepack = true, piggyback = true,
     krampus_sack = true, seedpouch = true, spicepack = true,
     wobybig = true, wobysmall = true, mushroom_light = true, mushroom_light2 = true,
@@ -50,7 +49,6 @@ local MONITORED_CONTAINER_PREFABS = {
     portablecookpot = true, portablespicer = true, sacred_chest = true, boat_ancient_container = true,
 
     -- 第三方模组
-    largechest = true, largeicebox = true,
     safebox = true, safechest = true, safeicebox = true,
     red_treasure_chest = true, purple_treasure_chest = true,
     green_treasure_chest = true, blue_treasure_chest = true,
@@ -153,24 +151,20 @@ local function TrackEntity(inst)
     return UpdateEntity
 end
 
-local function SyncContents(inst) -- inst：容器实体；服务器收集内容并写入网络字段
-    local container = inst.components.container -- 服务器端容器组件
-    if not container then
-        return
-    end
-    local contents, prefabs = {}, {} -- 去重后的物品类型集合，以及用于排序、拼接的类型列表
-    for _, item in pairs(container.slots) do -- item：槽位内物品；忽略槽位编号
+local function SyncContents(inst, container)
+    local contents, prefabs = {}, {}
+    for _, item in pairs(container.slots) do
         contents[item.prefab] = true
         local bundle = item.components and item.components.unwrappable -- 捆绑包的内容组件
         for _, saved in ipairs(bundle and bundle.itemdata or {}) do -- saved：包内单件物品的存档数据
             contents[saved.prefab] = true
         end
     end
-    for prefab in pairs(contents) do -- prefab：去重后的物品类型名
+    for prefab in pairs(contents) do
         prefabs[#prefabs + 1] = prefab
     end
     table.sort(prefabs) -- 调换槽位不应产生新的网络内容
-    local serialized = table.concat(prefabs, " ") -- 沿用以空格分隔 prefab 的网络格式
+    local serialized = table.concat(prefabs, " ")
     if inst.net_ShowMe_chest:value() ~= serialized then
         inst.net_ShowMe_chest:set(serialized)
     end
@@ -179,29 +173,61 @@ end
 -- 读取容器的同步内容，并更新该容器高亮
 local function ReadContents(inst)
     inst.ShowMe_chest_table = {}
-    for prefab in inst.net_ShowMe_chest:value():gmatch("%S+") do -- prefab：从网络字符串拆出的类型名
+    for prefab in inst.net_ShowMe_chest:value():gmatch("%S+") do
         inst.ShowMe_chest_table[prefab] = true
     end
     UpdateEntity(inst)
 end
-for prefab in pairs(MONITORED_CONTAINER_PREFABS) do -- prefab：需要安装内容同步钩子的容器类型
-    AddPrefabPostInit(prefab, function(inst) -- inst：新建容器，主客机声明相同网络字段
-        inst.net_ShowMe_chest = _G.net_string(inst.GUID, "ShowMe_chestlq_.", "ShowMe_chest_dirty")
-        if CLIENT_SIDE then
-            inst.ShowMe_chest_table = {}
-            if not inst.replica.inventoryitem then
-                TrackEntity(inst)
-            end
-            inst:ListenForEvent("ShowMe_chest_dirty", ReadContents)
+
+local CONTAINER_EVENTS = { "itemget", "itemlose", "onclose" } -- 容器数据刷新事件
+
+-- 初始化容器同步与客户端高亮，返回服务器的刷新回调。
+local function InitContainerHighlight(inst)
+    inst.net_ShowMe_chest = _G.net_string(inst.GUID, "ShowMe_chestlq_.", "ShowMe_chest_dirty")
+    if CLIENT_SIDE then
+        inst.ShowMe_chest_table = {}
+        if not inst.replica.inventoryitem then
+            TrackEntity(inst)
         end
-        if SERVER_SIDE then
-            for _, event in ipairs({ "itemget", "itemlose", "onclose" }) do -- event：容器内容变化事件名
-                inst:ListenForEvent(event, SyncContents)
+        inst:ListenForEvent("ShowMe_chest_dirty", ReadContents)
+    end
+    if SERVER_SIDE then
+        local proxy = inst.components.container_proxy -- 容器代理
+        local master -- 当前监听的实际容器实体
+        local function refresh() -- 普通容器读取自身；代理容器读取实际容器并维护监听
+            local current = proxy and proxy:GetMaster() -- 代理此刻指向的实际容器
+            if master ~= current then
+                for _, event in ipairs(CONTAINER_EVENTS) do
+                    if master then inst:RemoveEventCallback(event, refresh, master) end
+                    if current then inst:ListenForEvent(event, refresh, current) end
+                end
+                master = current
             end
-            inst:DoTaskInTime(0, SyncContents)
+            local container = master and master.components.container or inst.components.container
+            if container then
+                SyncContents(inst, container)
+            elseif inst.net_ShowMe_chest:value() ~= "" then
+                inst.net_ShowMe_chest:set("") -- 代理解绑且入口无普通容器时，清除旧内容
+            end
         end
-    end)
+        for _, event in ipairs(CONTAINER_EVENTS) do
+            inst:ListenForEvent(event, refresh)
+        end
+        inst:DoTaskInTime(0, refresh) -- 等待读档后的代理绑定就绪
+        return refresh
+    end
 end
+
+for prefab in pairs(MONITORED_CONTAINER_PREFABS) do
+    AddPrefabPostInit(prefab, InitContainerHighlight)
+end
+
+AddPrefabPostInit("chester", function(inst) -- 切斯特
+    local refresh = InitContainerHighlight(inst) -- 共用容器初始化与刷新逻辑
+    if SERVER_SIDE then
+        inst:ListenForEvent("chesterstatedirty", refresh) -- 切斯特变身后需重新读取代理
+    end
+end)
 
 -- 原版 takeitem 没有 dirty 事件，使用net_event替代持续查询
 AddPrefabPostInit("gelblob_storage", function(storage) -- storage：恶液储存箱实体
