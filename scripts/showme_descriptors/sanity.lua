@@ -3,7 +3,7 @@ local Describe = function(self, context)
     return {
         priority = 98, -- 固定在 hp/hunger 之后
         data_key = "sanity_character",
-        params = { context.utils.round2(math.floor(self:GetPercent() * 100 + 0.5), 1) },
+        params = { context.utils.round2(self.current, 1), context.utils.round2(self.max, 1) },
     }
 end
 

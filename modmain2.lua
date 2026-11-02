@@ -251,6 +251,7 @@ local FEATURE_DESCRIPTOR_FILES = {
     "fridge", -- 冰箱类容器：保鲜倍率偏离原版默认值时显示倍率
     "slingshot_ammo", -- 弹弓弹药：显示普通伤害与位面伤害
     "world_gauge", -- 雨量计与温度计：显示世界降雨速率、潮湿度或温度
+    "support_pillar", -- 支柱脚手架与支柱：显示加固/耐久度
     "spice", -- 蒜粉、辣椒粉与糖粉：预览食用增益效果
     "hungerslow", -- 减缓饥饿的装备：显示饥饿消耗降低百分比
     "winter_tree", -- 冬季盛宴树：显示查看者领取礼物的冷却天数或可领取状态

@@ -115,10 +115,10 @@ MY_DATA.strength.fn = function(arr)
     return arr.data.desc .. " " .. tostring(arr.param[1]) .. " ( " .. SHOWME_STRINGS.pvp .. round2(tostring(arr.param[2]) * tostring(arr.param[1]) * 0.01 + tostring(arr.param[1]),1).." )" --BOSS对玩家的伤害值，直接显示常值好了
 end
 
-MY_DATA.hp.fn = function(arr)
-    local cur,mx = arr.param[1], arr.param[2]
-    return cur .. " / " .. mx
-end
+MY_DATA.hp.fn = DefaultFraction
+MY_DATA.hunger.fn = DefaultFraction
+MY_DATA.sanity_character.fn = DefaultFraction
+
 MY_DATA.owner.fn = function(arr)
     return arr.data.desc .. " " .. arr.param_str  --如果名称中有逗号，将忽略逗号。
 end
@@ -188,6 +188,7 @@ end
 
 
 MY_DATA.durability.fn = DefaultFraction
+MY_DATA.reinforce.fn = DefaultFraction
 --武器上显示的攻击BUFF
 MY_DATA.dmg.fn = function(arr)
     local str = DefaultDisplayFn(arr)
@@ -209,8 +210,6 @@ MY_DATA.food_temperature.fn = function(arr) -- { temperature, time }
     return SHOWME_STRINGS.temperature .. ': ' .. temperature_str .. ', ' .. time_str
 end
 
-
-MY_DATA.sanity_character.percent = true
 MY_DATA.sanity.sign = true
 MY_DATA.sanityaura.sign = true
 MY_DATA.dmg_character.percent = true

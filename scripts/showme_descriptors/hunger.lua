@@ -5,7 +5,7 @@ local Describe = function(self, context)
         return {
             priority = 99, -- 固定在 hp 之后
             data_key = "hunger",
-            params = { context.utils.round2(self.current, 0) },
+            params = { context.utils.round2(self.current, 0), context.utils.round2(self.max, 0) },
         }
     end
     return nil

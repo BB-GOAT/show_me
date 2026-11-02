@@ -33,8 +33,10 @@ local Describe = function(context)
         table.insert(entries, { description = context.modenv.MY_STRINGS.cooldown .. utils.DataTimerFn(math.ceil(remaining)) })
     end
 
-    local sanity = inst.components.equippable:GetDapperness(context.player, true) * TUNING.SANITY_DAPPERNESS * 60
-    table.insert(entries, { data_key = "sanity", params = { utils.round2(sanity, 1) } })
+    local sanity = utils.round2(inst.components.equippable:GetDapperness(context.player, true) * TUNING.SANITY_DAPPERNESS * 60, 1)
+    if sanity ~= 0 then
+        table.insert(entries, { data_key = "sanity", params = { sanity } })
+    end
 
     return entries
 end

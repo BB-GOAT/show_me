@@ -14,8 +14,10 @@ local Describe = function(self, context)
                         and (context.config.client.display_hp == -1 or context.config.client.display_hp == 1) -- 客户端设置（自动 / 开）
 
     if need_send_hp and self.minhealth ~= nil then
-        local mx = math.ceil(self.maxhealth - self.minhealth)
-        local cur = math.ceil(self.currenthealth - self.minhealth)
+        local max_with_penalty = self.GetMaxWithPenalty and self:GetMaxWithPenalty() or self.maxhealth -- 优先使用游戏提供的含血上限惩罚的最大值
+        local min_health = math.min(self.minhealth or 0, max_with_penalty) -- minhealth 不能超过实际有效上限
+        local mx = math.ceil(max_with_penalty - min_health)
+        local cur = math.ceil(self.currenthealth - min_health)
         if cur > mx then cur = mx end
         table.insert(entries, { priority = 100, data_key = "hp", params = { cur, mx } }) -- 血量
     end
