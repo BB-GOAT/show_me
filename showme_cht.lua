@@ -88,6 +88,7 @@ local MY_STRINGS =
     winter_gift_ready = "可以開啟禮物",
     winter_gift_wait = "還差 %s 天可以開啟禮物",
     klaus_sack_loot = "重要戰利品:",
+    hardarmor = "防擊飛",
 }
 
 local SHOWME_STRINGS = {
@@ -256,7 +257,7 @@ local INTERNAL_TIMERS = {
     --泰拉
     summon_delay = "正在召喚", warning = "預警", spawneyes_cd = "生成小眼", leash_cd = "施展法術", charge_cd = "衝撞",
     --暗影与月亮阵营
-    targetswitched = "目标切换", attack_cooldown = "攻击冷却", idletimer = "柱立时间", try_crystals = "下次扩张",trynextstage = "下一阶段", seedmiasma = "溶合暗影", close = "裂隙关闭", jump_cooldown = "跳跃攻击", chase_tick = "分裂", finish_spawn = "完成生成", start_explosion = "爆炸", spawn_delay = "生成延迟", start_ball_growing = "膨胀", stalk_cd = "缓行", roar_cd = "咆哮", loot_spawn_cd = "再次生成", push_sleep_anim = "睡眠", expiretime = "失效時間", quickjump_cd = "快速跳躍", stunned = "虛弱", active_time = "活躍", supernova_cd = "超新星", erode_timer = "消失", teleportcd = "瞬移", opticblastcd = "衝擊波", portalcd = "傳送門",
+    targetswitched = "目标切换", attack_cooldown = "攻击冷却", idletimer = "柱立时间", try_crystals = "下次扩张",trynextstage = "下一阶段", seedmiasma = "溶合暗影", close = "裂隙关闭", jump_cooldown = "跳跃攻击", chase_tick = "分裂", finish_spawn = "完成生成", start_explosion = "爆炸", spawn_delay = "生成延迟", start_ball_growing = "膨胀", stalk_cd = "缓行", roar_cd = "咆哮", loot_spawn_cd = "再次生成", push_sleep_anim = "睡眠", expiretime = "失效時間", quickjump_cd = "快速跳躍", stunned = "虛弱", active_time = "活躍", supernova_cd = "超新星", erode_timer = "消失", teleportcd = "瞬移", opticblastcd = "衝擊波", portalcd = "傳送門", bouldercd = "巨石", dashcd = "衝撞", chompcd = "咀嚼", missiles_cd = "導彈", orbitalstrike_cd = "軌道打擊", tantrum_cd = "發爛雜", hackdrones_cd = "無人機入侵",
 	push_sleep_anim = "睡眠", expiretime = "失效時間", quickjump_cd = "快速跳躍", stunned = "虛弱", active_time = "活躍", supernova_cd = "超新星", erode_timer = "消失",
     --神话
     growup = "成長", light = "燈光剩餘", peach = "桃子剩餘", blackbear = "黑風刷新", despawn = "消失", flyaway = "飛走", goaway = "離開", cd = "冷卻", myth_nian_timer = "年獸", nian_leave = "年獸佔據", bomb_cd = "腐敗雲", bombboom = "腐敗雲引爆", nian_noclose = "不打烊", nian_killed = "商品打折", timeover = "契約", yj_spear_elec = "充能",
@@ -413,7 +414,7 @@ local OTHER_TITLES = {
     nutrient = "%d 水, %d 催, %d 堆, %d 糞",
     naughty = "淘氣值: ",
 	decor_score = "裝飾度: ",
-	decor_disabled = "未生效: ",
+	decor_disabled = "未生效",
 	lureplant_eyes = "眼球草: ",
 	lureplant_wake = "長根: ",
 	lureplant_meat_soon= "葉肉: ",

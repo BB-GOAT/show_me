@@ -54,6 +54,14 @@ local Describe = function(self, context)
             params = { math.floor(self.condition + 0.5), math.floor(self.maxcondition + 0.5) },
         })
     end
+	
+    -- 防击飞显示
+    if entity:HasTag("hardarmor") then
+        table.insert(entries, {
+            data_key = "hardarmor",
+            params = {},
+        })
+    end
 
     return entries
 end

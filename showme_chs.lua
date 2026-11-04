@@ -88,6 +88,7 @@ local MY_STRINGS =    -- 调用 MY_DATA.armor.desc
     winter_gift_ready = "可以打开礼物",
     winter_gift_wait = "还差 %s 天可以打开礼物",
     klaus_sack_loot = "重要战利品:",
+    hardarmor = "防击飞",
 }
 
 local SHOWME_STRINGS = {
@@ -256,7 +257,7 @@ local INTERNAL_TIMERS = {
     --泰拉
     summon_delay = "正在召唤", warning = "预警", spawneyes_cd = "生成小眼", leash_cd = "施展法术", charge_cd = "冲撞",
     --暗影与月亮阵营
-    targetswitched = "目标切换", attack_cooldown = "攻击冷却", idletimer = "柱立时间", try_crystals = "正在扩张",trynextstage = "下一阶段", seedmiasma = "溶合暗影", close = "裂隙关闭", jump_cooldown = "跳跃攻击", chase_tick = "分裂", finish_spawn = "完成生成", start_explosion = "爆炸", spawn_delay = "生成延迟", start_ball_growing = "膨胀", stalk_cd = "缓行", roar_cd = "咆哮", loot_spawn_cd = "再次生成", push_sleep_anim = "睡眠", expiretime = "失效时间", quickjump_cd = "快速跳跃", stunned = "虚弱", active_time = "活跃", supernova_cd = "超新星", erode_timer = "消失", teleportcd = "瞬移", opticblastcd = "冲击波", portalcd = "传送门",
+    targetswitched = "目标切换", attack_cooldown = "攻击冷却", idletimer = "柱立时间", try_crystals = "正在扩张",trynextstage = "下一阶段", seedmiasma = "溶合暗影", close = "裂隙关闭", jump_cooldown = "跳跃攻击", chase_tick = "分裂", finish_spawn = "完成生成", start_explosion = "爆炸", spawn_delay = "生成延迟", start_ball_growing = "膨胀", stalk_cd = "缓行", roar_cd = "咆哮", loot_spawn_cd = "再次生成", push_sleep_anim = "睡眠", expiretime = "失效时间", quickjump_cd = "快速跳跃", stunned = "虚弱", active_time = "活跃", supernova_cd = "超新星", erode_timer = "消失", teleportcd = "瞬移", opticblastcd = "冲击波", portalcd = "传送门", bouldercd = "巨石", dashcd = "冲撞", chompcd = "咀嚼", missiles_cd = "导弹", orbitalstrike_cd = "轨道打击", tantrum_cd = "狂怒", hackdrones_cd = "无人机入侵",
     --神话
     growup = "成长", light = "灯光剩余", peach = "桃子剩余", blackbear = "黑风刷新", despawn = "消失", flyaway = "飞走", goaway = "离开", cd = "冷却", myth_nian_timer = "年兽", nian_leave = "年兽占据", bomb_cd = "腐败云", bombboom = "腐败云引爆", nian_noclose = "不打烊", nian_killed = "商品打折", timeover = "契约", yj_spear_elec = "充能",
     TreeDance = "树舞", --大小生物
@@ -412,7 +413,7 @@ local OTHER_TITLES = {
     nutrient = "%d 水, %d 催, %d 堆, %d 粪",
     naughty = "淘气值: ",
 	decor_score = "装饰度: ",
-	decor_disabled = "未生效: ",
+	decor_disabled = "未生效",
 	lureplant_eyes = "眼球草: ",
 	lureplant_wake = "长根: ",
 	lureplant_meat_soon= "叶肉: ",

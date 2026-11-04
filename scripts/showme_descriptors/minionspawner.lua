@@ -1,7 +1,7 @@
 -- minionspawner 组件：食人花的眼球草与叶肉进度（仅 lureplant 显示）
 local Describe = function(self, context)
     local entity = context.entity
-    if entity.prefab ~= "lureplant" then
+    if entity.prefab ~= "lureplant" or TheWorld.state.iswinter then
         return nil
     end
     local o_t = context.modenv.OTHER_TITLES -- 服务器语言：格式化词条
