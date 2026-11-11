@@ -17,7 +17,7 @@ local Describe = function(self, context)
         return nil
     end
     return {
-        priority = 98,
+        priority = 97, -- 低于 sanity 确保三维信息在一起显示
         data_key = "sanityaura",
         params = { aura_val },
     }
