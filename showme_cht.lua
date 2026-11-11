@@ -103,6 +103,13 @@ local SHOWME_STRINGS = {
     },
     time_for_next_tool = "%s後需要另一個工具",
     experiment_time = "%s後實驗完成",
+    rain_start = "預計降雨: %s 後",
+    rain_start_unknown = "預計降雨: 暫無法預測",
+    rain_stop = "預計停雨: %s 後",
+    frog_moisture_enough = "青蛙雨: 水分條件滿足",
+    frog_moisture_low = "青蛙雨: 水分不足",
+    frog_start = "青蛙雨預計開始於: %s 後",
+    frog_stop = "青蛙雨預計停止於: %s 後",
     loyal = "臣服", --for very loyal pigman with loyalty over 9000
     of = " 屬於 ", -- X of Y (reserved)
     units_1 = "1 單位",

@@ -103,6 +103,13 @@ local SHOWME_STRINGS = {
     },
     time_for_next_tool = "Another tool needed in %s",
     experiment_time = "Experiment completes in %s",
+    rain_start = "Rain expected in: %s",
+    rain_start_unknown = "Rain forecast: currently unavailable",
+    rain_stop = "Rain ends in: %s",
+    frog_moisture_enough = "Frog rain: sufficient moisture",
+    frog_moisture_low = "Frog rain: insufficient moisture",
+    frog_start = "Frog rain starts in: %s",
+    frog_stop = "Frog rain stops in: %s",
     loyal = "forever", --for very loyal pigman with loyalty over 9000
     of = " of ", -- X of Y (reserved)
     units_1 = "1 unit of ",

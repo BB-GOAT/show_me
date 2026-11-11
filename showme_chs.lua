@@ -103,6 +103,13 @@ local SHOWME_STRINGS = {
     },
     time_for_next_tool = "%s后需要另一个工具",
     experiment_time = "%s后实验完成",
+    rain_start = "预计降雨: %s 后",
+    rain_start_unknown = "预计降雨: 暂无法预测",
+    rain_stop = "预计停雨: %s 后",
+    frog_moisture_enough = "青蛙雨: 水分条件满足",
+    frog_moisture_low = "青蛙雨: 水分不足",
+    frog_start = "青蛙雨预计开始于: %s 后",
+    frog_stop = "青蛙雨预计停止于: %s 后",
     loyal = "臣服", --忠诚度
     of = "属于 ", -- X of Y (reserved)
     units_1 = "1 单位",
