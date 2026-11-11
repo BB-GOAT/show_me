@@ -99,6 +99,7 @@ local server_config = {
     show_planar_resist = GetModConfigData("show_planar_resist"), -- 显示位面抵抗
     T_crop_mode = GetModConfigData("T_crop_mode"), -- 农作物状态显示
     show_klaus_sack_loot = GetModConfigData("show_klaus_sack_loot"), -- 显示赃物袋重要战利品
+    show_weight = GetModConfigData("show_weight"), -- 显示鱼、巨大作物的重量
 }
 
 -- 高亮颜色优先使用客户端配置，其次服务器配置，最后使用默认值。
@@ -128,6 +129,7 @@ local client_config = {
     show_planar_resist = GetModConfigData("show_planar_resist", true), -- 显示位面抵抗
     T_crop_mode = GetModConfigData("T_crop_mode", true), -- 农作物状态显示
     show_klaus_sack_loot = GetModConfigData("show_klaus_sack_loot", true), -- 显示赃物袋重要战利品
+    show_weight = GetModConfigData("show_weight", true), -- 显示鱼、巨大作物的重量
 
     ---------------------------------------------------------------------------------------------------
 

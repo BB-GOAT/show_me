@@ -119,6 +119,14 @@ MY_DATA.hp.fn = DefaultFraction
 MY_DATA.hunger.fn = DefaultFraction
 MY_DATA.sanity_character.fn = DefaultFraction
 
+MY_DATA.weight.fn = function(arr)
+    local str = DefaultDisplayFn(arr)
+    if arr.param[2] then
+        str = str .. " (" .. arr.param[2] .. "%)"
+    end
+    return str
+end
+
 MY_DATA.owner.fn = function(arr)
     return arr.data.desc .. " " .. arr.param_str  --如果名称中有逗号，将忽略逗号。
 end

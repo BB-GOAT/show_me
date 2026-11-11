@@ -15,11 +15,12 @@ description = "当前版本: " .. version .. "\n" ..
 - 支持显示支柱信息
 - 支持显示更多计时器（如高鸟再生倒计时）
 - 支持从“雨量计”获取下雨/停雨倒计时和青蛙雨信息
+- 支持显示鱼、巨大作物的重量（默认关闭）
+
+历史更新日志请前往创意工坊页面查看
 
 如果遇到问题请及时留言反馈
 并且可以在模组设置中关闭beta版show me以(尝试)解决问题
-历史更新日志请前往创意工坊页面查看
-
 如果不显示血量，是因为与简易血条MOD一起开启了，要显示请在模组设置 → 显示血量 → 是
 ]]
 
@@ -296,6 +297,19 @@ configuration_options =
             { description = "否", data = 0 },
             { description = "是", data = 1 },
             { description = "禁止", data = 2, hover = "服务端将不会发送战利品信息给客户端" },
+        },
+        default = 0,
+        live_config = true,
+    },
+    {
+        name = "show_weight",
+        label = "显示鱼、巨大作物的重量（Beta）",
+        hover = "显示鱼和巨大作物的重量及其在重量范围中的百分比，仅Beta版生效。默认关闭；服务器设为禁止时，所有客户端均无法查看",
+        options =
+        {
+            { description = "否", data = 0 },
+            { description = "是", data = 1 },
+            { description = "禁止", data = 2, hover = "服务端将不会发送重量信息给客户端" },
         },
         default = 0,
         live_config = true,

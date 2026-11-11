@@ -89,6 +89,7 @@ local MY_STRINGS =
     winter_gift_wait = "還差 %s 天可以開啟禮物",
     klaus_sack_loot = "重要戰利品:",
     hardarmor = "防擊飛",
+    weight = "重量:",
 }
 
 local SHOWME_STRINGS = {

@@ -89,6 +89,7 @@ local MY_STRINGS =    -- 调用 MY_DATA.armor.desc
     winter_gift_wait = "还差 %s 天可以打开礼物",
     klaus_sack_loot = "重要战利品:",
     hardarmor = "防击飞",
+    weight = "重量:",
 }
 
 local SHOWME_STRINGS = {
