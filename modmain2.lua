@@ -14,6 +14,19 @@ end
 
 print(modinfo.name .. " : v" .. modinfo.version .. " Beta版模式")
 
+HINT_FONT = GetModConfigData("use_showme_font", true) and "showme_hint_font" or nil -- show me专用字体名（用于显示提示信息）
+if HINT_FONT and not _G.TheNet:IsDedicated() then
+    Assets = {
+        Asset("FONT", "fonts/" .. HINT_FONT .. ".zip")
+    }
+
+    -- 模组资源加载完成后建立字体别名，确保创建 HUD 前已可用。
+    AddSimPostInit(function()
+        _G.TheSim:LoadFont(MODROOT .. "fonts/" .. HINT_FONT .. ".zip", HINT_FONT)
+        _G.TheSim:SetupFontFallbacks(HINT_FONT, _G.DEFAULT_FALLBACK_TABLE_OUTLINE)
+    end)
+end
+
 function Import(modulename, env)
     local f = _G.kleiloadlua(modulename)
     if f and type(f) == "function" then

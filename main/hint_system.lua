@@ -63,6 +63,10 @@ do
         return c.showme_hint2:sub(i+1)
     end
     if CLIENT_SIDE then
+        local HINT_FONT_SIZE = 26 -- 实际显示字号，字库以两倍尺寸生成
+        local text_scale = _G.LOC and _G.LOC.GetTextScale() or 1
+        HINT_FONT_SIZE = HINT_FONT_SIZE / text_scale
+
         local function UnpackData(str,div)
             local pos,arr = 0,{}
             -- for each divider found
@@ -77,6 +81,12 @@ do
         local save_target
         local last_check_time = 0 --最后一次查看时间, 每 2 秒过期一次。
         AddClassPostConstruct("widgets/hoverer",function(hoverer) --hoverer=self
+            if HINT_FONT then
+                -- 名称与追加信息统一使用专用描边字体，抵消游戏语言的字号缩放
+                hoverer.text:SetFont(HINT_FONT)
+                hoverer.text:SetSize(HINT_FONT_SIZE)
+            end
+
             local old_SetString = hoverer.text.SetString
             local NEWLINES_SHIFT = {
                 '', --无信息
