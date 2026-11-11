@@ -14,8 +14,8 @@ end
 
 print(modinfo.name .. " : v" .. modinfo.version .. " Beta版模式")
 
-HINT_FONT = GetModConfigData("use_showme_font", true) and "showme_hint_font" or nil -- show me专用字体名（用于显示提示信息）
-if HINT_FONT and not _G.TheNet:IsDedicated() then
+HINT_FONT = "showme_hint_font" -- show me专用字体名（用于显示提示信息）
+if not _G.TheNet:IsDedicated() then
     Assets = {
         Asset("FONT", "fonts/" .. HINT_FONT .. ".zip")
     }
@@ -180,11 +180,13 @@ local highlight_data = Import(MODROOT .. "main/item_highlight.lua", env)
 highlight_data.SetConfigTable(client_config)
 
 -- 游戏内实时修改配置
+local SetHintFont = Import(MODROOT .. "main/hint_system.lua", env) -- 信息显示
 local SetupChangeModSettings = Import(MODROOT .. "main/change_modsettings.lua", env)
 SetupChangeModSettings(client_config, player_config, {
     SetupLanguage = language_data.SetupLanguage,
     RefreshChests = highlight_data.Refresh,
     ResolveChannel = ResolveChannel,
+    SetHintFont = SetHintFont,
 })
 
 Import(MODROOT .. "main/temperature_client.lua", env) -- 温度相关
@@ -207,8 +209,6 @@ if SERVER_SIDE then
     local server_mods_data = Import(MODROOT .. "main/check_mods.lua", env)
     server_config.is_HealthInfo = server_mods_data.is_HealthInfo -- 简易血条
 end
-
-Import(MODROOT .. "main/hint_system.lua", env) -- 信息显示
 
 -------------------------------------------------- CLIENT --------------------------------------------------
 

@@ -91,6 +91,7 @@ configuration_options =
         },
         default = true,
         client = true,
+        live_config = true,
     },
     SkipSpace("信息控制"),
     {
