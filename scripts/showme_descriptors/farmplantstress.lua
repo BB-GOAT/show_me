@@ -12,7 +12,7 @@ local function CanViewCropStress(viewer)
     end
     local inv = viewer.components and viewer.components.inventory
     local hat = inv and inv:GetEquippedItem(EQUIPSLOTS.HEAD)
-    return (hat and (hat.prefab == "plantregistryhat" or hat.prefab == "nutrientsgoggleshat")) ~= nil
+    return hat and (hat.prefab == "plantregistryhat" or hat.prefab == "nutrientsgoggleshat") or false
 end
 
 local Describe = function(self, context)

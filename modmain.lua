@@ -2459,8 +2459,8 @@ function GetTestString(item,viewer) --从这里开始，与Tell Me区分
         if TS_crop == 1 then
             -- 帽子档：需装备耕作先驱帽或园艺帽，沃姆伍德可直接查看
             local hat = viewer and viewer.components.inventory and viewer.components.inventory:GetEquippedItem(_G.EQUIPSLOTS.HEAD)
-            show_crop = (hat and (hat.prefab == "plantregistryhat" or hat.prefab == "nutrientsgoggleshat")) ~= nil
-                or (viewer ~= nil and viewer.prefab == "wormwood")
+            show_crop = (hat and (hat.prefab == "plantregistryhat" or hat.prefab == "nutrientsgoggleshat"))
+                or (viewer and viewer.prefab == "wormwood")
         end
         if show_crop then
             if c.farmplantstress and c.farmplantstress.stress_points then

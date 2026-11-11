@@ -14,10 +14,17 @@ local function SetConfigTable(config_table)
 end
 
 local function GetRenderConfig(config_name)
-    if live_config ~= nil then
-        return live_config[config_name]
+    local value
+    if live_config then
+        value = live_config[config_name]
+    else
+        value = GetModConfigData(config_name, true)
     end
-    return GetModConfigData(config_name, true)
+    -- 食物格式与样式的默认档(0)跟随服务端；腐烂样式的 0 是实际选项，保持原值
+    if value == 0 and (config_name == "food_order" or config_name == "food_style") then
+        value = GetModConfigData(config_name) or 0
+    end
+    return value
 end
 
 local function DefaultDisplayFn(arr) --输入有一个特殊的结构：{ data, param }。 data 是对 MY_DATA 元素的引用，param 是对数组 p 的引用。

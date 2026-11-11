@@ -8,10 +8,12 @@ local Describe = function(self, context)
     local utils = context.utils
     local entries = {}
 
-    local need_send_hp = (context.config.server.display_hp == 1 -- 开
-                        or (context.config.server.display_hp == -1 and not context.config.server.is_HealthInfo) -- 自动 + 没开简易血条
-                        or context.config.server.display_hp == 0) -- 关（但不是禁止）
-                        and (context.config.client.display_hp == -1 or context.config.client.display_hp == 1) -- 客户端设置（自动 / 开）
+    local server_hp = context.config.server.display_hp
+    local client_hp = context.config.client.display_hp
+
+    local need_send_hp = server_hp ~= 2 -- 服务端未禁止
+        and (client_hp == -1 or client_hp == 1) -- 客户端自动或开启
+        and not (server_hp == -1 and context.config.server.is_HealthInfo and client_hp == -1) -- 双方自动且有简易血条时不发送
 
     if need_send_hp and self.minhealth ~= nil then
         local max_with_penalty = self.GetMaxWithPenalty and self:GetMaxWithPenalty() or self.maxhealth -- 优先使用游戏提供的含血上限惩罚的最大值

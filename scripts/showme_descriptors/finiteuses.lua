@@ -18,7 +18,7 @@ local Describe = function(self, context)
     if show_uses == -1 then
         show_uses = context.config.server.show_uses
     end
-    if item_info_mod ~= 0 or show_uses == 0 then
+    if item_info_mod ~= 0 or show_uses == 0 or show_uses == 2 then
         return nil
     end
     if context.entity:HasTag("hide_percentage") then

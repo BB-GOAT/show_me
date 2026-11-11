@@ -328,7 +328,7 @@ configuration_options =
     {
         name = "highlight_containers",
         label = "高亮容器",
-        hover = "高亮存有查找物品的容器，以及恶液储存箱中展示的料理",
+        hover = "仅Beta版支持此开关，旧版始终开启；高亮存有查找物品的容器，以及恶液储存箱中展示的料理",
         options = {
             { description = "关闭", data = false },
             { description = "开启", data = true },
@@ -339,7 +339,7 @@ configuration_options =
     },
     {
         name = "highlight_inventory",
-        label = "高亮物品栏物品",
+        label = "高亮物品栏物品（Beta）",
         hover = "高亮物品栏、装备栏、背包和已打开容器中的同类物品图标",
         options = {
             { description = "关闭", data = false },
@@ -351,7 +351,7 @@ configuration_options =
     },
     {
         name = "highlight_ground",
-        label = "高亮地面物品",
+        label = "高亮地面物品（Beta）",
         hover = "高亮地面上与手持物品或配方材料同类的物品",
         options = {
             { description = "关闭", data = false },

@@ -7,7 +7,10 @@ local Describe = function(context)
         return nil
     end
 
-    -- show_food_units 数值档：客户端显式设置优先，默认档(-1)跟随服务器；0(客户端关)与 2(服务器禁止)都在生成层拦截不发送
+    -- 服务端禁止时不发送；否则客户端显式设置优先，默认档(-1)跟随服务器
+    if context.config.server.show_food_units == 2 then
+        return nil
+    end
     local show_food_units = context.config.client.show_food_units
     if show_food_units == -1 then
         show_food_units = context.config.server.show_food_units
