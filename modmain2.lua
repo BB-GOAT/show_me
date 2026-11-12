@@ -257,7 +257,7 @@ local PREFAB_DESCRIPTOR_FILES = {
     "shadow_battleaxe", -- 暗影槌：显示等级、升级所需 BOSS 击杀进度及吸血效果
     "volcano_altar", -- 火山祭坛：显示喷发状态或距离下次喷发的天数
     "junk_pile_big", -- 垃圾堆：显示机械残骸、栅栏及科学笔记的补货倒计时
-    "king_cane", -- 国王魔杖：显示宝石能力、腐化值与恢复时间、技能冷却及精神影响
+    "king_cane", -- 国王魔杖：显示宝石能力、腐化值与恢复时间、技能冷却
     "klaus_sack", -- 赃物袋：读取已生成的重要战利品，由客户端决定是否显示
 }
 local FEATURE_DESCRIPTOR_FILES = {
@@ -288,7 +288,9 @@ local FEATURE_DESCRIPTOR_FILES = {
 local dynamic_prefab_modules = {} -- 动态匹配
 AddSimPostInit(function()
     for _, path in ipairs(PREFAB_DESCRIPTOR_FILES) do
-        prefab_routes[path] = require("showme_prefab_descriptors/" .. path)
+        if not prefab_routes[path] then -- 保留第三方通过 API 提前注册的描述。
+            prefab_routes[path] = require("showme_prefab_descriptors/" .. path)
+        end
     end
     for _, path in ipairs(FEATURE_DESCRIPTOR_FILES) do
         local mod = require("showme_feature_descriptors/" .. path)

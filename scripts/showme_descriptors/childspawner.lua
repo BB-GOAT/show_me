@@ -32,9 +32,20 @@ local function GetRegenInfo(self, utils)
             paused = world_timer:IsPaused(timer_name),
         }
     else
-        local regen_time = self.timetonextregen
-        if self.task then
-            regen_time = regen_time + GetTaskRemaining(self.task)
+        local task = self.task
+        local period = task and task.period
+        local remaining = self.timetonextregen
+        if not period or not (period > 0 and period < math.huge)
+            or not (remaining > -math.huge and remaining < math.huge)
+        then
+            return nil
+        end
+        -- 每次更新扣除一个周期，剩余值小于 0 才再生；floor 得到首次更新后还需等待的周期数
+        local later_updates = math.max(0, math.floor(remaining / period))
+        -- 预计剩余时间 = 距下次更新的时间 + 后续周期数 × 更新周期，不细算浮点残差和帧对齐
+        local regen_time = math.max(0, GetTaskRemaining(task)) + later_updates * period
+        if not (regen_time >= 0 and regen_time < math.huge) then
+            return nil
         end
 
         return {

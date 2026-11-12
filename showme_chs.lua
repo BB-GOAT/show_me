@@ -126,7 +126,7 @@ local SHOWME_STRINGS = {
     onpickup = " 采摘时", --对于花
     pressure = '压力( %s )', -- 农作物压力
     _in = ' 大约 ', -- X秒后的东西
-    jieduan = "阶段", chixu = " 持续", pvp = "对你是: ", norot = "永久保鲜", hot = "变质速度 +", weak = "变质速度 +", cold = "保鲜倍率 +", refresh = "返鲜速度 +", xiaolv = "效率", fangyu = "防御", gongji = "攻击", fangshui = "防水", gandian = "感电攻击", faguang = "发光", huifu = "生命恢复",
+    jieduan = "阶段", chixu = " 持续", pvp = "对你是: ", norot = "永久保鲜", hot = "变质速度 +", weak = "变质速度 +", cold = "保鲜倍率 ", refresh = "返鲜速度 +", xiaolv = "效率", fangyu = "防御", gongji = "攻击", fangshui = "防水", gandian = "感电攻击", faguang = "发光", huifu = "生命恢复",
 }
 
 --食物信息名称定义，例如【1 单位 veggie】，定义后显示【1单位 蔬菜】
@@ -334,8 +334,8 @@ local OTHER_TAGS = {    -- 表用于cn("other_tag", key), 拿不到的数值先�
     slingshot_handle_voidcloth = "风帽加强绝望石、纯粹恐惧弹药\n伤害 +10%\n位面伤害 +5\n群聚恐怖 +2次",
 
     --万圣节
-    halloweenpotion_health = "生命恢复 +1/秒, 持续 60 秒",
-    halloweenpotion_sanity = "精神恢复 +1/秒, 持续 60 秒",
+    halloweenpotion_health = "每2秒恢复1点生命, 持续 60 秒",
+    halloweenpotion_sanity = "每2秒恢复1点精神, 持续 60 秒",
     --大力士
     wolfgang_whistle = "范围: 6 地皮\n随从获得9.5秒双倍伤害\n玩家获得 5 精神增益",
     --弹珠
@@ -412,7 +412,7 @@ local OTHER_TITLES = {
     mpl_hit = "位面加深 %s/击，持续 %s 秒",
     shf_hit = "群聚恐怖 %s/次，共 %s 次",
     slingshot_range = "弹弓范围: +%s",
-    ammo_speed = "子弹速度: +%s",
+    ammo_speed = "子弹速度: ×%s",
     slingshot_speed = "%s 概率不消耗子弹",
     critterhunger = "饥饿剩余: ",
     level = "等级: ",

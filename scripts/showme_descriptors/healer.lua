@@ -8,10 +8,14 @@ local Describe = function(self, context)
     if item_info_mod ~= 0 then
         return nil
     end
-    local heal = context.utils.round2(self.health, 1)
+    local heal = self.health
     if heal == 0 and context.entity.prefab == "spider_healer_item" then
         heal = TUNING.HEALING_MEDSMALL -- 治疗蛛巢切割器的治疗量未写入组件，取同档常量
+    else
+        local efficientuser = context.player.components.efficientuser
+        heal = heal * (efficientuser and efficientuser:GetMultiplier(ACTIONS.HEAL) or 1)
     end
+    heal = context.utils.round2(heal, 1)
     if heal and heal ~= 0 then
         return {
             data_key = "heal",

@@ -34,12 +34,6 @@ local Describe = function(self, context)
         end
         table.insert(entries, { data_key = "strength", params = { tostring(utils.round2(dmg, 1)), pvp_perc } })
 
-        local planardamage = entity.components.planardamage
-        if planardamage and planardamage.basedamage and planardamage.basedamage > 0 then
-            --位面伤害不计算小数？向下整取试试, 不知有没pvp
-            table.insert(entries, { data_key = "basedmg", params = { math.floor(planardamage.basedamage) } })
-        end
-
         if show_planar_resist and entity.components.planarentity then
             table.insert(entries, { description = context.modenv.OTHER_TITLES.dmgresist })
         end
@@ -47,6 +41,13 @@ local Describe = function(self, context)
         if self.areahitdamagepercent then --AoE
             table.insert(entries, { data_key = "aoe", params = { math.floor(dmg * self.areahitdamagepercent + 0.5) } })
         end
+    end
+
+    -- 位面伤害包含倍率和额外加成，独立于物理伤害显示
+    local planardamage = entity.components.planardamage
+    local planar = planardamage and planardamage:GetDamage()
+    if planar and planar > 0 then
+        table.insert(entries, { data_key = "basedmg", params = { math.floor(planar) } })
     end
 
     -- 攻击范围：原版范围链的 combat 兑底分支（纯 combat 物品），

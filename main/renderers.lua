@@ -362,21 +362,18 @@ MY_DATA.fresh.fn = function(arr)
 end
 --冰箱保鲜程度
 MY_DATA.frigde.fn = function(arr)
-    local v = tonumber(arr.param[1]);
-    if v == 0 then
-        return SHOWME_STRINGS.norot; --hard coded
-    elseif v == 1 then
-        return 'Broken';
-    elseif v > 1 then
-        return SHOWME_STRINGS.hot ..round2((v-1)*100)..'%';
-    elseif v > 0.5 then
-        return SHOWME_STRINGS.weak ..round2((v-0.5)*200)..'%';
+    local v = tonumber(arr.param[1])
+    if not v or v ~= v or math.abs(v) == math.huge then
+        return "???"
+    elseif v == 0 then
+        return SHOWME_STRINGS.norot
     elseif v > 0 then
-        return SHOWME_STRINGS.cold ..round2(1/(v)+1)..'x'; --少了数，应该再+1
-    elseif v < 0 then
-        return SHOWME_STRINGS.refresh ..round2((-v)*1)..'%';
+        local lifetime = 1 / v
+        return lifetime < math.huge and (SHOWME_STRINGS.cold .. round2(lifetime, 2) .. "x") or "???"
+    else
+        local refresh = -v * 100
+        return refresh < math.huge and (SHOWME_STRINGS.refresh .. round2(refresh, 2) .. "%") or "???"
     end
-    return 'Paradox '..tostring(v); --error
 end
 
 local CONST_COUNT = { ['1'] = '(1)', ['2'] = '(2)', ['3'] = '(3)', ['4'] = '(4)', ['5'] = '(5)', ['6'] = '(6)', ['7'] = '(7)',

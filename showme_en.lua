@@ -126,7 +126,7 @@ local SHOWME_STRINGS = {
     onpickup = " on pick up", --for flowers
     pressure = 'Pressure( %s )',
     _in = ' in ',
-    jieduan = "Stage", chixu = " Duration", pvp = "pvp: ", norot = "Permanent freshness", hot = "Spoil speed +", weak = "Spoil speed +", cold = "Freshness +", refresh = "Refresh speed +", xiaolv = "Efficiency", fangyu = "Absorb", gongji = "Damage", fangshui = "Waterproof", gandian = "Electrified attack", faguang = "light", huifu = "Health regen",
+    jieduan = "Stage", chixu = " Duration", pvp = "pvp: ", norot = "Permanent freshness", hot = "Spoil speed +", weak = "Spoil speed +", cold = "Freshness multiplier ", refresh = "Refresh speed +", xiaolv = "Efficiency", fangyu = "Absorb", gongji = "Damage", fangshui = "Waterproof", gandian = "Electrified attack", faguang = "light", huifu = "Health regen",
 }
 
 --食物信息名称定义，例如【1 单位 veggie】，定义后显示【1单位 蔬菜】
@@ -335,8 +335,8 @@ local OTHER_TAGS = {    --Hardcoded values
     slingshot_handle_voidcloth = "Enhances dreadstone and pure horror ammo\nDamage +10%\nPlanar damage +5\nCluster terror +2 uses",
 
     --Halloween
-    halloweenpotion_health = "Health regen +1/sec, lasts 30 sec",
-    halloweenpotion_sanity = "Sanity regen +1/sec, lasts 30 sec",
+    halloweenpotion_health = "Health regen +1 every 2 sec, lasts 60 sec",
+    halloweenpotion_sanity = "Sanity regen +1 every 2 sec, lasts 60 sec",
     --Wolfgang
     wolfgang_whistle = "Range: 6 tiles\nFollowers gain 9.5 sec double damage\nPlayer gains 5 sanity bonus",
     --Slingshot ammo
@@ -413,7 +413,7 @@ OTHER_TITLES = {
     mpl_hit = "Planar deepen %s/hit, lasts %s sec",
     shf_hit = "Cluster terror %s/use, total %s uses",
     slingshot_range = "Slingshot range: +%s",
-    ammo_speed = "Bullet speed: +%s",
+    ammo_speed = "Bullet speed: ×%s",
     slingshot_speed = "%s chance to not consume ammo",
     critterhunger = "Hunger left: ",
     level = "Level: ",

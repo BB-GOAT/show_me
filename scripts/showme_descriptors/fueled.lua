@@ -1,6 +1,16 @@
 -- fueled 组件：建筑燃料（火堆/结构）与服饰、工具耐久
 local SPICIAL_STRUCTURES = { campfire = true, coldfire = true } -- 非结构但也显示建筑燃料的火堆类
 
+local function GetFuelTime(self)
+    local rate = self.rate * self.rate_modifiers:Get()
+    if rate > 0 and rate < math.huge then
+        local time = self.currentfuel / rate
+        if time >= 0 and time < math.huge then
+            return time
+        end
+    end
+end
+
 local Describe = function(self, context)
     local entity = context.entity
     local prefab = entity.prefab
@@ -17,14 +27,17 @@ local Describe = function(self, context)
     end
     local o_t = context.modenv.OTHER_TITLES
     local s_str = context.modenv.SHOWME_STRINGS
+    local fuel_time = GetFuelTime(self)
+    local percent = " ( " .. math.floor(self:GetPercent() * 100) .. "% )"
+    -- 正速率的未使用物品仍预览恢复使用后的时长；零速率或回充时没有耗尽倒计时
+    local paused = fuel_time and not self.consuming and " (" .. s_str.paused .. ")" or ""
 
     local lines = {}
 
     -- 建筑燃料：火堆类与结构建筑，显示剩余燃烧时间与燃料效率
     if self:GetPercent() > 0 and (SPICIAL_STRUCTURES[prefab] or entity:HasTag("structure")) then
-        if self.currentfuel ~= nil then
-            table.insert(lines, o_t.ot_fuel .. utils.DataTimerFn(self.currentfuel) .. " ( " .. math.floor(self:GetPercent() * 100) .. "% )")
-        end
+        local time_str = fuel_time and utils.DataTimerFn(fuel_time) or s_str.stopped
+        table.insert(lines, o_t.ot_fuel .. time_str .. percent .. paused)
         if show_fuel ~= false and self.bonusmult ~= nil and self.bonusmult > 1 then
             table.insert(lines, o_t.ot_fuelval .. self.bonusmult .. "x")
         end
@@ -32,16 +45,20 @@ local Describe = function(self, context)
 
     -- 服饰/工具耐久：按燃料类型与物品类型决定是否显示
     if show_fueled ~= false and not entity:HasTag("hide_percentage") then
-        local FueledTime = utils.DataTimerFn(self.currentfuel)
-        local FueledDay = tostring(utils.round2(self.currentfuel / TUNING.TOTAL_DAY_TIME, 2))
-        local FDays = s_str.days
         local s_fval
-        if show_fueled == 1 then --根据配置，显示不同的样式
-            s_fval = o_t.fueled .. FueledTime
-        elseif show_fueled == 2 then
-            s_fval = o_t.fueled .. FueledDay .. FDays
+        if fuel_time then
+            local FueledTime = utils.DataTimerFn(fuel_time)
+            local FueledDay = tostring(utils.round2(fuel_time / TUNING.TOTAL_DAY_TIME, 2)) .. s_str.days
+            if show_fueled == 1 then -- 根据配置，显示不同的样式
+                s_fval = o_t.fueled .. FueledTime
+            elseif show_fueled == 2 then
+                s_fval = o_t.fueled .. FueledDay
+            else
+                s_fval = o_t.fueled .. FueledTime .. " ( " .. FueledDay .. " )"
+            end
+            s_fval = s_fval .. paused
         else
-            s_fval = o_t.fueled .. FueledTime .. " ( " .. FueledDay .. FDays .. " )"
+            s_fval = o_t.fueled .. s_str.stopped .. percent
         end
         --CAVE, NIGHTMARE, MAGIC, CHEMICAL, WORMLIGHT
         if (self.fueltype == FUELTYPE.USAGE or self.secondaryfueltype == FUELTYPE.USAGE) and not (self.no_sewing or entity:HasTag("heatrock")) then

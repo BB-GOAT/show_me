@@ -258,6 +258,9 @@ do
                     math.clamp(x, XOFFSET + w, scr_w - w - XOFFSET),
                     math.clamp(y, YOFFSETDOWN + h, scr_h + 9999),
                 0)
+                if self.force_settle_text then
+                    self:SettleTextPosition()
+                end
             end
 
 
@@ -277,9 +280,7 @@ do
         end
         if item ~= nil and item.components ~= nil then
             local s = GetTestString(item, player) --在服务器上形成一个字符串（GetTestString 为 modmain2 HOST 分区定义的 env 全局，本 handler 仅服务器端运行时解析，届时必已定义）
-            if s and s ~= "" then
-                player.player_classified.net_showme_hint2:set(tostring(guid)..";"..s) --将其打包成一行并将其发送回同一玩家
-            end
+            player.player_classified.net_showme_hint2:set(tostring(guid)..";"..(s or ""))
         end
     end)
 

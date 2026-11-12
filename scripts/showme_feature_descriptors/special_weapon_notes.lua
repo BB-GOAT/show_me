@@ -5,7 +5,11 @@ local Describe = function(context)
 
     D.batbat = function()
         local drain = TUNING.BATBAT_DRAIN
-        return { description = string.format(o_t.batbat, drain, -0.5 * drain) }
+        local inventory = context.player.components.inventory
+        local hat = inventory and inventory:GetEquippedItem(EQUIPSLOTS.HEAD)
+        local mult = hat and hat:HasTag("bathat") and TUNING.BATBAT_SETBONUS_SANITY_DRAIN_MULT
+            or TUNING.BATBAT_SANITY_DRAIN_MULT
+        return { description = string.format(o_t.batbat, drain, -mult * drain) }
     end
 
     D.ruins_bat = function()

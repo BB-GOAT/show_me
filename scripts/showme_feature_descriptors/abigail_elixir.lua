@@ -20,7 +20,7 @@ local Describe = function(context)
             local heal = TUNING.GHOSTLYELIXIR_SLOWREGEN_HEALING
             table.insert(entries, { description = string.format(o_t.healthpertick, heal) .. " /" .. o_t.second .. "," .. SHOWME_STRINGS.chixu .. g_pt.DURATION / day_time .. SHOWME_STRINGS.days })
         end
-    elseif g_pt.ONDETACH then
+    elseif context.entity.prefab == "ghostlyelixir_attack" then
         table.insert(entries, { description = string.format(o_t.ghost_atk, g_pt.DURATION / day_time) })
     elseif g_pt.speed_hauntable == true then
         local speed_mult = TUNING.GHOSTLYELIXIR_SPEED_LOCO_MULT

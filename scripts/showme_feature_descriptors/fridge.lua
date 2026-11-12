@@ -7,7 +7,7 @@ local Describe = function(context)
     if not fridge then
         return nil
     end
-    return { data_key = "frigde", params = { context.utils.round2(fridge, 1) } }
+    return { data_key = "frigde", params = { fridge } }
 end
 
 return {
