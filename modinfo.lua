@@ -91,7 +91,7 @@ configuration_options =
             { description = "否", data = false },
             { description = "是", data = true },
         },
-        default = true,
+        default = false,
         client = true,
         live_config = true,
     },
