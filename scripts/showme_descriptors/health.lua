@@ -5,6 +5,12 @@ local Describe = function(self, context)
         return nil -- 石果等生长体不显示血量，由 growable 显示阶段
     end
 
+    -- 部分生物由控制器统一承伤，优先读取控制器的共享血量
+    local controller = entity.controller
+    if controller and controller:IsValid() and controller.components and controller.components.health then
+        self = controller.components.health
+    end
+
     local utils = context.utils
     local entries = {}
 
@@ -15,7 +21,7 @@ local Describe = function(self, context)
         and (client_hp == -1 or client_hp == 1) -- 客户端自动或开启
         and not (server_hp == -1 and context.config.server.is_HealthInfo and client_hp == -1) -- 双方自动且有简易血条时不发送
 
-    if need_send_hp and self.minhealth ~= nil then
+    if need_send_hp and not self:IsInvincible() and self.minhealth ~= nil then
         local max_with_penalty = self.GetMaxWithPenalty and self:GetMaxWithPenalty() or self.maxhealth -- 优先使用游戏提供的含血上限惩罚的最大值
         local min_health = math.min(self.minhealth or 0, max_with_penalty) -- minhealth 不能超过实际有效上限
         local mx = math.ceil(max_with_penalty - min_health)

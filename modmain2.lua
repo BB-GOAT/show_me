@@ -275,6 +275,7 @@ local FEATURE_DESCRIPTOR_FILES = {
     "special_item_notes", -- 特定物品：显示书籍、装备、弹弓部件及模块等的专属说明词条
     "rebirth_amulet", -- 重生护符：显示可用于重生的说明
     "charged_days", -- 带 chargeleft 字段的充能物品：显示剩余可用天数
+    "worm_health", -- 巨大洞穴蠕虫身体：读取 worm 字段关联的共享血量
     "special_weapon_notes", -- 蝙蝠棒、铥矿棒、铥矿皇冠与盐粉：显示吸血、暗影触手或治疗加成说明
     "slingshot_upgrades", -- 特殊弹药与弹弓皮筋：显示附加效果、群体伤害、射程及弹速等
     "wx78_modules", -- WX-78 电路模块：显示属性提升、回复及其他模块效果
